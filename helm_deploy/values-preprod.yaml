@@ -4,7 +4,7 @@
 replicaCount: 4
 
 image:
-  repository: quay.io/hmpps/prison-offender-search-indexer
+  repository: quay.io/hmpps/probation-offender-search-indexer
   tag: latest
   port: 8080
 
@@ -14,8 +14,8 @@ ingress:
   annotations:
     kubernetes.io/ingress.class: "nginx"
   hosts:
-    - host: prison-offender-search-indexer-preprod.prison.service.justice.gov.uk
-      cert_secret: prison-offender-search-indexer-cert
+    - host: probation-offender-search-indexer-preprod.prison.service.justice.gov.uk
+      cert_secret: probation-offender-search-indexer-cert
   path: /
 
 env:
