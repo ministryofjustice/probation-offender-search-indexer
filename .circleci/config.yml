@@ -45,7 +45,6 @@ workflows:
             branches:
               only:
                 - main
-                - DT-961-IndexerServiceCreate
       - hmpps/deploy_env:
           name: deploy_dev
           env: "dev"
@@ -53,7 +52,6 @@ workflows:
             branches:
               only:
                 - main
-                - DT-961-IndexerServiceCreate
           requires:
             - validate
             - helm_lint
