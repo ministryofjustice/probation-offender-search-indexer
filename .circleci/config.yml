@@ -53,6 +53,7 @@ workflows:
             branches:
               only:
                 - main
+                - DT-961-IndexerServiceCreate
           requires:
             - validate
             - helm_lint
