@@ -19,4 +19,77 @@ env:
         name: {{ template "app.name" . }}
         key: APPINSIGHTS_INSTRUMENTATIONKEY
 
+  - name: EVENT_SQS_AWS_ACCESS_KEY_ID
+    valueFrom:
+      secretKeyRef:
+        name: pose-sqs-instance-output
+        key: access_key_id
+
+  - name: EVENT_SQS_AWS_SECRET_ACCESS_KEY
+    valueFrom:
+      secretKeyRef:
+        name: pose-sqs-instance-output
+        key: secret_access_key
+
+  - name: EVENT_SQS_QUEUE_NAME
+    valueFrom:
+      secretKeyRef:
+        name: pose-sqs-instance-output
+        key: sqs_pos_name
+
+  - name: EVENT_SQS_AWS_DLQ_ACCESS_KEY_ID
+    valueFrom:
+      secretKeyRef:
+        name: pose-sqs-dl-instance-output
+        key: access_key_id
+
+  - name: EVENT_SQS_AWS_DLQ_SECRET_ACCESS_KEY
+    valueFrom:
+      secretKeyRef:
+        name: pose-sqs-dl-instance-output
+        key: secret_access_key
+
+  - name: EVENT_SQS_DLQ_NAME
+    valueFrom:
+      secretKeyRef:
+        name: pose-sqs-dl-instance-output
+        key: sqs_pos_name
+
+  - name: INDEX_SQS_AWS_ACCESS_KEY_ID
+    valueFrom:
+      secretKeyRef:
+        name: poi-idx-sqs-instance-output
+        key: access_key_id
+
+  - name: INDEX_SQS_AWS_SECRET_ACCESS_KEY
+    valueFrom:
+      secretKeyRef:
+        name: poi-idx-sqs-instance-output
+        key: secret_access_key
+
+  - name: INDEX_SQS_QUEUE_NAME
+    valueFrom:
+      secretKeyRef:
+        name: poi-idx-sqs-instance-output
+        key: sqs_pos_name
+
+  - name: INDEX_SQS_AWS_DLQ_ACCESS_KEY_ID
+    valueFrom:
+      secretKeyRef:
+        name: poi-idx-sqs-dl-instance-output
+        key: access_key_id
+
+  - name: INDEX_SQS_AWS_DLQ_SECRET_ACCESS_KEY
+    valueFrom:
+      secretKeyRef:
+        name: poi-idx-sqs-dl-instance-output
+        key: secret_access_key
+
+  - name: INDEX_SQS_DLQ_NAME
+    valueFrom:
+      secretKeyRef:
+        name: poi-idx-sqs-dl-instance-output
+        key: sqs_pos_name
+
+
 {{- end -}}

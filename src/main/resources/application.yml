@@ -37,3 +37,16 @@ management:
     info:
       cache:
         time-to-live: 2000ms
+
+aws:
+  provider: aws
+  region: eu-west-2
+
+event:
+  sqs:
+    provider: ${aws.provider}
+    endpoint.region: ${aws.region}
+index:
+  sqs:
+    provider: ${aws.provider}
+    endpoint.region: ${aws.region}
