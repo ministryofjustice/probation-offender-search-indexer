@@ -1,0 +1,12 @@
+graceful:
+  shutdown.enabled: false
+
+
+event:
+  sqs:
+    queue.name: probation_offender_search_event_queue
+    dlq.name: probation_offender_search_event_dead_letter_queue_dl
+index:
+  sqs:
+    queue.name: probation_offender_index_queue
+    dlq.name: probation_offender_index_queue_dl
