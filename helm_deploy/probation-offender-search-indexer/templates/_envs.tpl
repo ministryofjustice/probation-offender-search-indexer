@@ -35,7 +35,7 @@ env:
     valueFrom:
       secretKeyRef:
         name: pose-sqs-instance-output
-        key: sqs_pos_name
+        key: sqs_name
 
   - name: EVENT_SQS_AWS_DLQ_ACCESS_KEY_ID
     valueFrom:
@@ -53,7 +53,7 @@ env:
     valueFrom:
       secretKeyRef:
         name: pose-sqs-dl-instance-output
-        key: sqs_pos_name
+        key: sqs_name
 
   - name: INDEX_SQS_AWS_ACCESS_KEY_ID
     valueFrom:
@@ -71,7 +71,7 @@ env:
     valueFrom:
       secretKeyRef:
         name: poi-idx-sqs-instance-output
-        key: sqs_pos_name
+        key: sqs_name
 
   - name: INDEX_SQS_AWS_DLQ_ACCESS_KEY_ID
     valueFrom:
@@ -89,7 +89,7 @@ env:
     valueFrom:
       secretKeyRef:
         name: poi-idx-sqs-dl-instance-output
-        key: sqs_pos_name
+        key: sqs_name
 
 
 {{- end -}}

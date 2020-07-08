@@ -5,14 +5,14 @@ export AWS_ACCESS_KEY_ID=foobar
 export AWS_SECRET_ACCESS_KEY=foobar
 export AWS_DEFAULT_REGION=eu-west-2
 
-aws --endpoint-url=http://localhost:4576 sqs create-queue --queue-name probation_offender_index_queue_dl
-aws --endpoint-url=http://localhost:4576 sqs create-queue --queue-name probation_offender_index_queue
+aws --endpoint-url=http://localhost:4576 sqs create-queue --queue-name probation_offender_search_index_dl_queue
+aws --endpoint-url=http://localhost:4576 sqs create-queue --queue-name probation_offender_search_index_queue
 
 aws --endpoint-url=http://localhost:4575 sns create-topic --name probation_offender_events
 
-aws --endpoint-url=http://localhost:4576 sqs create-queue --queue-name probation_offender_search_event_dead_letter_queue_dl
+aws --endpoint-url=http://localhost:4576 sqs create-queue --queue-name probation_offender_search_event_dl_queue
 aws --endpoint-url=http://localhost:4576 sqs create-queue --queue-name probation_offender_search_event_queue
-aws --endpoint-url=http://localhost:4576 sqs set-queue-attributes --queue-url "http://localhost:4576/queue/probation_offender_search_event_queue" --attributes '{"RedrivePolicy":"{\"maxReceiveCount\":\"3\", \"deadLetterTargetArn\":\"arn:aws:sqs:eu-west-2:000000000000:probation_offender_search_event_dead_letter_queue_dl\"}"}'
+aws --endpoint-url=http://localhost:4576 sqs set-queue-attributes --queue-url "http://localhost:4576/queue/probation_offender_search_event_queue" --attributes '{"RedrivePolicy":"{\"maxReceiveCount\":\"3\", \"deadLetterTargetArn\":\"arn:aws:sqs:eu-west-2:000000000000:probation_offender_search_event_dl_queue\"}"}'
 aws --endpoint-url=http://localhost:4575 sns subscribe \
     --topic-arn arn:aws:sns:eu-west-2:000000000000:probation_offender_events \
     --protocol sqs \

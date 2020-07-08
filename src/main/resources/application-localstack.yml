@@ -3,11 +3,11 @@ graceful:
 
 event:
   sqs:
-    endpoint.url: http://localhost:4576
+    endpoint.url: http://localhost:4576 # only required for external localstack
     queue.name: probation_offender_search_event_queue
-    dlq.name: probation_offender_search_event_dead_letter_queue_dl
+    dlq.name: probation_offender_search_event_dl_queue
 index:
   sqs:
-    endpoint.url: http://localhost:4576
-    queue.name: probation_offender_index_queue
-    dlq.name: probation_offender_index_queue_dl
+    endpoint.url: http://localhost:4576 # only required for external localstack
+    queue.name: probation_offender_search_index_queue
+    dlq.name: probation_offender_search_index_dl_queue
