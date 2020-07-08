@@ -1,5 +1,5 @@
 plugins {
-	id("uk.gov.justice.hmpps.gradle-spring-boot") version "0.4.2"
+	id("uk.gov.justice.hmpps.gradle-spring-boot") version "0.4.3"
 	kotlin("plugin.spring") version "1.3.72"
 }
 
@@ -8,6 +8,12 @@ configurations {
 }
 
 dependencies {
+
+	implementation("org.springframework.boot:spring-boot-starter-security")
+	implementation("org.springframework.boot:spring-boot-starter-webflux")
+	implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
+	implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
+
 	implementation("org.springframework:spring-jms")
 	implementation("com.amazonaws:amazon-sqs-java-messaging-lib:1.0.8")
 

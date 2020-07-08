@@ -24,7 +24,7 @@ class JmsTestContainersLocalStackConfig(private val localStackContainer: LocalSt
   @Bean
   fun indexAwsSqsDlqClient() = amazonSQS()
 
-  private fun amazonSQS() : AmazonSQS = AmazonSQSClientBuilder.standard()
+  private fun amazonSQS(): AmazonSQS = AmazonSQSClientBuilder.standard()
       .withEndpointConfiguration(localStackContainer.getEndpointConfiguration(LocalStackContainer.Service.SQS))
       .withCredentials(localStackContainer.defaultCredentialsProvider)
       .build()
