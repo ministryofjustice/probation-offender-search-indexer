@@ -1,6 +1,8 @@
 spring:
   profiles:
     include: localstack
+aws:
+  provider: testcontainers-localstack
 
 server:
   shutdown: immediate
@@ -9,6 +11,3 @@ server:
 management.endpoint:
   health.cache.time-to-live: 0
   info.cache.time-to-live: 0
-
-aws:
-  provider: testcontainers-localstack
