@@ -100,5 +100,5 @@ constructor(eventAwsSqsClient: AmazonSQS,
 class IndexQueueHealth
 constructor(indexAwsSqsClient: AmazonSQS,
             indexAwsSqsDlqClient: AmazonSQS,
-            @Value("\${event.sqs.queue.name}") private val eventQueueName: String,
-            @Value("\${index.sqs.dlq.name}") private val eventDlqName: String) : QueueHealth(indexAwsSqsClient, indexAwsSqsDlqClient, eventQueueName, eventDlqName)
+            @Value("\${index.sqs.queue.name}") private val indexQueueName: String,
+            @Value("\${index.sqs.dlq.name}") private val indexDlqName: String) : QueueHealth(indexAwsSqsClient, indexAwsSqsDlqClient, indexQueueName, indexDlqName)
