@@ -13,7 +13,7 @@ aws:
 oauth:
   endpoint.url: http://localhost:8090/auth
   client:
-    id: probationoffendersearchindexer-client
+    id: probation-offender-search-indexer-client
     secret: clientsecret
 
 community:

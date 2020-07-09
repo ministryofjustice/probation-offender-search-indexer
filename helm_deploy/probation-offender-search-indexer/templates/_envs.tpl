@@ -19,6 +19,18 @@ env:
         name: {{ template "app.name" . }}
         key: APPINSIGHTS_INSTRUMENTATIONKEY
 
+  - name: OAUTH_CLIENT_ID
+    valueFrom:
+      secretKeyRef:
+        name: {{ template "app.name" . }}
+        key: OAUTH_CLIENT_ID
+
+  - name: OAUTH_CLIENT_SECRET
+    valueFrom:
+      secretKeyRef:
+        name: {{ template "app.name" . }}
+        key: OAUTH_CLIENT_SECRET
+
   - name: EVENT_SQS_AWS_ACCESS_KEY_ID
     valueFrom:
       secretKeyRef:
