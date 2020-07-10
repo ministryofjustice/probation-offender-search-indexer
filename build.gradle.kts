@@ -13,14 +13,18 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-webflux")
 	implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
 	implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
+	implementation("org.springframework.data:spring-data-elasticsearch")
 
 	implementation("org.springframework:spring-jms")
 	implementation("com.amazonaws:amazon-sqs-java-messaging-lib:1.0.8")
+	implementation("com.amazonaws:aws-java-sdk-elasticsearch:1.11.809")
 
 	implementation( "com.google.code.gson:gson:2.8.6")
 
 
 	testImplementation("com.github.tomakehurst:wiremock-standalone:2.26.3")
 	testImplementation("org.testcontainers:localstack:1.14.3")
+	testImplementation("org.testcontainers:elasticsearch:1.14.3")
+	testImplementation("org.awaitility:awaitility-kotlin:4.0.3")
 	testImplementation("org.awaitility:awaitility-kotlin:4.0.3")
 }

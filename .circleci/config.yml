@@ -10,7 +10,8 @@ executors:
       - image: circleci/openjdk:11-jdk
       - image: localstack/localstack:0.11.2
         environment:
-          - SERVICES=sqs,sns
+          - SERVICES=sqs,sns,es
+          - ES_PORT_EXTERNAL=4571
           - DATA_DIR=/tmp/localstack/data
           - DOCKER_HOST=unix:///var/run/docker.sock
           - DEFAULT_REGION=eu-west-2
@@ -35,6 +36,12 @@ jobs:
       - run:
           name: Wait for SNS to be ready
           command: curl -4 --connect-timeout 30 --retry-connrefused --retry 20 --retry-delay 5 http://localhost:4575
+      - run:
+          name: Wait for ES to be ready
+          command: curl -4 --connect-timeout 30 --retry-connrefused --retry 20 --retry-delay 5 http://localhost:4578
+      - run:
+          name: Set up es domain
+          command: src/test/resources/localstack/setup-es.sh
       - run:
           name: Set up queues
           command: src/test/resources/localstack/setup-sns.sh
