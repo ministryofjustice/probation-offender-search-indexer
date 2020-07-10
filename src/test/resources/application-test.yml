@@ -1,6 +1,6 @@
 spring:
   profiles:
-    include: localstack
+    include: localstack, stdout
 aws:
   provider: testcontainers-localstack
 

@@ -11,3 +11,8 @@ index:
     endpoint.url: http://localhost:4576 # only required for external localstack
     queue.name: probation_offender_search_index_queue
     dlq.name: probation_offender_search_index_dl_queue
+
+elasticsearch:
+  port: 4571
+  scheme: http
+  host: localhost

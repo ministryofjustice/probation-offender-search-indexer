@@ -109,5 +109,13 @@ env:
         name: poi-idx-sqs-dl-instance-output
         key: sqs_name
 
+  - name: ELASTICSEARCH_PORT
+    value: "9200"
+
+  - name: ELASTICSEARCH_SCHEME
+    value: "http"
+
+  - name: ELASTICSEARCH_HOST
+    value: "aws-es-proxy-service"
 
 {{- end -}}
