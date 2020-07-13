@@ -4,10 +4,13 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 @Service
-class IndexService {
+class SearchService {
   companion object {
     val log = LoggerFactory.getLogger(this::class.java)
   }
 
-  fun buildIndex() = log.info("Received request to rebuild index")
+  fun match(): List<String> {
+    log.info("Received request to match offender")
+    return listOf()
+  }
 }

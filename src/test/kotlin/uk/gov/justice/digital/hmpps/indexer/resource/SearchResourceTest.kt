@@ -4,27 +4,26 @@ import com.nhaarman.mockitokotlin2.verify
 import org.junit.jupiter.api.Test
 import org.springframework.http.MediaType
 
-class IndexResourceTest : ResourceIntegrationTest() {
+class SearchResourceTest : ResourceIntegrationTest() {
 
   @Test
-  fun `Request rebuild index is successful and calls service`() {
-    webTestClient.put()
-        .uri("/probation-index/build-index")
+  fun `Match returns success`() {
+    webTestClient.post()
+        .uri("/probation-search/match")
         .accept(MediaType.APPLICATION_JSON)
         .headers(setAuthorisation())
         .exchange()
         .expectStatus().isOk
 
-    verify(indexService).buildIndex()
+    verify(searchService).match()
   }
 
   @Test
-  fun `Request rebuild index requires valid token`() {
-    webTestClient.put()
-        .uri("/probation-index/build-index")
+  fun `Match requires valid token`() {
+    webTestClient.post()
+        .uri("/probation-search/match")
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus().isUnauthorized
   }
-
 }

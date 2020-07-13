@@ -14,6 +14,6 @@ class IndexResource(private val indexService: IndexService) {
   }
 
   @PutMapping("/build-index")
-  fun rebuildCurrentIndex() = indexService.rebuildIndex()
+  fun buildIndex() = indexService.buildIndex()
 
 }
