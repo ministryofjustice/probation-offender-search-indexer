@@ -1,18 +1,19 @@
 package uk.gov.justice.digital.hmpps.indexer.resource
 
 import org.slf4j.LoggerFactory
-import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
+import uk.gov.justice.digital.hmpps.indexer.service.IndexService
 
 @RestController
-@RequestMapping("/index")
-class IndexResource {
+@RequestMapping("/probation-index")
+class IndexResource(private val indexService: IndexService) {
   companion object {
     val log = LoggerFactory.getLogger(this::class.java)
   }
 
-  @PostMapping("/rebuild")
-  fun rebuildCurrentIndex() = log.info("Request received to rebuild index")
+  @PutMapping("/build-index")
+  fun rebuildCurrentIndex() = indexService.rebuildIndex()
 
 }
