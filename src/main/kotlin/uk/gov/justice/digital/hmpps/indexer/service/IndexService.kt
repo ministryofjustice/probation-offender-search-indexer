@@ -10,4 +10,6 @@ class IndexService {
   }
 
   fun buildIndex() = log.info("Received request to rebuild index")
+
+  fun markIndexingComplete() = log.info("Received request to mark indexing complete")
 }
