@@ -14,7 +14,7 @@ import java.time.Duration
 class ResourceIntegrationTest {
 
   @Autowired
-  protected lateinit var webTestClient: WebTestClient
+  lateinit var webTestClient: WebTestClient
 
   @Autowired
   protected lateinit var jwtAuthHelper: JwtAuthHelper

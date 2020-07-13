@@ -7,11 +7,13 @@ import org.springframework.data.elasticsearch.annotations.Field
 import org.springframework.data.elasticsearch.annotations.FieldType
 import java.time.LocalDateTime
 
+internal const val INDEX_STATUS_ID = "STATUS"
+
 @Document(indexName = "offender-index-status")
-class IndexStatus(
+data class IndexStatus(
   @Id
   @Field(type = FieldType.Keyword)
-  var id: String = "STATUS",
+  var id: String = INDEX_STATUS_ID,
 
   @Field(type = FieldType.Keyword)
   var currentIndex: SyncIndex,
