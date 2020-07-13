@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.indexer.resource
+package uk.gov.justice.digital.hmpps.indexer.integration
 
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.SignatureAlgorithm

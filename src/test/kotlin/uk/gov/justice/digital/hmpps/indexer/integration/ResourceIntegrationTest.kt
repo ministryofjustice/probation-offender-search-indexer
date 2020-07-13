@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.indexer.resource
+package uk.gov.justice.digital.hmpps.indexer.integration
 
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -7,7 +7,6 @@ import org.springframework.http.HttpHeaders
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.reactive.server.WebTestClient
 import uk.gov.justice.digital.hmpps.indexer.service.IndexService
-import uk.gov.justice.digital.hmpps.indexer.service.SearchService
 import java.time.Duration
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -22,9 +21,6 @@ class ResourceIntegrationTest {
 
   @SpyBean
   protected lateinit var indexService: IndexService
-
-  @SpyBean
-  protected lateinit var searchService: SearchService
 
   internal fun setAuthorisation(user: String = "probation-offender-search-indexer-client", roles: List<String> = listOf()): (HttpHeaders) -> Unit {
     val token = jwtAuthHelper.createJwt(subject = user,

@@ -9,8 +9,8 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.SpyBean
 import org.springframework.test.context.ActiveProfiles
-import uk.gov.justice.digital.hmpps.indexer.health.wiremock.CommunityMockServer
-import uk.gov.justice.digital.hmpps.indexer.health.wiremock.OAuthMockServer
+import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.CommunityMockServer
+import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.OAuthMockServer
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles(profiles = ["test"])

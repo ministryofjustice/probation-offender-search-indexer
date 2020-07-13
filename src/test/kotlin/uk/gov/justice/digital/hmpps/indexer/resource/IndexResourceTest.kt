@@ -4,6 +4,7 @@ import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import org.junit.jupiter.api.Test
 import org.springframework.http.MediaType
+import uk.gov.justice.digital.hmpps.indexer.integration.ResourceIntegrationTest
 
 class IndexResourceTest : ResourceIntegrationTest() {
 

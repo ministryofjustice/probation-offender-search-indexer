@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.indexer.resource
+package uk.gov.justice.digital.hmpps.indexer.integration.wiremock
 
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
