@@ -28,6 +28,6 @@ class IndexStatus(
 ) {
 
   fun toggleIndex() {
-    currentIndex = if (currentIndex == SyncIndex.GREEN) SyncIndex.BLUE else SyncIndex.GREEN
+    currentIndex = currentIndex.otherIndex()
   }
 }
