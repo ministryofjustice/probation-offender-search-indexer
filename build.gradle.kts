@@ -27,4 +27,6 @@ dependencies {
 	testImplementation("org.testcontainers:elasticsearch:1.14.3")
 	testImplementation("org.awaitility:awaitility-kotlin:4.0.3")
 	testImplementation("org.awaitility:awaitility-kotlin:4.0.3")
+	testImplementation("org.springframework.security:spring-security-test")
+	testImplementation("io.jsonwebtoken:jjwt:0.9.1")
 }
