@@ -2,7 +2,6 @@ package uk.gov.justice.digital.hmpps.indexer.resource
 
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import org.junit.jupiter.api.Test
 import org.springframework.http.MediaType
 
