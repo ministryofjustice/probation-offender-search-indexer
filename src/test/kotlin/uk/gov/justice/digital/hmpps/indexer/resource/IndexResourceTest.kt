@@ -72,6 +72,8 @@ class IndexResourceTest : ResourceIntegrationTest() {
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus().isUnauthorized
+
+    verify(indexService, never()).markIndexingComplete()
   }
 
 }
