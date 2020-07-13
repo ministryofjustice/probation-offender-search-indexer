@@ -12,4 +12,8 @@ class IndexService {
   fun buildIndex() = log.info("Received request to rebuild index")
 
   fun markIndexingComplete() = log.info("Received request to mark indexing complete")
+
+  fun cancelIndexing() = log.info("Received request to cancel indexing")
+
+  fun indexOffender(crn: String) = log.info("Received request to index offender {}", crn)
 }
