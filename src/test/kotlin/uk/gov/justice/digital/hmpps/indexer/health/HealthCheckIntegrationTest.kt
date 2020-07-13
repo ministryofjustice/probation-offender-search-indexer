@@ -1,11 +1,6 @@
 package uk.gov.justice.digital.hmpps.indexer.health
 
-import com.github.tomakehurst.wiremock.client.WireMock.aResponse
-import com.github.tomakehurst.wiremock.client.WireMock.get
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.doCallRealMethod
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -15,6 +10,8 @@ import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.test.util.ReflectionTestUtils
 import org.springframework.test.web.reactive.server.WebTestClient
 import uk.gov.justice.digital.hmpps.indexer.integration.IntegrationTest
+import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.CommunityApiExtension
+import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.OAuthExtension
 
 
 @ExtendWith(SpringExtension::class)
@@ -244,15 +241,8 @@ class HealthCheckIntegrationTest : IntegrationTest() {
   }
 
   private fun stubPingWithResponse(status: Int) {
-    oauthMockServer.stubFor(get("/auth/health/ping").willReturn(aResponse()
-        .withHeader("Content-Type", "application/json")
-        .withBody(if (status == 200) "pong" else "some error")
-        .withStatus(status)))
-
-    communityMockServer.stubFor(get("/health/ping").willReturn(aResponse()
-        .withHeader("Content-Type", "application/json")
-        .withBody(if (status == 200) "pong" else "some error")
-        .withStatus(status)))
+    OAuthExtension.oAuthApi.stubHealthPing(status)
+    CommunityApiExtension.communityApi.stubHealthPing(status)
   }
 
 }

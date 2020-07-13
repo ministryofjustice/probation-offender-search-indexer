@@ -2,6 +2,8 @@ package uk.gov.justice.digital.hmpps.indexer.integration.wiremock
 
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
+import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.http.HttpHeader
 import com.github.tomakehurst.wiremock.http.HttpHeaders
 import org.junit.jupiter.api.extension.AfterAllCallback
@@ -30,19 +32,26 @@ class OAuthExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback {
 
 class OAuthMockServer : WireMockServer(WIREMOCK_PORT) {
   companion object {
-    private const val WIREMOCK_PORT = 8998
+    private const val WIREMOCK_PORT = 8090
   }
 
   fun stubGrantToken() {
     stubFor(
         WireMock.post(WireMock.urlEqualTo("/auth/oauth/token"))
-            .willReturn(WireMock.aResponse()
+            .willReturn(aResponse()
                 .withHeaders(HttpHeaders(HttpHeader("Content-Type", "application/json")))
                 .withBody("""{
                     "token_type": "bearer",
                     "access_token": "ABCDE"
                 }""".trimIndent()))
     )
+  }
+
+  fun stubHealthPing(status: Int) {
+    stubFor(get("/auth/health/ping").willReturn(aResponse()
+        .withHeader("Content-Type", "application/json")
+        .withBody(if (status == 200) "pong" else "some error")
+        .withStatus(status)))
   }
 
 }
