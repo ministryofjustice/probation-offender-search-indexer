@@ -4,7 +4,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 @Service
-class IndexService(private val offenderSynchronizerService: OffenderSynchronizerService) {
+class IndexService(private val offenderSynchroniserService: OffenderSynchroniserService) {
   companion object {
     val log = LoggerFactory.getLogger(this::class.java)
   }
@@ -15,5 +15,5 @@ class IndexService(private val offenderSynchronizerService: OffenderSynchronizer
 
   fun cancelIndexing() = log.info("Received request to cancel indexing")
 
-  fun indexOffender(crn: String) = offenderSynchronizerService.synchroniseOffender(crn)
+  fun indexOffender(crn: String) = offenderSynchroniserService.synchroniseOffender(crn)
 }

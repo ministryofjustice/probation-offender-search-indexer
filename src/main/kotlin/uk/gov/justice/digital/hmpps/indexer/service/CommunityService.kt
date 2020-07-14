@@ -17,10 +17,7 @@ class CommunityService(@Qualifier("communityApiWebClient") private val webClient
   }
 }
 
-
 data class Offender(val body: String) {
-
-
   val offenderId: Long
     get() {
       val detail  = Gson().fromJson(body, OffenderDetail::class.java)

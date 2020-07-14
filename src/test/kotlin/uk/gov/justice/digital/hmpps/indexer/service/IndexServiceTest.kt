@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
 class IndexServiceTest {
-  private val offenderSynchronizerService = mock<OffenderSynchronizerService>()
+  private val offenderSynchronizerService = mock<OffenderSynchroniserService>()
   private val service = IndexService(offenderSynchronizerService)
 
   // buildIndex

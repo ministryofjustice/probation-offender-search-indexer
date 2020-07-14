@@ -5,10 +5,8 @@ import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import org.junit.jupiter.api.Test
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.http.MediaType
 import uk.gov.justice.digital.hmpps.indexer.integration.ResourceIntegrationTest
-import uk.gov.justice.digital.hmpps.indexer.service.OffenderSynchronizerService
 
 class IndexResourceTest : ResourceIntegrationTest() {
 
@@ -117,7 +115,7 @@ class IndexResourceTest : ResourceIntegrationTest() {
 
   @Test
   fun `Request to index offender is successful and calls service`() {
-    doReturn("{}").whenever(indexService ).indexOffender("SOME_CRN")
+    doReturn("{}").whenever(indexService).indexOffender("SOME_CRN")
 
     webTestClient.put()
         .uri("/probation-index/index/offender/SOME_CRN")

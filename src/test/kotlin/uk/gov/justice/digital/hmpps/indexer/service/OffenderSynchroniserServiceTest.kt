@@ -12,11 +12,11 @@ import org.junit.jupiter.api.Test
 import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.BLUE
 
-internal class OffenderSynchronizerServiceTest {
+internal class OffenderSynchroniserServiceTest {
   private val communityApi = mock<CommunityService>()
   private val offenderRepository = mock<OffenderRepository>()
   private val indexStatusService = mock<IndexStatusService>()
-  private val service = OffenderSynchronizerService(communityApi, offenderRepository, indexStatusService)
+  private val service = OffenderSynchroniserService(communityApi, offenderRepository, indexStatusService)
 
   @BeforeEach
   internal fun setUp() {
@@ -48,7 +48,7 @@ internal class OffenderSynchronizerServiceTest {
 
     service.synchroniseOffender("X12345")
 
-    verify(offenderRepository).save(isA(), check { assertThat(it.currentIndex).isEqualTo(BLUE) })
+    verify(offenderRepository).save(isA(), check { assertThat(it).isEqualTo(BLUE) })
   }
 }
 
