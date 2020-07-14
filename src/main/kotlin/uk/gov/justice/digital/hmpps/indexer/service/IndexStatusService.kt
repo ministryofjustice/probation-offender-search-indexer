@@ -35,6 +35,15 @@ class IndexStatusService(private val indexStatusRepository: IndexStatusRepositor
     }
   }
 
+  fun cancelIndexBuild(): Boolean {
+    val currentIndex = getOrCreateCurrentIndex()
+    return if (currentIndex.inProgress) {
+      indexStatusRepository.save(currentIndex.copy(currentIndex = currentIndex.currentIndex.otherIndex(), inProgress = false))
+      true
+    } else {
+      false
+    }
+  }
 }
 
 private fun <T : Any> Optional<T>.toNullable(): T? = this.orElse(null)

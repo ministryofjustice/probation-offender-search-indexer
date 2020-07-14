@@ -119,4 +119,37 @@ class IndexStatusServiceTest {
     }
   }
 
+  @Nested
+  inner class CancelIndexing {
+
+    @Test
+    fun `Build not currently in progress returns false`() {
+      val existingIndexNotInProgress = IndexStatus(currentIndex = SyncIndex.GREEN, startIndexTime = null, endIndexTime = null, inProgress = false)
+      whenever(indexStatusRepository.findById(INDEX_STATUS_ID)).thenReturn(Optional.ofNullable(existingIndexNotInProgress))
+
+      assertThat(indexStatusService.cancelIndexBuild()).isFalse()
+    }
+
+    @Test
+    fun `Build currently in progress returns true`() {
+      val existingIndexInProgress = IndexStatus(currentIndex = SyncIndex.GREEN, startIndexTime = LocalDateTime.now().minusHours(1), endIndexTime = null, inProgress = true)
+      whenever(indexStatusRepository.findById(INDEX_STATUS_ID)).thenReturn(Optional.ofNullable(existingIndexInProgress))
+
+      assertThat(indexStatusService.cancelIndexBuild()).isTrue()
+    }
+
+    @Test
+    fun `Build currently in progress updates repository to not building`() {
+      val existingIndexInProgress = IndexStatus(currentIndex = SyncIndex.GREEN, startIndexTime = LocalDateTime.now().minusHours(1), endIndexTime = null, inProgress = true)
+      whenever(indexStatusRepository.findById(INDEX_STATUS_ID)).thenReturn(Optional.ofNullable(existingIndexInProgress))
+
+      indexStatusService.cancelIndexBuild()
+
+      verify(indexStatusRepository).save<IndexStatus>(check { savedIndexStatus ->
+        assertThat(savedIndexStatus.currentIndex).isEqualTo(SyncIndex.BLUE)
+        assertThat(savedIndexStatus.endIndexTime).isNull()
+        assertThat(savedIndexStatus.inProgress).isFalse()
+      })
+    }
+  }
 }
