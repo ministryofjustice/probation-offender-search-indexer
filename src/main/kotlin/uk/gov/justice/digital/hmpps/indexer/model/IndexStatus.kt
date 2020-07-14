@@ -29,4 +29,15 @@ data class IndexStatus(
 
 ) {
 
+  fun toBuildInProgress(): IndexStatus {
+    return this.copy(startIndexTime = LocalDateTime.now(), endIndexTime = null, inProgress = true)
+  }
+
+  fun toBuildComplete(): IndexStatus {
+    return this.copy(currentIndex = this.currentIndex.otherIndex(), endIndexTime = LocalDateTime.now(), inProgress = false)
+  }
+
+  fun toBuildCancelled(): IndexStatus {
+    return this.copy(currentIndex = this.currentIndex.otherIndex(), inProgress = false)
+  }
 }
