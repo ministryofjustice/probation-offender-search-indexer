@@ -13,23 +13,20 @@ internal const val INDEX_STATUS_ID = "STATUS"
 data class IndexStatus(
   @Id
   @Field(type = FieldType.Keyword)
-  var id: String = INDEX_STATUS_ID,
+  val id: String = INDEX_STATUS_ID,
 
   @Field(type = FieldType.Keyword)
-  var currentIndex: SyncIndex,
+  val currentIndex: SyncIndex,
 
   @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second)
-  var startIndexTime: LocalDateTime?,
+  val startIndexTime: LocalDateTime?,
 
   @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second)
-  var endIndexTime: LocalDateTime?,
+  val endIndexTime: LocalDateTime?,
 
   @Field(type = FieldType.Boolean)
-  var inProgress: Boolean
+  val inProgress: Boolean
 
 ) {
 
-  fun toggleIndex() {
-    currentIndex = currentIndex.otherIndex()
-  }
 }

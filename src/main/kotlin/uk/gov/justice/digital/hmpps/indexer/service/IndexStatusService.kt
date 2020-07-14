@@ -17,31 +17,23 @@ class IndexStatusService(private val indexStatusRepository: IndexStatusRepositor
       indexStatusRepository.findById(INDEX_STATUS_ID).toNullable()
           ?: indexStatusRepository.save(IndexStatus(INDEX_STATUS_ID, SyncIndex.GREEN, null, null, false))
 
-  fun markBuildInProgress(): Boolean =
-    if (getOrCreateCurrentIndex().inProgress) {
-      false
-    } else {
+  fun markBuildInProgress() {
+    if (getOrCreateCurrentIndex().inProgress.not()) {
       indexStatusRepository.save(IndexStatus(INDEX_STATUS_ID, SyncIndex.GREEN, LocalDateTime.now(), null, true))
-      true
-    }
-
-  fun markBuildComplete(): Boolean {
-    val currentIndex = getOrCreateCurrentIndex()
-    return if (currentIndex.inProgress) {
-      indexStatusRepository.save(currentIndex.copy(currentIndex = currentIndex.currentIndex.otherIndex(), endIndexTime = LocalDateTime.now(), inProgress = false))
-      true
-    } else {
-      false
     }
   }
 
-  fun cancelIndexBuild(): Boolean {
-    val currentIndex = getOrCreateCurrentIndex()
-    return if (currentIndex.inProgress) {
-      indexStatusRepository.save(currentIndex.copy(currentIndex = currentIndex.currentIndex.otherIndex(), inProgress = false))
-      true
-    } else {
-      false
+  fun markBuildComplete() {
+    val currentIndexStatus = getOrCreateCurrentIndex()
+    if (currentIndexStatus.inProgress) {
+      indexStatusRepository.save(currentIndexStatus.copy(currentIndex = currentIndexStatus.currentIndex.otherIndex(), endIndexTime = LocalDateTime.now(), inProgress = false))
+    }
+  }
+
+  fun cancelIndexBuild() {
+    val currentIndexStatus = getOrCreateCurrentIndex()
+    if (currentIndexStatus.inProgress) {
+      indexStatusRepository.save(currentIndexStatus.copy(currentIndex = currentIndexStatus.currentIndex.otherIndex(), inProgress = false))
     }
   }
 }

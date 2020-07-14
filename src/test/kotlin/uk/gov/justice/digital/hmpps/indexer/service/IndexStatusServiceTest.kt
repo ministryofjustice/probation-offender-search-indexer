@@ -3,7 +3,9 @@ package uk.gov.justice.digital.hmpps.indexer.service
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.check
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
@@ -55,19 +57,13 @@ class IndexStatusServiceTest {
   inner class MarkRebuildInProgress {
 
     @Test
-    fun `Already building index returns false`() {
+    fun `Already building index does nothing`() {
       val existingIndexInProgress = indexInProgress(SyncIndex.GREEN)
       whenever(indexStatusRepository.findById(INDEX_STATUS_ID)).thenReturn(Optional.ofNullable(existingIndexInProgress))
 
-      assertThat(indexStatusService.markBuildInProgress()).isFalse()
-    }
+      indexStatusService.markBuildInProgress()
 
-    @Test
-    fun `Not currently building index returns true`() {
-      val existingIndexNotInProgress = indexNotInProgress(SyncIndex.GREEN)
-      whenever(indexStatusRepository.findById(INDEX_STATUS_ID)).thenReturn(Optional.ofNullable(existingIndexNotInProgress))
-
-      assertThat(indexStatusService.markBuildInProgress()).isTrue()
+      verify(indexStatusRepository, never()).save<IndexStatus>(any())
     }
 
     @Test
@@ -89,19 +85,11 @@ class IndexStatusServiceTest {
   inner class MarkBuildComplete {
 
     @Test
-    fun `Not currently building index returns false`() {
+    fun `Not currently building index does nothing`() {
       val existingIndexNotInProgress = indexNotInProgress(SyncIndex.GREEN)
       whenever(indexStatusRepository.findById(INDEX_STATUS_ID)).thenReturn(Optional.ofNullable(existingIndexNotInProgress))
 
-      assertThat(indexStatusService.markBuildComplete()).isFalse()
-    }
-
-    @Test
-    fun `Currently building index returns true`() {
-      val existingIndexInProgress = indexInProgress(SyncIndex.GREEN)
-      whenever(indexStatusRepository.findById(INDEX_STATUS_ID)).thenReturn(Optional.ofNullable(existingIndexInProgress))
-
-      assertThat(indexStatusService.markBuildComplete()).isTrue()
+      verify(indexStatusRepository, never()).save<IndexStatus>(any())
     }
 
     @Test
@@ -123,19 +111,11 @@ class IndexStatusServiceTest {
   inner class CancelIndexing {
 
     @Test
-    fun `Build not currently in progress returns false`() {
+    fun `Build not currently in progress does nothing`() {
       val existingIndexNotInProgress = indexNotInProgress(SyncIndex.GREEN)
       whenever(indexStatusRepository.findById(INDEX_STATUS_ID)).thenReturn(Optional.ofNullable(existingIndexNotInProgress))
 
-      assertThat(indexStatusService.cancelIndexBuild()).isFalse()
-    }
-
-    @Test
-    fun `Build currently in progress returns true`() {
-      val existingIndexInProgress = indexInProgress(SyncIndex.GREEN)
-      whenever(indexStatusRepository.findById(INDEX_STATUS_ID)).thenReturn(Optional.ofNullable(existingIndexInProgress))
-
-      assertThat(indexStatusService.cancelIndexBuild()).isTrue()
+      verify(indexStatusRepository, never()).save<IndexStatus>(any())
     }
 
     @Test
