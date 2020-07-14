@@ -3,7 +3,6 @@ package uk.gov.justice.digital.hmpps.indexer.service
 import org.slf4j.LoggerFactory
 import uk.gov.justice.digital.hmpps.indexer.model.INDEX_STATUS_ID
 import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
-import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
 import uk.gov.justice.digital.hmpps.indexer.repository.IndexStatusRepository
 import java.util.Optional
 
@@ -14,25 +13,25 @@ class IndexStatusService(private val indexStatusRepository: IndexStatusRepositor
 
   fun getOrCreateCurrentIndexStatus(): IndexStatus =
       indexStatusRepository.findById(INDEX_STATUS_ID).toNullable()
-          ?: indexStatusRepository.save(IndexStatus(INDEX_STATUS_ID, SyncIndex.GREEN, null, null, false))
+          ?: indexStatusRepository.save(IndexStatus.newIndex())
 
   fun markBuildInProgress() {
     val currentIndexStatus = getOrCreateCurrentIndexStatus()
-    if (currentIndexStatus.inProgress.not()) {
+    if (currentIndexStatus.inProgress().not()) {
       indexStatusRepository.save(currentIndexStatus.toBuildInProgress())
     }
   }
 
   fun markBuildComplete() {
     val currentIndexStatus = getOrCreateCurrentIndexStatus()
-    if (currentIndexStatus.inProgress) {
+    if (currentIndexStatus.inProgress()) {
       indexStatusRepository.save(currentIndexStatus.toBuildComplete())
     }
   }
 
   fun markBuildCancelled() {
     val currentIndexStatus = getOrCreateCurrentIndexStatus()
-    if (currentIndexStatus.inProgress) {
+    if (currentIndexStatus.inProgress()) {
       indexStatusRepository.save(currentIndexStatus.toBuildCancelled())
     }
   }
