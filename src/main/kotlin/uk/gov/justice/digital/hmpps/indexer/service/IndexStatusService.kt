@@ -1,11 +1,13 @@
 package uk.gov.justice.digital.hmpps.indexer.service
 
 import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.indexer.model.INDEX_STATUS_ID
 import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
 import uk.gov.justice.digital.hmpps.indexer.repository.IndexStatusRepository
 import java.util.Optional
 
+@Service
 class IndexStatusService(private val indexStatusRepository: IndexStatusRepository) {
   companion object {
     val log = LoggerFactory.getLogger(this::class.java)
