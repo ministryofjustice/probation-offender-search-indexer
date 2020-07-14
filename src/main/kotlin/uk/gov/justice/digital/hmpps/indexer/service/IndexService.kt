@@ -42,6 +42,6 @@ class IndexService(
 
 
 @Suppress("UNUSED_PARAMETER")
-sealed class BuildIndexError(errorMessage: String, indexStatus: IndexStatus) {
-  data class BuildAlreadyInProgress(val indexStatus: IndexStatus): BuildIndexError("The build is already in progress", indexStatus)
+sealed class BuildIndexError(errorMessage: String, open val indexStatus: IndexStatus) {
+  data class BuildAlreadyInProgress(override val indexStatus: IndexStatus): BuildIndexError("The build is already in progress", indexStatus)
 }
