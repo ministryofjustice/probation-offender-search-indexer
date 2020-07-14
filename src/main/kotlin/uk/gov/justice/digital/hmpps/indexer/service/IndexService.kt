@@ -2,7 +2,6 @@ package uk.gov.justice.digital.hmpps.indexer.service
 
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import java.util.Optional
 
 @Service
 class IndexService {
