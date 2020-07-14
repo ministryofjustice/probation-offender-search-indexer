@@ -27,5 +27,4 @@ class IndexServiceTest {
   inner class IndexOffender {
 
   }
-
 }
