@@ -18,5 +18,3 @@ class IndexService {
 
   fun indexOffender(crn: String) = log.info("Received request to index offender {}", crn)
 }
-
-fun <T : Any> Optional<T>.toNullable(): T? = this.orElse(null)

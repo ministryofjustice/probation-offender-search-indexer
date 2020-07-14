@@ -21,7 +21,7 @@ class IndexStatusServiceTest {
   private val indexStatusService = IndexStatusService(indexStatusRepository)
 
   @Nested
-  inner class GetCurrentIndex() {
+  inner class GetCurrentIndex {
 
     @Test
     fun `An existing index status should be returned`() {
@@ -49,6 +49,40 @@ class IndexStatusServiceTest {
       assertThat(actualIndexStatus).isEqualTo(expectedNewIndexStatus)
     }
 
+  }
+
+  @Nested
+  inner class MarkRebuildInProgress {
+
+    @Test
+    fun `Already building index returns false`() {
+      val existingIndexInProgress = IndexStatus(currentIndex = SyncIndex.GREEN, startIndexTime = LocalDateTime.now().minusHours(1), endIndexTime = null, inProgress = true)
+      whenever(indexStatusRepository.findById(INDEX_STATUS_ID)).thenReturn(Optional.ofNullable(existingIndexInProgress))
+
+      assertThat(indexStatusService.markRebuildInProgress()).isFalse()
+    }
+
+    @Test
+    fun `Not currently building index returns true`() {
+      val existingIndexNotInProgress = IndexStatus(currentIndex = SyncIndex.GREEN, startIndexTime = null, endIndexTime = null, inProgress = false)
+      whenever(indexStatusRepository.findById(INDEX_STATUS_ID)).thenReturn(Optional.ofNullable(existingIndexNotInProgress))
+
+      assertThat(indexStatusService.markRebuildInProgress()).isTrue()
+    }
+
+    @Test
+    fun `Not currently building index saves status building`() {
+      val existingIndexNotInProgress = IndexStatus(currentIndex = SyncIndex.GREEN, startIndexTime = null, endIndexTime = null, inProgress = false)
+      whenever(indexStatusRepository.findById(INDEX_STATUS_ID)).thenReturn(Optional.ofNullable(existingIndexNotInProgress))
+
+      indexStatusService.markRebuildInProgress()
+
+      verify(indexStatusRepository).save<IndexStatus>(check { savedIndexStatus ->
+        assertThat(savedIndexStatus.currentIndex).isEqualTo(SyncIndex.GREEN)
+        assertThat(savedIndexStatus.startIndexTime).isNotNull()
+        assertThat(savedIndexStatus.inProgress).isTrue()
+      })
+    }
   }
 
 }
