@@ -11,6 +11,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.BLUE
+import uk.gov.justice.digital.hmpps.indexer.repository.OffenderRepository
 
 internal class OffenderSynchroniserServiceTest {
   private val communityApi = mock<CommunityService>()

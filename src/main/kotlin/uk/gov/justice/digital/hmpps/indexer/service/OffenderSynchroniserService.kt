@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.indexer.service
 
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.indexer.repository.OffenderRepository
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
 
 @Service
