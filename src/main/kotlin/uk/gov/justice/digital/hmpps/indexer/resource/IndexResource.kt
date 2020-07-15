@@ -14,7 +14,7 @@ import uk.gov.justice.digital.hmpps.indexer.service.BuildIndexError.BuildAlready
 import uk.gov.justice.digital.hmpps.indexer.service.IndexService
 
 @RestController
-@RequestMapping("/probation-index")// , produces = [MediaType.APPLICATION_JSON_VALUE]
+@RequestMapping("/probation-index")
 class IndexResource(private val indexService: IndexService) {
   companion object {
     val log = LoggerFactory.getLogger(this::class.java)
