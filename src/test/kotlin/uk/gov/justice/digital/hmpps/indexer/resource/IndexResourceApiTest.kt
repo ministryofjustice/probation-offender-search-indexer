@@ -61,8 +61,8 @@ class IndexResourceApiTest : ResourceIntegrationTest() {
         .expectStatus().isEqualTo(409)
         .expectBody()
         .jsonPath("$.message").value<String> {message ->
-          assertThat(message).contains("BLUE")
-          assertThat(message).contains("BUILDING")
+          assertThat(message).contains(SyncIndex.BLUE.name)
+          assertThat(message).contains(IndexState.BUILDING.name)
         }
 
         verify(indexService).buildIndex()

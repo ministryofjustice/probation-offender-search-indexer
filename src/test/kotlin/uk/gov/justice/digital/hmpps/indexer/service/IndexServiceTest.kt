@@ -21,16 +21,10 @@ class IndexServiceTest {
   private val indexStatusService = mock<IndexStatusService>()
   private val offenderSynchroniserService = mock<OffenderSynchroniserService>()
   private val indexQueueService = mock<IndexQueueService>()
-  private val searchClient = mock<SearchClient>()
-  private val indexService = IndexService(indexStatusService, offenderSynchroniserService, indexQueueService, searchClient)
+  private val indexService = IndexService(indexStatusService, offenderSynchroniserService, indexQueueService)
 
   @Nested
   inner class BuildIndex {
-
-    @BeforeEach
-    fun `mock index count`() {
-      whenever(searchClient.countIndex(any())).thenReturn(0)
-    }
 
     @Test
     fun `Index already building returns error`() {
