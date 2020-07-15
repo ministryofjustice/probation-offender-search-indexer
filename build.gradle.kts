@@ -19,7 +19,8 @@ dependencies {
 	implementation("com.amazonaws:amazon-sqs-java-messaging-lib:1.0.8")
 	implementation("com.amazonaws:aws-java-sdk-elasticsearch:1.11.809")
 
-	implementation( "com.google.code.gson:gson:2.8.6")
+	implementation("com.google.code.gson:gson:2.8.6")
+	implementation("io.arrow-kt:arrow-core:0.10.5")
 
 
 	testImplementation("com.github.tomakehurst:wiremock-standalone:2.26.3")

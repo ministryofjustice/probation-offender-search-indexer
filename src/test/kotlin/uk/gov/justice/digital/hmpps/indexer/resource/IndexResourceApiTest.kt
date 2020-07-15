@@ -1,23 +1,37 @@
 package uk.gov.justice.digital.hmpps.indexer.resource
 
+import arrow.core.left
+import arrow.core.right
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.http.MediaType
 import uk.gov.justice.digital.hmpps.indexer.integration.ResourceIntegrationTest
+import uk.gov.justice.digital.hmpps.indexer.model.IndexState
+import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
+import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
+import uk.gov.justice.digital.hmpps.indexer.service.BuildIndexError
+import java.time.LocalDateTime
 
-class IndexResourceTest : ResourceIntegrationTest() {
+class IndexResourceApiTest : ResourceIntegrationTest() {
 
   @Test
   fun `Request rebuild index is successful and calls service`() {
+    val expectedIndexStatus = IndexStatus(currentIndex = SyncIndex.BLUE, startIndexTime = LocalDateTime.now(), endIndexTime = null, state = IndexState.BUILDING)
+    whenever(indexService.buildIndex()).thenReturn(expectedIndexStatus.right())
+
     webTestClient.put()
         .uri("/probation-index/build-index")
         .accept(MediaType.APPLICATION_JSON)
         .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
         .exchange()
         .expectStatus().isOk
+        .expectBody()
+        .jsonPath("$.currentIndex").isEqualTo("BLUE")
+        .jsonPath("$.state").isEqualTo("BUILDING")
 
     verify(indexService).buildIndex()
   }
@@ -32,6 +46,26 @@ class IndexResourceTest : ResourceIntegrationTest() {
         .expectStatus().isForbidden
 
     verify(indexService, never()).buildIndex()
+  }
+
+  @Test
+  fun `Request rebuild index already building returns conflict`() {
+    val expectedIndexStatus = IndexStatus(currentIndex = SyncIndex.BLUE, startIndexTime = LocalDateTime.now(), endIndexTime = null, state = IndexState.BUILDING)
+    whenever(indexService.buildIndex()).thenReturn(BuildIndexError.BuildAlreadyInProgress(expectedIndexStatus).left())
+
+    webTestClient.put()
+        .uri("/probation-index/build-index")
+        .accept(MediaType.APPLICATION_JSON)
+        .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+        .exchange()
+        .expectStatus().isEqualTo(409)
+        .expectBody()
+        .jsonPath("$.message").value<String> {message ->
+          assertThat(message).contains(SyncIndex.BLUE.name)
+          assertThat(message).contains(IndexState.BUILDING.name)
+        }
+
+        verify(indexService).buildIndex()
   }
 
   @Test
