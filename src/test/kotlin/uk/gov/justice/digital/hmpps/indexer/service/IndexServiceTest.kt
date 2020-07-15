@@ -1,7 +1,6 @@
 package uk.gov.justice.digital.hmpps.indexer.service
 
-import arrow.core.left
-import arrow.core.right
+import arrow.core.getOrHandle
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.times
@@ -34,7 +33,7 @@ class IndexServiceTest {
       val result = indexService.buildIndex()
 
       verify(indexStatusService).getOrCreateCurrentIndexStatus()
-      assertThat(result).isEqualTo(BuildIndexError.BuildAlreadyInProgress(expectedIndexStatus).left())
+      assertThat(result.getOrHandle { it }).isEqualTo(BuildIndexError.BuildAlreadyInProgress(expectedIndexStatus))
     }
 
     @Test
@@ -74,17 +73,57 @@ class IndexServiceTest {
       val result = indexService.buildIndex()
 
       verify(indexStatusService, times(2)).getOrCreateCurrentIndexStatus()
-      assertThat(result).isEqualTo(expectedIndexStatus.right())
+      assertThat(result.getOrHandle { it }).isEqualTo(expectedIndexStatus)
     }
 
-    private fun indexStatus(currentIndex: SyncIndex, state: IndexState) =
-        IndexStatus(currentIndex = currentIndex, startIndexTime = LocalDateTime.now().minusHours(1), endIndexTime = null, state = state)
   }
 
-  // markIndexingComplete
   @Nested
   inner class MarkIndexingComplete {
 
+    @Test
+    fun `Index not building returns error`() {
+      val expectedIndexStatus = IndexStatus(currentIndex = SyncIndex.GREEN, state = IndexState.COMPLETED, startIndexTime = LocalDateTime.now().minusHours(2), endIndexTime = LocalDateTime.now().minusHours(1))
+      whenever(indexStatusService.getOrCreateCurrentIndexStatus()).thenReturn(expectedIndexStatus)
+
+      val result = indexService.markIndexingComplete()
+
+      verify(indexStatusService).getOrCreateCurrentIndexStatus()
+      assertThat(result.getOrHandle { it }).isEqualTo(MarkBuildCompleteError.BuildNotInProgress(expectedIndexStatus))
+    }
+
+    @Test
+    fun `A request is made to mark the index state as complete`() {
+      val expectedIndexStatus = indexStatus(currentIndex = SyncIndex.GREEN, state = IndexState.BUILDING)
+      whenever(indexStatusService.getOrCreateCurrentIndexStatus()).thenReturn(expectedIndexStatus)
+
+      indexService.markIndexingComplete()
+
+      verify(indexStatusService).markBuildComplete()
+    }
+
+    @Test
+    fun `A request is made to remove queued index requests`() {
+      val expectedIndexStatus = indexStatus(currentIndex = SyncIndex.GREEN, state = IndexState.BUILDING)
+      whenever(indexStatusService.getOrCreateCurrentIndexStatus()).thenReturn(expectedIndexStatus)
+
+      indexService.markIndexingComplete()
+
+      verify(indexQueueService).clearAllMessages()
+    }
+
+    @Test
+    fun `Once current index marked as complete, the 'other' index is current`() {
+      val expectedIndexStatus = indexStatus(currentIndex = SyncIndex.GREEN, state = IndexState.COMPLETED)
+      whenever(indexStatusService.getOrCreateCurrentIndexStatus())
+          .thenReturn(indexStatus(currentIndex = SyncIndex.BLUE, state = IndexState.BUILDING))
+          .thenReturn(expectedIndexStatus)
+
+      val result = indexService.markIndexingComplete()
+
+      verify(indexStatusService, times(2)).getOrCreateCurrentIndexStatus()
+      assertThat(result.getOrHandle { it }).isEqualTo(expectedIndexStatus)
+    }
   }
 
   // cancelIndexing
@@ -107,4 +146,8 @@ class IndexServiceTest {
       verify(offenderSynchroniserService).synchroniseOffender("X12345")
     }
   }
+
+  private fun indexStatus(currentIndex: SyncIndex, state: IndexState) =
+      IndexStatus(currentIndex = currentIndex, startIndexTime = LocalDateTime.now().minusHours(1), endIndexTime = null, state = state)
+
 }

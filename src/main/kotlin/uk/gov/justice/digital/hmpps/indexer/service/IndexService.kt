@@ -32,7 +32,18 @@ class IndexService(
     return indexStatusService.getOrCreateCurrentIndexStatus().right()
   }
 
-  fun markIndexingComplete() = log.info("Received request to mark indexing complete")
+  fun markIndexingComplete(): Either<MarkBuildCompleteError, IndexStatus> {
+    val indexStatus = indexStatusService.getOrCreateCurrentIndexStatus()
+    if (indexStatus.state != IndexState.BUILDING) {
+      return MarkBuildCompleteError.BuildNotInProgress(indexStatus).left()
+    }
+
+    indexStatusService.markBuildComplete()
+    indexQueueService.clearAllMessages()
+    log.info("Index ${indexStatus.currentIndex.otherIndex()} marked as complete, ${indexStatus.currentIndex} is now current")
+
+    return indexStatusService.getOrCreateCurrentIndexStatus().right()
+  }
 
   fun cancelIndexing() = log.info("Received request to cancel indexing")
 
@@ -43,4 +54,8 @@ class IndexService(
 @Suppress("UNUSED_PARAMETER")
 sealed class BuildIndexError(val message: String) {
   data class BuildAlreadyInProgress(val indexStatus: IndexStatus): BuildIndexError("The build for ${indexStatus.currentIndex} is already ${indexStatus.state} (started at ${indexStatus.startIndexTime})")
+}
+
+sealed class MarkBuildCompleteError(val message: String) {
+  data class BuildNotInProgress(val indexStatus: IndexStatus): MarkBuildCompleteError("The index ${indexStatus.currentIndex} is in state ${indexStatus.state} (ended at ${indexStatus.endIndexTime} ")
 }

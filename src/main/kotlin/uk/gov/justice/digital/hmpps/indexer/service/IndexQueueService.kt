@@ -5,4 +5,5 @@ import org.springframework.stereotype.Service
 @Service
 class IndexQueueService {
   fun sendIndexRequestMessage() = null
+  fun clearAllMessages() = null
 }
