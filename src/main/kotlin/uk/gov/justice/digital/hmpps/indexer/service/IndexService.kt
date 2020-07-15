@@ -27,6 +27,7 @@ class IndexService(
 
     // TODO DT-961 log out the status of both indexes and which one is currently building
 
+    indexStatusService.markBuildInProgress()
     offenderSynchroniserService.checkExistsAndReset(indexStatus.currentIndex.otherIndex())
     indexQueueService.sendIndexRequestMessage()
 
@@ -42,6 +43,6 @@ class IndexService(
 
 
 @Suppress("UNUSED_PARAMETER")
-sealed class BuildIndexError(errorMessage: String, open val indexStatus: IndexStatus) {
-  data class BuildAlreadyInProgress(override val indexStatus: IndexStatus): BuildIndexError("The build is already in progress", indexStatus)
+sealed class BuildIndexError(val message: String) {
+  data class BuildAlreadyInProgress(val indexStatus: IndexStatus): BuildIndexError("The build for ${indexStatus.currentIndex} is already ${indexStatus.state} (started at ${indexStatus.startIndexTime})")
 }

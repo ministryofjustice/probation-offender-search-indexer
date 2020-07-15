@@ -6,6 +6,7 @@ import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.http.MediaType
 import uk.gov.justice.digital.hmpps.indexer.integration.ResourceIntegrationTest
@@ -15,7 +16,7 @@ import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
 import uk.gov.justice.digital.hmpps.indexer.service.BuildIndexError
 import java.time.LocalDateTime
 
-class IndexResourceIntegrationTest : ResourceIntegrationTest() {
+class IndexResourceApiTest : ResourceIntegrationTest() {
 
   @Test
   fun `Request rebuild index is successful and calls service`() {
@@ -59,10 +60,12 @@ class IndexResourceIntegrationTest : ResourceIntegrationTest() {
         .exchange()
         .expectStatus().isEqualTo(409)
         .expectBody()
-        .jsonPath("$.currentIndex").isEqualTo("BLUE")
-        .jsonPath("$.state").isEqualTo("BUILDING")
+        .jsonPath("$.message").value<String> {message ->
+          assertThat(message).contains("BLUE")
+          assertThat(message).contains("BUILDING")
+        }
 
-    verify(indexService).buildIndex()
+        verify(indexService).buildIndex()
   }
 
   @Test

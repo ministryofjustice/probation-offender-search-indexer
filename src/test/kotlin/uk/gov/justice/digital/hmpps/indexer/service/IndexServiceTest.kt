@@ -38,6 +38,15 @@ class IndexServiceTest {
     }
 
     @Test
+    fun `A request is made to mark the index build is in progress`() {
+      whenever(indexStatusService.getOrCreateCurrentIndexStatus()).thenReturn(indexStatus(SyncIndex.GREEN, IndexState.NEW))
+
+      indexService.buildIndex()
+
+      verify(indexStatusService).markBuildInProgress()
+    }
+
+    @Test
     fun `A request is made to reset the other index`() {
       whenever(indexStatusService.getOrCreateCurrentIndexStatus()).thenReturn(indexStatus(SyncIndex.GREEN, IndexState.NEW))
 
