@@ -21,7 +21,8 @@ class IndexServiceTest {
   private val indexStatusService = mock<IndexStatusService>()
   private val offenderSynchroniserService = mock<OffenderSynchroniserService>()
   private val indexQueueService = mock<IndexQueueService>()
-  private val indexService = IndexService(indexStatusService, offenderSynchroniserService, indexQueueService)
+  private val searchClient = mock<SearchClient>()
+  private val indexService = IndexService(indexStatusService, offenderSynchroniserService, indexQueueService, searchClient)
 
   @Nested
   inner class BuildIndex {
