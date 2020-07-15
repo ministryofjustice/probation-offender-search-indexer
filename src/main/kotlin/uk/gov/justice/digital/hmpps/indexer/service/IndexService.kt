@@ -37,13 +37,8 @@ class IndexService(
     return indexStatusService.getOrCreateCurrentIndexStatus().right()
   }
 
-  private fun countIndex(syncIndex: SyncIndex): Int {
-    val response = searchClient.lowLevelClient().performRequest(Request("get", "/${syncIndex.indexName}/_count"))
-    return JsonParser.parseString(IOUtils.toString(response.entity.content)).asJsonObject["count"].asInt
-  }
-
   private fun allIndexesSummary(currentIndex: SyncIndex) =
-      "Current index is $currentIndex [${countIndex(currentIndex)}], rebuilding ${currentIndex.otherIndex()} [${countIndex(currentIndex.otherIndex())}]}"
+      "Current index is $currentIndex [${searchClient.countIndex(currentIndex)}], rebuilding ${currentIndex.otherIndex()} [${searchClient.countIndex(currentIndex.otherIndex())}]}"
 
   fun markIndexingComplete() = log.info("Received request to mark indexing complete")
 

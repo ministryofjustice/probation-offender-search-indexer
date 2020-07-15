@@ -27,6 +27,11 @@ class IndexServiceTest {
   @Nested
   inner class BuildIndex {
 
+    @BeforeEach
+    fun `mock index count`() {
+      whenever(searchClient.countIndex(any())).thenReturn(0)
+    }
+
     @Test
     fun `Index already building returns error`() {
       val expectedIndexStatus = indexStatus(SyncIndex.GREEN, IndexState.BUILDING)
