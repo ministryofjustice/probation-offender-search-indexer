@@ -1,7 +1,9 @@
 package uk.gov.justice.digital.hmpps.indexer.resource
 
+import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.whenever
 import org.junit.jupiter.api.Test
 import org.springframework.http.MediaType
 import uk.gov.justice.digital.hmpps.indexer.integration.ResourceIntegrationTest
@@ -113,6 +115,8 @@ class IndexResourceTest : ResourceIntegrationTest() {
 
   @Test
   fun `Request to index offender is successful and calls service`() {
+    doReturn("{}").whenever(indexService).indexOffender("SOME_CRN")
+
     webTestClient.put()
         .uri("/probation-index/index/offender/SOME_CRN")
         .accept(MediaType.APPLICATION_JSON)

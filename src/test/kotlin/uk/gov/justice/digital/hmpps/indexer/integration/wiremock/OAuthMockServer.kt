@@ -19,10 +19,12 @@ class OAuthExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback {
 
   override fun beforeAll(context: ExtensionContext) {
     oAuthApi.start()
+    oAuthApi.stubGrantToken()
   }
 
   override fun beforeEach(context: ExtensionContext) {
     oAuthApi.resetRequests()
+    oAuthApi.stubGrantToken()
   }
 
   override fun afterAll(context: ExtensionContext) {
