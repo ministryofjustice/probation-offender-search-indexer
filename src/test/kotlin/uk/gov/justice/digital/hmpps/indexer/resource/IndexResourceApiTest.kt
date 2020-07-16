@@ -12,13 +12,13 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import org.springframework.http.MediaType
+import uk.gov.justice.digital.hmpps.indexer.helpers.indexStatus
 import uk.gov.justice.digital.hmpps.indexer.integration.ResourceIntegrationTest
 import uk.gov.justice.digital.hmpps.indexer.model.IndexState
-import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
 import uk.gov.justice.digital.hmpps.indexer.service.BuildIndexError
+import uk.gov.justice.digital.hmpps.indexer.service.CancelBuildIndexError
 import uk.gov.justice.digital.hmpps.indexer.service.MarkBuildCompleteError
-import java.time.LocalDateTime
 
 class IndexResourceApiTest : ResourceIntegrationTest() {
 
@@ -31,7 +31,7 @@ class IndexResourceApiTest : ResourceIntegrationTest() {
   inner class BuildIndex {
     @Test
     fun `Request build index is successful and calls service`() {
-      val expectedIndexStatus = indexStatusBuilding(SyncIndex.BLUE)
+      val expectedIndexStatus = indexStatus(SyncIndex.BLUE, IndexState.BUILDING)
       whenever(indexService.buildIndex()).thenReturn(expectedIndexStatus.right())
 
       webTestClient.put()
@@ -61,7 +61,7 @@ class IndexResourceApiTest : ResourceIntegrationTest() {
 
     @Test
     fun `Request build index already building returns conflict`() {
-      val expectedIndexStatus = indexStatusBuilding(SyncIndex.BLUE)
+      val expectedIndexStatus = indexStatus(SyncIndex.BLUE, IndexState.BUILDING)
       whenever(indexService.buildIndex()).thenReturn(BuildIndexError.BuildAlreadyInProgress(expectedIndexStatus).left())
 
       webTestClient.put()
@@ -88,14 +88,13 @@ class IndexResourceApiTest : ResourceIntegrationTest() {
           .expectStatus().isUnauthorized
     }
 
-    private fun indexStatusBuilding(currentIndex: SyncIndex) = IndexStatus(currentIndex = currentIndex, startIndexTime = LocalDateTime.now(), endIndexTime = null, state = IndexState.BUILDING)
   }
 
   @Nested
   inner class MarkIndexComplete {
     @Test
     fun `Request to mark index complete is successful and calls service`() {
-      val expectedIndexStatus = indexStatusCompleted(SyncIndex.BLUE)
+      val expectedIndexStatus = indexStatus(SyncIndex.BLUE, IndexState.COMPLETED)
       whenever(indexService.markIndexingComplete()).thenReturn(expectedIndexStatus.right())
 
       webTestClient.put()
@@ -133,7 +132,7 @@ class IndexResourceApiTest : ResourceIntegrationTest() {
 
     @Test
     fun `Request to mark index complete when index not building returns error`() {
-      val expectedIndexStatus = indexStatusCompleted(SyncIndex.BLUE)
+      val expectedIndexStatus = indexStatus(SyncIndex.BLUE, IndexState.COMPLETED)
       whenever(indexService.markIndexingComplete()).thenReturn(MarkBuildCompleteError.BuildNotInProgress(expectedIndexStatus).left())
 
       webTestClient.put()
@@ -151,14 +150,15 @@ class IndexResourceApiTest : ResourceIntegrationTest() {
       verify(indexService).markIndexingComplete()
     }
 
-    private fun indexStatusCompleted(currentIndex: SyncIndex) = IndexStatus(currentIndex = currentIndex, startIndexTime = LocalDateTime.now().minusHours(1), endIndexTime = LocalDateTime.now(), state = IndexState.COMPLETED)
-
   }
 
   @Nested
   inner class CancelIndexing {
     @Test
     fun `Request to cancel indexing is successful and calls service`() {
+      val expectedIndexStatus = indexStatus(SyncIndex.BLUE, IndexState.CANCELLED)
+      whenever(indexService.buildIndex()).thenReturn(expectedIndexStatus.right())
+
       webTestClient.put()
           .uri("/probation-index/cancel-index")
           .accept(MediaType.APPLICATION_JSON)
@@ -190,6 +190,26 @@ class IndexResourceApiTest : ResourceIntegrationTest() {
           .expectStatus().isUnauthorized
 
       verify(indexService, never()).cancelIndexing()
+    }
+
+    @Test
+    fun `Request to mark index cancelled when index not building returns error`() {
+      val expectedIndexStatus = indexStatus(SyncIndex.BLUE, IndexState.CANCELLED)
+      whenever(indexService.cancelIndexing()).thenReturn(CancelBuildIndexError.BuildNotInProgress(expectedIndexStatus).left())
+
+      webTestClient.put()
+          .uri("/probation-index/cancel-index")
+          .accept(MediaType.APPLICATION_JSON)
+          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+          .exchange()
+          .expectStatus().isEqualTo(409)
+          .expectBody()
+          .jsonPath("$.message").value<String> { message ->
+            assertThat(message).contains(expectedIndexStatus.currentIndex.name)
+            assertThat(message).contains(expectedIndexStatus.state.name)
+          }
+
+      verify(indexService).cancelIndexing()
     }
   }
 

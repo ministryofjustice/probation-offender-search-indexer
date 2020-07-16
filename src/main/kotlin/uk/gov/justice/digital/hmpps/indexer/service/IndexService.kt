@@ -45,17 +45,30 @@ class IndexService(
     return indexStatusService.getOrCreateCurrentIndexStatus().right()
   }
 
-  fun cancelIndexing() = log.info("Received request to cancel indexing")
+  fun cancelIndexing(): Either<CancelBuildIndexError, IndexStatus> {
+    val indexStatus = indexStatusService.getOrCreateCurrentIndexStatus()
+    if (indexStatus.state != IndexState.BUILDING) {
+      return CancelBuildIndexError.BuildNotInProgress(indexStatus).left()
+    }
+
+    indexStatusService.markBuildCancelled()
+    log.info("Index ${indexStatus.currentIndex.otherIndex()} marked as cancelled, ${indexStatus.currentIndex} is now current")
+
+    return indexStatusService.getOrCreateCurrentIndexStatus().right()
+  }
 
   fun indexOffender(crn: String) = offenderSynchroniserService.synchroniseOffender(crn)
 }
 
 
-@Suppress("UNUSED_PARAMETER")
 sealed class BuildIndexError(val message: String) {
   data class BuildAlreadyInProgress(val indexStatus: IndexStatus): BuildIndexError("The build for ${indexStatus.currentIndex} is already ${indexStatus.state} (started at ${indexStatus.startIndexTime})")
 }
 
 sealed class MarkBuildCompleteError(val message: String) {
-  data class BuildNotInProgress(val indexStatus: IndexStatus): MarkBuildCompleteError("The index ${indexStatus.currentIndex} is in state ${indexStatus.state} (ended at ${indexStatus.endIndexTime} ")
+  data class BuildNotInProgress(val indexStatus: IndexStatus) : MarkBuildCompleteError("The index ${indexStatus.currentIndex} is in state ${indexStatus.state} (ended at ${indexStatus.endIndexTime})")
+}
+
+sealed class CancelBuildIndexError(val message: String) {
+  data class BuildNotInProgress(val indexStatus: IndexStatus): CancelBuildIndexError("The index ${indexStatus.currentIndex} is in state ${indexStatus.state} (ended at ${indexStatus.endIndexTime})")
 }

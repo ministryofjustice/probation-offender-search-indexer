@@ -10,7 +10,8 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.server.ResponseStatusException
 import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
-import uk.gov.justice.digital.hmpps.indexer.service.BuildIndexError.BuildAlreadyInProgress
+import uk.gov.justice.digital.hmpps.indexer.service.BuildIndexError
+import uk.gov.justice.digital.hmpps.indexer.service.CancelBuildIndexError
 import uk.gov.justice.digital.hmpps.indexer.service.IndexService
 import uk.gov.justice.digital.hmpps.indexer.service.MarkBuildCompleteError
 
@@ -27,7 +28,7 @@ class IndexResource(private val indexService: IndexService) {
       indexService.buildIndex()
           .getOrHandle { error ->
             when (error) {
-              is BuildAlreadyInProgress -> throw ResponseStatusException(HttpStatus.CONFLICT, error.message)
+              is BuildIndexError.BuildAlreadyInProgress -> throw ResponseStatusException(HttpStatus.CONFLICT, error.message)
             }
           }
 
@@ -43,7 +44,13 @@ class IndexResource(private val indexService: IndexService) {
 
   @PutMapping("/cancel-index")
   @PreAuthorize("hasRole('PROBATION_INDEX')")
-  fun cancelIndex() = indexService.cancelIndexing()
+  fun cancelIndex() =
+      indexService.cancelIndexing()
+          .getOrHandle { error ->
+            when (error) {
+              is CancelBuildIndexError.BuildNotInProgress -> throw ResponseStatusException(HttpStatus.CONFLICT, error.message)
+            }
+          }
 
   @PutMapping("/index/offender/{crn}")
   @PreAuthorize("hasRole('PROBATION_INDEX')")

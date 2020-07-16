@@ -10,10 +10,9 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import uk.gov.justice.digital.hmpps.indexer.helpers.indexStatus
 import uk.gov.justice.digital.hmpps.indexer.model.IndexState
-import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
-import java.time.LocalDateTime
 
 class IndexServiceTest {
 
@@ -83,7 +82,7 @@ class IndexServiceTest {
 
     @Test
     fun `Index not building returns error`() {
-      val expectedIndexStatus = IndexStatus(currentIndex = SyncIndex.GREEN, state = IndexState.COMPLETED, startIndexTime = LocalDateTime.now().minusHours(2), endIndexTime = LocalDateTime.now().minusHours(1))
+      val expectedIndexStatus = indexStatus(currentIndex = SyncIndex.GREEN, state = IndexState.COMPLETED)
       whenever(indexStatusService.getOrCreateCurrentIndexStatus()).thenReturn(expectedIndexStatus)
 
       val result = indexService.markIndexingComplete()
@@ -126,9 +125,42 @@ class IndexServiceTest {
     }
   }
 
-  // cancelIndexing
   @Nested
   inner class CancelIndexing {
+
+    @Test
+    fun `Index not building returns error`() {
+      val expectedIndexStatus = indexStatus(currentIndex = SyncIndex.GREEN, state = IndexState.COMPLETED)
+      whenever(indexStatusService.getOrCreateCurrentIndexStatus()).thenReturn(expectedIndexStatus)
+
+      val result = indexService.cancelIndexing()
+
+      verify(indexStatusService).getOrCreateCurrentIndexStatus()
+      assertThat(result.getOrHandle { it }).isEqualTo(CancelBuildIndexError.BuildNotInProgress(expectedIndexStatus))
+    }
+
+    @Test
+    fun `A request is made to mark the index state as cancelled`() {
+      val expectedIndexStatus = indexStatus(currentIndex = SyncIndex.GREEN, state = IndexState.BUILDING)
+      whenever(indexStatusService.getOrCreateCurrentIndexStatus()).thenReturn(expectedIndexStatus)
+
+      indexService.cancelIndexing()
+
+      verify(indexStatusService).markBuildCancelled()
+    }
+
+    @Test
+    fun `Once current index marked as cancelled, the 'other' index is current`() {
+      val expectedIndexStatus = indexStatus(currentIndex = SyncIndex.GREEN, state = IndexState.CANCELLED)
+      whenever(indexStatusService.getOrCreateCurrentIndexStatus())
+          .thenReturn(indexStatus(currentIndex = SyncIndex.BLUE, state = IndexState.BUILDING))
+          .thenReturn(expectedIndexStatus)
+
+      val result = indexService.cancelIndexing()
+
+      verify(indexStatusService, times(2)).getOrCreateCurrentIndexStatus()
+      assertThat(result.getOrHandle { it }).isEqualTo(expectedIndexStatus)
+    }
 
   }
 
@@ -146,8 +178,5 @@ class IndexServiceTest {
       verify(offenderSynchroniserService).synchroniseOffender("X12345")
     }
   }
-
-  private fun indexStatus(currentIndex: SyncIndex, state: IndexState) =
-      IndexStatus(currentIndex = currentIndex, startIndexTime = LocalDateTime.now().minusHours(1), endIndexTime = null, state = state)
 
 }
