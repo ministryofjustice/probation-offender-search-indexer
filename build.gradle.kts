@@ -21,6 +21,7 @@ dependencies {
 
 	implementation("com.google.code.gson:gson:2.8.6")
 	implementation("io.arrow-kt:arrow-core:0.10.5")
+	implementation("org.apache.logging.log4j:log4j-api-kotlin:1.0.0")
 
 
 	testImplementation("com.github.tomakehurst:wiremock-standalone:2.26.3")

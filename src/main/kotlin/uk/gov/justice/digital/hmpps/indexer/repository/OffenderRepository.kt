@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.indexer.repository
 
+import org.apache.logging.log4j.kotlin.Logging
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest
 import org.elasticsearch.action.index.IndexRequest
 import org.elasticsearch.action.ingest.PutPipelineRequest
@@ -10,7 +11,6 @@ import org.elasticsearch.client.indices.GetIndexRequest
 import org.elasticsearch.client.indices.PutMappingRequest
 import org.elasticsearch.common.bytes.BytesArray
 import org.elasticsearch.common.xcontent.XContentType.JSON
-import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Repository
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
@@ -20,16 +20,14 @@ const val pipelineId = "pnc-pipeline"
 
 @Repository
 class OffenderRepository(@Qualifier("elasticSearchClient") private val client: RestHighLevelClient) {
-  companion object {
-    val log = LoggerFactory.getLogger(this::class.java)
-  }
+  companion object : Logging
 
   fun save(offender: Offender, index: SyncIndex) {
     client.index(offender.toIndexRequest().index(index.indexName), RequestOptions.DEFAULT)
   }
 
   fun createIndex(index: SyncIndex) {
-    log.info("creating index {}", index.indexName)
+    logger.info { "creating index ${index.indexName}" }
     client.indices().create(CreateIndexRequest(index.indexName), RequestOptions.DEFAULT)
     client.indices()
         .putMapping(PutMappingRequest(index.indexName).source("/es/mapping.json".resourceAsString(), JSON), RequestOptions.DEFAULT)
@@ -38,15 +36,15 @@ class OffenderRepository(@Qualifier("elasticSearchClient") private val client: R
   }
 
   fun deleteIndex(index: SyncIndex) {
-    log.info("deleting index {}", index.indexName)
+    logger.info { "deleting index ${index.indexName}"  }
     if (client.indices().exists(GetIndexRequest(index.indexName), RequestOptions.DEFAULT)) {
       client.indices().delete(DeleteIndexRequest(index.indexName), RequestOptions.DEFAULT)
     } else {
-      log.warn("index {} was never there in the first place", index.indexName)
+      logger.warn { "index ${index.indexName} was never there in the first place" }
     }
   }
   fun doesIndexExist(index: SyncIndex) : Boolean{
-    log.info("deleting index {}", index.indexName)
+    logger.info { "deleting index ${index.indexName}" }
     return client.indices().exists(GetIndexRequest(index.indexName), RequestOptions.DEFAULT)
   }
 }

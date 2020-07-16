@@ -8,8 +8,7 @@ import com.amazonaws.services.sqs.model.QueueAttributeName
 import com.amazonaws.services.sqs.model.QueueAttributeName.ApproximateNumberOfMessages
 import com.amazonaws.services.sqs.model.QueueAttributeName.ApproximateNumberOfMessagesNotVisible
 import com.amazonaws.services.sqs.model.QueueDoesNotExistException
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
+import org.apache.logging.log4j.kotlin.Logging
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.actuate.health.Health
 import org.springframework.boot.actuate.health.Health.Builder
@@ -41,16 +40,14 @@ abstract class QueueHealth(
     private val queueName: String,
     private val dlqName: String) : HealthIndicator {
 
-  companion object {
-    val log: Logger = LoggerFactory.getLogger(this::class.java)
-  }
+  companion object : Logging
 
   override fun health(): Health {
     val queueAttributes = try {
       val url = awsSqsClient.getQueueUrl(queueName)
       awsSqsClient.getQueueAttributes(getQueueAttributesRequest(url))
     } catch (e: Exception) {
-      log.error("Unable to retrieve queue attributes for queue '{}' due to exception:", queueName, e)
+      logger.error(e) {"Unable to retrieve queue attributes for queue '$queueName' due to exception:"}
       return Builder().down().withException(e).build()
     }
     val details = mutableMapOf<String, Any?>(
@@ -65,7 +62,7 @@ abstract class QueueHealth(
 
   private fun Builder.addDlqHealth(mainQueueAttributes: GetQueueAttributesResult): Builder {
     if (!mainQueueAttributes.attributes.containsKey("RedrivePolicy")) {
-      log.error("Queue '{}' is missing a RedrivePolicy attribute indicating it does not have a dead letter queue", queueName)
+      logger.error { "Queue '$queueName' is missing a RedrivePolicy attribute indicating it does not have a dead letter queue" }
       return down().withDetail("dlqStatus", NOT_ATTACHED.description)
     }
 
@@ -73,10 +70,10 @@ abstract class QueueHealth(
       val url = awsSqsDlqClient.getQueueUrl(dlqName)
       awsSqsDlqClient.getQueueAttributes(getQueueAttributesRequest(url))
     } catch (e: QueueDoesNotExistException) {
-      log.error("Unable to retrieve dead letter queue URL for queue '{}' due to exception:", queueName, e)
+      logger.error(e) { "Unable to retrieve dead letter queue URL for queue '$queueName' due to exception:"}
       return down(e).withDetail("dlqStatus", NOT_FOUND.description)
     } catch (e: Exception) {
-      log.error("Unable to retrieve dead letter queue attributes for queue '{}' due to exception:", queueName, e)
+      logger.error(e) { "Unable to retrieve dead letter queue attributes for queue '$queueName' due to exception:"}
       return down(e).withDetail("dlqStatus", NOT_AVAILABLE.description)
     }
 

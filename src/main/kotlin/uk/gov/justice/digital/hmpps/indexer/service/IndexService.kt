@@ -3,8 +3,7 @@ package uk.gov.justice.digital.hmpps.indexer.service
 import arrow.core.Either
 import arrow.core.left
 import arrow.core.right
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
+import org.apache.logging.log4j.kotlin.Logging
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.indexer.model.IndexState
 import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
@@ -17,9 +16,7 @@ class IndexService(
     private val indexQueueService: IndexQueueService
 ) {
 
-  companion object {
-    val log: Logger = LoggerFactory.getLogger(this::class.java)
-  }
+  companion object : Logging
 
   fun prepareIndexForRebuild(): Either<BuildIndexError, IndexStatus> {
     val indexStatus = indexStatusService.getIndexStatus()
@@ -41,7 +38,7 @@ class IndexService(
 
     indexStatusService.markBuildCompleteAndSwitchIndex()
     indexQueueService.clearAllMessages()
-    log.info("Index ${indexStatus.otherIndex} marked as ${indexStatus.otherIndexState}, ${indexStatus.currentIndex} is now current")
+    logger.info {"Index ${indexStatus.otherIndex} marked as ${indexStatus.otherIndexState}, ${indexStatus.currentIndex} is now current"}
 
     return indexStatusService.getIndexStatus().right()
   }
@@ -53,7 +50,7 @@ class IndexService(
     }
 
     indexStatusService.markBuildCancelled()
-    log.info("Index ${indexStatus.currentIndex.otherIndex()} marked as ${indexStatus.otherIndexState}, ${indexStatus.currentIndex} is still current")
+    logger.info {"Index ${indexStatus.currentIndex.otherIndex()} marked as ${indexStatus.otherIndexState}, ${indexStatus.currentIndex} is still current"}
 
     return indexStatusService.getIndexStatus().right()
   }
