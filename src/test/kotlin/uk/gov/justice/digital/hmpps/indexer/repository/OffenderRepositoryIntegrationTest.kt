@@ -1,8 +1,10 @@
 package uk.gov.justice.digital.hmpps.indexer.repository
 
+import net.javacrumbs.jsonunit.assertj.JsonAssert.assertThatJson
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest
+import org.elasticsearch.action.get.GetRequest
 import org.elasticsearch.action.ingest.GetPipelineRequest
 import org.elasticsearch.client.RequestOptions
 import org.elasticsearch.client.RestHighLevelClient
@@ -19,6 +21,9 @@ import org.springframework.beans.factory.annotation.Qualifier
 import uk.gov.justice.digital.hmpps.indexer.integration.IntegrationTest
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.BLUE
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.GREEN
+import uk.gov.justice.digital.hmpps.indexer.service.IDs
+import uk.gov.justice.digital.hmpps.indexer.service.Offender
+import uk.gov.justice.digital.hmpps.indexer.service.OffenderDetail
 
 internal class OffenderRepositoryIntegrationTest : IntegrationTest() {
 
@@ -78,67 +83,161 @@ internal class OffenderRepositoryIntegrationTest : IntegrationTest() {
         assertThatThrownBy { offenderRepository.createIndex(GREEN) }.hasMessageContaining("already exists")
       }
     }
+
+    @Nested
+    inner class Mappings {
+      lateinit var mappingProperties: Map<String, Any>
+      @BeforeEach
+      internal fun setUp() {
+        highLevelClient.safeIndexDelete(BLUE.indexName)
+        highLevelClient.safeIndexDelete(GREEN.indexName)
+
+        offenderRepository.createIndex(BLUE)
+
+        val mappings = highLevelClient.indices()
+            .getMapping(GetMappingsRequest().indices(BLUE.indexName), RequestOptions.DEFAULT)
+        mappingProperties = mappings.properties(BLUE.indexName)
+      }
+
+      @Test
+      internal fun `mappings should be created with the index`() {
+        assertThat(mappingProperties).isNotNull.hasSizeGreaterThan(1)
+      }
+
+      @Test
+      internal fun `croNumberLowercase is a keyword`() {
+        val value = mappingProperties.value("otherIds.properties.croNumberLowercase.type")
+        assertThat(value).isEqualTo("keyword")
+      }
+
+      @Test
+      internal fun `pncNumberLongYear is a keyword`() {
+        val value = mappingProperties.value("otherIds.properties.pncNumberLongYear.type")
+        assertThat(value).isEqualTo("keyword")
+      }
+
+      @Test
+      internal fun `pncNumberShortYear is a keyword`() {
+        val value = mappingProperties.value("otherIds.properties.pncNumberShortYear.type")
+        assertThat(value).isEqualTo("keyword")
+      }
+
+      @Test
+      internal fun `dateOfBirth is a date`() {
+        val value = mappingProperties.value("dateOfBirth.type")
+        assertThat(value).isEqualTo("date")
+      }
+
+      @Test
+      internal fun `dateOfBirth allows multiple formats`() {
+        val value = mappingProperties.value("dateOfBirth.format")
+        assertThat(value).isEqualTo("yyyy-MM-dd||yyyy/MM/dd||dd-MM-yy||dd/MM/yy||dd-MM-yyyy||dd/MM/yyyy")
+      }
+
+      @Test
+      internal fun `offenderManagers is nested`() {
+        val value = mappingProperties.value("offenderManagers.type")
+        assertThat(value).isEqualTo("nested")
+      }
+
+      @Test
+      internal fun `the nested offenderManagers property probationArea code is a keyword`() {
+        val value = mappingProperties.value("offenderManagers.properties.probationArea.properties.code.type")
+        assertThat(value).isEqualTo("keyword")
+      }
+    }
+
+    @Nested
+    inner class Pipeline {
+      @BeforeEach
+      internal fun setUp() {
+        highLevelClient.safeIndexDelete(BLUE.indexName)
+        highLevelClient.safeIndexDelete(GREEN.indexName)
+      }
+
+      @Test
+      internal fun `will have a pipeline created`() {
+        offenderRepository.createIndex(BLUE)
+
+
+        val response = highLevelClient.ingest().getPipeline(GetPipelineRequest("pnc-pipeline"), RequestOptions.DEFAULT)
+        assertThat(response.isFound).isTrue()
+      }
+
+      @Test
+      internal fun `can create both indexes even though there is a single shared pipeline`() {
+        offenderRepository.createIndex(BLUE)
+        offenderRepository.createIndex(GREEN)
+
+        val response = highLevelClient.ingest().getPipeline(GetPipelineRequest("pnc-pipeline"), RequestOptions.DEFAULT)
+        assertThat(response.isFound).isTrue()
+      }
+    }
+
   }
 
   @Nested
-  inner class Mappings {
-    lateinit var mappingProperties: Map<String, Any>
+  inner class Save {
     @BeforeEach
     internal fun setUp() {
       highLevelClient.safeIndexDelete(BLUE.indexName)
       highLevelClient.safeIndexDelete(GREEN.indexName)
-
       offenderRepository.createIndex(BLUE)
-
-      val mappings = highLevelClient.indices()
-          .getMapping(GetMappingsRequest().indices(BLUE.indexName), RequestOptions.DEFAULT)
-      mappingProperties = mappings.properties(BLUE.indexName)
+      offenderRepository.createIndex(GREEN)
     }
 
     @Test
-    internal fun `mappings should be created with the index`() {
-      assertThat(mappingProperties).isNotNull.hasSizeGreaterThan(1)
+    internal fun `will save offender in the correct index`() {
+      offenderRepository.save(Offender(OffenderDetail(crn = "X12345", offenderId = 99).asJson()), BLUE)
+
+      assertThat(highLevelClient.get(GetRequest(BLUE.indexName).id("X12345"), RequestOptions.DEFAULT).isExists).isTrue()
+      assertThat(highLevelClient.get(GetRequest(GREEN.indexName).id("X12345"), RequestOptions.DEFAULT).isExists).isFalse()
     }
 
     @Test
-    internal fun `croNumberLowercase is a keyword`() {
-      val value = mappingProperties.value("otherIds.properties.croNumberLowercase.type")
-      assertThat(value).isEqualTo("keyword")
+    internal fun `will save json`() {
+      offenderRepository.save(Offender(OffenderDetail(crn = "X12345", offenderId = 99).asJson()), BLUE)
+
+      val json = highLevelClient.get(GetRequest(BLUE.indexName).id("X12345"), RequestOptions.DEFAULT).sourceAsString
+
+      assertThatJson(json).isEqualTo("{\"offenderId\":99,\"crn\":\"X12345\"}")
+      val offenderDetail = gson.fromJson(json, OffenderDetail::class.java)
+      assertThat(offenderDetail.crn).isEqualTo("X12345")
     }
+
     @Test
-    internal fun `pncNumberLongYear is a keyword`() {
-      val value = mappingProperties.value("otherIds.properties.pncNumberLongYear.type")
-      assertThat(value).isEqualTo("keyword")
+    internal fun `will save two canonical forms of pncNumber in pncNumberLongYear and pncNumberShortYear`() {
+      offenderRepository.save(Offender(OffenderDetail(crn = "X12345", offenderId = 99, otherIds = IDs(pncNumber = "2016/01234Z")).asJson()), BLUE)
+
+      val json = highLevelClient.get(GetRequest(BLUE.indexName).id("X12345"), RequestOptions.DEFAULT).sourceAsString
+
+      assertThatJson(json).node("otherIds.pncNumber").isEqualTo("\"2016/01234Z\"")
+      assertThatJson(json).node("otherIds.pncNumberLongYear").isEqualTo("\"2016/1234z\"")
+      assertThatJson(json).node("otherIds.pncNumberShortYear").isEqualTo("\"16/1234z\"")
     }
+
     @Test
-    internal fun `pncNumberShortYear is a keyword`() {
-      val value = mappingProperties.value("otherIds.properties.pncNumberShortYear.type")
-      assertThat(value).isEqualTo("keyword")
+    internal fun `will save lowercase version of croNumber`() {
+      offenderRepository.save(Offender(OffenderDetail(crn = "X12345", offenderId = 99, otherIds = IDs(croNumber = "16/01234Z")).asJson()), BLUE)
+
+      val json = highLevelClient.get(GetRequest(BLUE.indexName).id("X12345"), RequestOptions.DEFAULT).sourceAsString
+
+      assertThatJson(json).node("otherIds.croNumber").isEqualTo("\"16/01234Z\"")
+      assertThatJson(json).node("otherIds.croNumberLowercase").isEqualTo("\"16/01234z\"")
     }
+
     @Test
-    internal fun `dateOfBirth is a date`() {
-      val value = mappingProperties.value("dateOfBirth.type")
-      assertThat(value).isEqualTo("date")
-    }
-    @Test
-    internal fun `dateOfBirth allows multiple formats`() {
-      val value = mappingProperties.value("dateOfBirth.format")
-      assertThat(value).isEqualTo("yyyy-MM-dd||yyyy/MM/dd||dd-MM-yy||dd/MM/yy||dd-MM-yyyy||dd/MM/yyyy")
-    }
-    @Test
-    internal fun `offenderManagers is nested`() {
-      val value = mappingProperties.value("offenderManagers.type")
-      assertThat(value).isEqualTo("nested")
-    }
-    @Test
-    internal fun `the nested offenderManagers property probationArea code is a keyword`() {
-      val value = mappingProperties.value("offenderManagers.properties.probationArea.properties.code.type")
-      assertThat(value).isEqualTo("keyword")
+    internal fun `will happily ignore missing pnc and cro numbers`() {
+      offenderRepository.save(Offender(OffenderDetail(crn = "X12345", offenderId = 99, otherIds = IDs(croNumber = null, pncNumber = null)).asJson()), BLUE)
+
+      val json = highLevelClient.get(GetRequest(BLUE.indexName).id("X12345"), RequestOptions.DEFAULT).sourceAsString
+
+      assertThatJson(json).node("otherIds").isEqualTo("{}")
     }
   }
 
   @Nested
-  inner class Pipeline {
+  inner class DeleteIndex {
     @BeforeEach
     internal fun setUp() {
       highLevelClient.safeIndexDelete(BLUE.indexName)
@@ -146,23 +245,63 @@ internal class OffenderRepositoryIntegrationTest : IntegrationTest() {
     }
 
     @Test
-    internal fun `will have a pipeline created`() {
+    internal fun `will delete an existing index`() {
       offenderRepository.createIndex(BLUE)
 
+      assertThat(highLevelClient.indices().exists(GetIndexRequest(BLUE.indexName), RequestOptions.DEFAULT)).isTrue()
+      assertThat(highLevelClient.indices().exists(GetIndexRequest(GREEN.indexName), RequestOptions.DEFAULT)).isFalse()
 
-      val response = highLevelClient.ingest().getPipeline(GetPipelineRequest("pnc-pipeline"), RequestOptions.DEFAULT)
-      assertThat(response.isFound).isTrue()
+      offenderRepository.deleteIndex(BLUE)
+
+      assertThat(highLevelClient.indices().exists(GetIndexRequest(BLUE.indexName), RequestOptions.DEFAULT)).isFalse()
+      assertThat(highLevelClient.indices().exists(GetIndexRequest(GREEN.indexName), RequestOptions.DEFAULT)).isFalse()
     }
 
     @Test
-    internal fun `can create both indexes even though there is a single shared pipeline`() {
+    internal fun `will leave the other index alone`() {
       offenderRepository.createIndex(BLUE)
       offenderRepository.createIndex(GREEN)
 
-      val response = highLevelClient.ingest().getPipeline(GetPipelineRequest("pnc-pipeline"), RequestOptions.DEFAULT)
-      assertThat(response.isFound).isTrue()
+      assertThat(highLevelClient.indices().exists(GetIndexRequest(BLUE.indexName), RequestOptions.DEFAULT)).isTrue()
+      assertThat(highLevelClient.indices().exists(GetIndexRequest(GREEN.indexName), RequestOptions.DEFAULT)).isTrue()
+
+      offenderRepository.deleteIndex(BLUE)
+
+      assertThat(highLevelClient.indices().exists(GetIndexRequest(BLUE.indexName), RequestOptions.DEFAULT)).isFalse()
+      assertThat(highLevelClient.indices().exists(GetIndexRequest(GREEN.indexName), RequestOptions.DEFAULT)).isTrue()
+    }
+
+    @Test
+    internal fun `will not complain if index to delete does not exist`() {
+      assertThat(highLevelClient.indices().exists(GetIndexRequest(BLUE.indexName), RequestOptions.DEFAULT)).isFalse()
+
+      offenderRepository.deleteIndex(BLUE)
+
+      assertThat(highLevelClient.indices().exists(GetIndexRequest(BLUE.indexName), RequestOptions.DEFAULT)).isFalse()
     }
   }
+
+  @Nested
+  inner class DoesIndexExist {
+    @BeforeEach
+    internal fun setUp() {
+      highLevelClient.safeIndexDelete(BLUE.indexName)
+      highLevelClient.safeIndexDelete(GREEN.indexName)
+    }
+
+    @Test
+    internal fun `will report true when index exists`() {
+      offenderRepository.createIndex(BLUE)
+      assertThat(offenderRepository.doesIndexExist(BLUE)).isTrue()
+      assertThat(offenderRepository.doesIndexExist(GREEN)).isFalse()
+    }
+    @Test
+    internal fun `will report false when index does not exists`() {
+      assertThat(offenderRepository.doesIndexExist(BLUE)).isFalse()
+      assertThat(offenderRepository.doesIndexExist(GREEN)).isFalse()
+    }
+  }
+  private fun Any.asJson() = gson.toJson(this)
 }
 
 fun RestHighLevelClient.safeIndexDelete(name: String) {
@@ -184,7 +323,7 @@ fun GetMappingsResponse.properties(index: String): Map<String, Any> {
   return mappingProperties as Map<String, Any>
 }
 
-fun Map<*, *>.value(property: String) : String {
+fun Map<*, *>.value(property: String): String {
   val properties = property.split(".")
   var currentMap = this
   properties.forEach {

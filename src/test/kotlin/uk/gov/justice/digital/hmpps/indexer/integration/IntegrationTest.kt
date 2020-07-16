@@ -38,7 +38,7 @@ abstract class IntegrationTest {
   internal lateinit var indexAwsSqsDlqClient: AmazonSQS
 
   @Autowired
-  private lateinit var gson: Gson
+  internal lateinit var gson: Gson
 
   @Autowired
   lateinit var elasticSearchClient: RestHighLevelClient

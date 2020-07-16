@@ -18,7 +18,7 @@ internal class CommunityServiceTest : IntegrationTest() {
     CommunityApiExtension.communityApi.stubFor(WireMock.get(WireMock.anyUrl()).willReturn(WireMock.aResponse()
         .withHeader("Content-Type", "application/json")
         .withBody("""{
-          "offenderId": 99
+          "offenderId": 99,
           "crn": "X12345"
           }""")
         .withStatus(HttpURLConnection.HTTP_OK)))
