@@ -5,10 +5,13 @@ import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
 import java.time.LocalDateTime
 
-internal fun indexStatus(currentIndex: SyncIndex, state: IndexState) =
+internal fun indexStatus(otherIndex: SyncIndex, otherIndexState: IndexState) =
     IndexStatus(
-        currentIndex = currentIndex,
-        startIndexTime = if (state == IndexState.NEW) null else LocalDateTime.now().minusHours(1),
-        endIndexTime = if (state == IndexState.BUILDING) null else LocalDateTime.now().minusMinutes(1),
-        state = state
+        currentIndex = otherIndex.otherIndex(),
+        currentIndexStartBuildTime = null,
+        currentIndexEndBuildTime = null,
+        currentIndexState = IndexState.NEW,
+        otherIndexStartBuildTime = if (otherIndexState == IndexState.NEW) null else LocalDateTime.now().minusHours(1),
+        otherIndexEndBuildTime = if (listOf(IndexState.NEW, IndexState.BUILDING).contains(otherIndexState)) null else LocalDateTime.now().minusMinutes(1),
+        otherIndexState = otherIndexState
     )

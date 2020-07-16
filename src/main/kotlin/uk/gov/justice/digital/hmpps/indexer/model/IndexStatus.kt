@@ -21,33 +21,64 @@ data class IndexStatus(
   val currentIndex: SyncIndex,
 
   @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second)
-  val startIndexTime: LocalDateTime?,
+  val currentIndexStartBuildTime: LocalDateTime? = null,
 
   @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second)
-  val endIndexTime: LocalDateTime?,
+  val currentIndexEndBuildTime: LocalDateTime? = null,
 
   @Field(type = FieldType.Text)
-  val state: IndexState
+  val currentIndexState: IndexState = IndexState.NEW,
+
+  @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second)
+  val otherIndexStartBuildTime: LocalDateTime? = null,
+
+  @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second)
+  val otherIndexEndBuildTime: LocalDateTime? = null,
+
+  @Field(type = FieldType.Text)
+  val otherIndexState: IndexState = IndexState.NEW
 
 ) {
 
+  val otherIndex
+    get() = currentIndex.otherIndex()
+
   fun inProgress(): Boolean {
-    return this.state == IndexState.BUILDING
+    return this.otherIndexState == IndexState.BUILDING
   }
 
   fun toBuildInProgress(): IndexStatus {
-    return this.copy(startIndexTime = LocalDateTime.now(), endIndexTime = null, state = IndexState.BUILDING)
+    return this.copy(
+        otherIndexStartBuildTime = LocalDateTime.now(),
+        otherIndexEndBuildTime = null,
+        otherIndexState = IndexState.BUILDING
+    )
   }
 
   fun toBuildComplete(): IndexStatus {
-    return this.copy(currentIndex = this.currentIndex.otherIndex(), endIndexTime = LocalDateTime.now(), state = IndexState.COMPLETED)
+    return this.copy(
+        otherIndexEndBuildTime = LocalDateTime.now(),
+        otherIndexState = IndexState.COMPLETED
+    )
+  }
+
+  fun toSwitchIndex(): IndexStatus {
+    return this.copy(
+        currentIndex = otherIndex,
+        currentIndexStartBuildTime = otherIndexStartBuildTime,
+        currentIndexEndBuildTime = otherIndexEndBuildTime,
+        currentIndexState = otherIndexState,
+        otherIndexStartBuildTime = null,
+        otherIndexEndBuildTime = null,
+        otherIndexState = IndexState.NEW
+    )
   }
 
   fun toBuildCancelled(): IndexStatus {
-    return this.copy(currentIndex = this.currentIndex.otherIndex(), state = IndexState.CANCELLED)
+    return this.copy(otherIndexEndBuildTime = LocalDateTime.now(), otherIndexState = IndexState.CANCELLED)
   }
 
   companion object {
-    fun newIndex() = IndexStatus(INDEX_STATUS_ID, SyncIndex.GREEN, null, null, IndexState.NEW)
+    fun newIndex() = IndexStatus(currentIndex = SyncIndex.GREEN)
   }
 }

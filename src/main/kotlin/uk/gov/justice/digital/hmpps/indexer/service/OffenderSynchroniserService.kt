@@ -8,7 +8,7 @@ import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
 class OffenderSynchroniserService(val communityService: CommunityService, val offenderRepository: OffenderRepository, val indexStatusService: IndexStatusService) {
   fun synchroniseOffender(crn: String) : String {
     val offender = communityService.getOffender(crn)
-    offenderRepository.save(offender, indexStatusService.getOrCreateCurrentIndexStatus().currentIndex)
+    offenderRepository.save(offender, indexStatusService.getIndexStatus().currentIndex)
     return offender.body
   }
 

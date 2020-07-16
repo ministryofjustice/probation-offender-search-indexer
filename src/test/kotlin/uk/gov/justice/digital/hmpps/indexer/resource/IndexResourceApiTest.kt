@@ -31,7 +31,7 @@ class IndexResourceApiTest : ResourceIntegrationTest() {
   inner class BuildIndex {
     @Test
     fun `Request build index is successful and calls service`() {
-      val expectedIndexStatus = indexStatus(SyncIndex.BLUE, IndexState.BUILDING)
+      val expectedIndexStatus = indexStatus(otherIndex = SyncIndex.BLUE, otherIndexState = IndexState.BUILDING)
       whenever(indexService.buildIndex()).thenReturn(expectedIndexStatus.right())
 
       webTestClient.put()
@@ -41,8 +41,8 @@ class IndexResourceApiTest : ResourceIntegrationTest() {
           .exchange()
           .expectStatus().isOk
           .expectBody()
-          .jsonPath("$.currentIndex").isEqualTo("BLUE")
-          .jsonPath("$.state").isEqualTo("BUILDING")
+          .jsonPath("$.otherIndex").isEqualTo("BLUE")
+          .jsonPath("$.otherIndexState").isEqualTo("BUILDING")
 
       verify(indexService).buildIndex()
     }
@@ -61,7 +61,7 @@ class IndexResourceApiTest : ResourceIntegrationTest() {
 
     @Test
     fun `Request build index already building returns conflict`() {
-      val expectedIndexStatus = indexStatus(SyncIndex.BLUE, IndexState.BUILDING)
+      val expectedIndexStatus = indexStatus(otherIndex = SyncIndex.BLUE, otherIndexState = IndexState.BUILDING)
       whenever(indexService.buildIndex()).thenReturn(BuildIndexError.BuildAlreadyInProgress(expectedIndexStatus).left())
 
       webTestClient.put()
@@ -72,8 +72,8 @@ class IndexResourceApiTest : ResourceIntegrationTest() {
           .expectStatus().isEqualTo(409)
           .expectBody()
           .jsonPath("$.message").value<String> { message ->
-            assertThat(message).contains(expectedIndexStatus.currentIndex.name)
-            assertThat(message).contains(expectedIndexStatus.state.name)
+            assertThat(message).contains(expectedIndexStatus.otherIndex.name)
+            assertThat(message).contains(expectedIndexStatus.otherIndexState.name)
           }
 
       verify(indexService).buildIndex()
@@ -94,7 +94,7 @@ class IndexResourceApiTest : ResourceIntegrationTest() {
   inner class MarkIndexComplete {
     @Test
     fun `Request to mark index complete is successful and calls service`() {
-      val expectedIndexStatus = indexStatus(SyncIndex.BLUE, IndexState.COMPLETED)
+      val expectedIndexStatus = indexStatus(otherIndex = SyncIndex.BLUE, otherIndexState = IndexState.COMPLETED)
       whenever(indexService.markIndexingComplete()).thenReturn(expectedIndexStatus.right())
 
       webTestClient.put()
@@ -132,7 +132,7 @@ class IndexResourceApiTest : ResourceIntegrationTest() {
 
     @Test
     fun `Request to mark index complete when index not building returns error`() {
-      val expectedIndexStatus = indexStatus(SyncIndex.BLUE, IndexState.COMPLETED)
+      val expectedIndexStatus = indexStatus(otherIndex = SyncIndex.BLUE, otherIndexState = IndexState.COMPLETED)
       whenever(indexService.markIndexingComplete()).thenReturn(MarkBuildCompleteError.BuildNotInProgress(expectedIndexStatus).left())
 
       webTestClient.put()
@@ -143,8 +143,8 @@ class IndexResourceApiTest : ResourceIntegrationTest() {
           .expectStatus().isEqualTo(409)
           .expectBody()
           .jsonPath("$.message").value<String> { message ->
-            assertThat(message).contains(expectedIndexStatus.currentIndex.name)
-            assertThat(message).contains(expectedIndexStatus.state.name)
+            assertThat(message).contains(expectedIndexStatus.otherIndex.name)
+            assertThat(message).contains(expectedIndexStatus.otherIndexState.name)
           }
 
       verify(indexService).markIndexingComplete()
@@ -156,7 +156,7 @@ class IndexResourceApiTest : ResourceIntegrationTest() {
   inner class CancelIndexing {
     @Test
     fun `Request to cancel indexing is successful and calls service`() {
-      val expectedIndexStatus = indexStatus(SyncIndex.BLUE, IndexState.CANCELLED)
+      val expectedIndexStatus = indexStatus(otherIndex = SyncIndex.BLUE, otherIndexState = IndexState.CANCELLED)
       whenever(indexService.buildIndex()).thenReturn(expectedIndexStatus.right())
 
       webTestClient.put()
@@ -194,7 +194,7 @@ class IndexResourceApiTest : ResourceIntegrationTest() {
 
     @Test
     fun `Request to mark index cancelled when index not building returns error`() {
-      val expectedIndexStatus = indexStatus(SyncIndex.BLUE, IndexState.CANCELLED)
+      val expectedIndexStatus = indexStatus(otherIndex = SyncIndex.BLUE, otherIndexState = IndexState.CANCELLED)
       whenever(indexService.cancelIndexing()).thenReturn(CancelBuildIndexError.BuildNotInProgress(expectedIndexStatus).left())
 
       webTestClient.put()
@@ -205,8 +205,8 @@ class IndexResourceApiTest : ResourceIntegrationTest() {
           .expectStatus().isEqualTo(409)
           .expectBody()
           .jsonPath("$.message").value<String> { message ->
-            assertThat(message).contains(expectedIndexStatus.currentIndex.name)
-            assertThat(message).contains(expectedIndexStatus.state.name)
+            assertThat(message).contains(expectedIndexStatus.otherIndex.name)
+            assertThat(message).contains(expectedIndexStatus.otherIndexState.name)
           }
 
       verify(indexService).cancelIndexing()
