@@ -34,69 +34,69 @@ class IndexStatusIntegrationTest : IntegrationTest() {
 
   @Test
   fun `Should save new index status to repository`() {
-    indexStatusService.getOrCreateCurrentIndexStatus()
+    indexStatusService.getIndexStatus()
 
     val actual = getActualIndexStatus()
-    assertThat(actual.state).isEqualTo(IndexState.NEW)
+    assertThat(actual.otherIndexState).isEqualTo(IndexState.NEW)
   }
 
   @Test
   fun `Should save index status to repository`() {
-    indexStatusService.getOrCreateCurrentIndexStatus()
+    indexStatusService.getIndexStatus()
 
     indexStatusService.markBuildInProgress()
 
     val actual = getActualIndexStatus()
-    assertThat(actual.state).isEqualTo(IndexState.BUILDING)
-    assertThat(actual.startIndexTime).isNotNull()
+    assertThat(actual.otherIndexState).isEqualTo(IndexState.BUILDING)
+    assertThat(actual.otherIndexStartBuildTime).isNotNull()
   }
 
   @Test
-  fun `Should mark build index complete`() {
-    indexStatusService.getOrCreateCurrentIndexStatus()
+  fun `Should mark build index complete and switch to current`() {
+    indexStatusService.getIndexStatus()
     indexStatusService.markBuildInProgress()
 
-    indexStatusService.markBuildComplete()
+    indexStatusService.markBuildCompleteAndSwitchIndex()
 
     val actual = getActualIndexStatus()
-    assertThat(actual.state).isEqualTo(IndexState.COMPLETED)
-    assertThat(actual.endIndexTime).isNotNull()
+    assertThat(actual.currentIndexState).isEqualTo(IndexState.COMPLETED)
+    assertThat(actual.currentIndexEndBuildTime).isNotNull()
   }
 
   @Test
   fun `Should mark build index cancelled`() {
-    indexStatusService.getOrCreateCurrentIndexStatus()
+    indexStatusService.getIndexStatus()
     indexStatusService.markBuildInProgress()
 
     indexStatusService.markBuildCancelled()
 
     val actual = getActualIndexStatus()
-    assertThat(actual.state).isEqualTo(IndexState.CANCELLED)
-    assertThat(actual.endIndexTime).isNull()
+    assertThat(actual.otherIndexState).isEqualTo(IndexState.CANCELLED)
+    assertThat(actual.otherIndexEndBuildTime).isNotNull()
   }
 
   @Test
   fun `Should not mark cancelled if not building`() {
-    indexStatusService.getOrCreateCurrentIndexStatus()
+    indexStatusService.getIndexStatus()
     indexStatusService.markBuildInProgress()
-    indexStatusService.markBuildComplete()
+    indexStatusService.markBuildCompleteAndSwitchIndex()
 
     indexStatusService.markBuildCancelled()
 
     val actual = getActualIndexStatus()
-    assertThat(actual.state).isEqualTo(IndexState.COMPLETED)
+    assertThat(actual.otherIndexState).isNotEqualTo(IndexState.CANCELLED)
   }
 
   @Test
   fun `Should not mark completed if not building`() {
-    indexStatusService.getOrCreateCurrentIndexStatus()
+    indexStatusService.getIndexStatus()
     indexStatusService.markBuildInProgress()
     indexStatusService.markBuildCancelled()
 
-    indexStatusService.markBuildComplete()
+    indexStatusService.markBuildCompleteAndSwitchIndex()
 
     val actual = getActualIndexStatus()
-    assertThat(actual.state).isEqualTo(IndexState.CANCELLED)
+    assertThat(actual.otherIndexState).isNotEqualTo(IndexState.COMPLETED)
   }
 
   private fun getActualIndexStatus() = indexStatusRepository.findById(INDEX_STATUS_ID).orElseGet { fail("Should find index status in repository") }

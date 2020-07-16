@@ -26,18 +26,19 @@ class IndexServiceTest {
 
     @Test
     fun `Index already building returns error`() {
-      val expectedIndexStatus = indexStatus(SyncIndex.GREEN, IndexState.BUILDING)
-      whenever(indexStatusService.getOrCreateCurrentIndexStatus()).thenReturn(expectedIndexStatus)
+      val expectedIndexStatus = indexStatus(otherIndex = SyncIndex.BLUE, otherIndexState = IndexState.BUILDING)
+      whenever(indexStatusService.getIndexStatus()).thenReturn(expectedIndexStatus)
 
       val result = indexService.buildIndex()
 
-      verify(indexStatusService).getOrCreateCurrentIndexStatus()
+      verify(indexStatusService).getIndexStatus()
       assertThat(result.getOrHandle { it }).isEqualTo(BuildIndexError.BuildAlreadyInProgress(expectedIndexStatus))
     }
 
     @Test
     fun `A request is made to mark the index build is in progress`() {
-      whenever(indexStatusService.getOrCreateCurrentIndexStatus()).thenReturn(indexStatus(SyncIndex.GREEN, IndexState.NEW))
+      whenever(indexStatusService.getIndexStatus())
+          .thenReturn(indexStatus(otherIndex = SyncIndex.BLUE, otherIndexState = IndexState.NEW))
 
       indexService.buildIndex()
 
@@ -46,7 +47,8 @@ class IndexServiceTest {
 
     @Test
     fun `A request is made to reset the other index`() {
-      whenever(indexStatusService.getOrCreateCurrentIndexStatus()).thenReturn(indexStatus(SyncIndex.GREEN, IndexState.NEW))
+      whenever(indexStatusService.getIndexStatus())
+          .thenReturn(indexStatus(otherIndex = SyncIndex.BLUE, otherIndexState = IndexState.NEW))
 
       indexService.buildIndex()
 
@@ -55,7 +57,8 @@ class IndexServiceTest {
 
     @Test
     fun `A request is made to build other index`() {
-      whenever(indexStatusService.getOrCreateCurrentIndexStatus()).thenReturn(indexStatus(SyncIndex.GREEN, IndexState.NEW))
+      whenever(indexStatusService.getIndexStatus())
+          .thenReturn(indexStatus(otherIndex = SyncIndex.BLUE, otherIndexState = IndexState.NEW))
 
       indexService.buildIndex()
 
@@ -64,14 +67,14 @@ class IndexServiceTest {
 
     @Test
     fun `The updated index is returned`() {
-      val expectedIndexStatus = indexStatus(SyncIndex.BLUE, IndexState.BUILDING)
-      whenever(indexStatusService.getOrCreateCurrentIndexStatus())
+      val expectedIndexStatus = indexStatus(otherIndex = SyncIndex.GREEN, otherIndexState = IndexState.BUILDING)
+      whenever(indexStatusService.getIndexStatus())
           .thenReturn(indexStatus(SyncIndex.GREEN, IndexState.NEW))
           .thenReturn(expectedIndexStatus)
 
       val result = indexService.buildIndex()
 
-      verify(indexStatusService, times(2)).getOrCreateCurrentIndexStatus()
+      verify(indexStatusService, times(2)).getIndexStatus()
       assertThat(result.getOrHandle { it }).isEqualTo(expectedIndexStatus)
     }
 
@@ -82,29 +85,29 @@ class IndexServiceTest {
 
     @Test
     fun `Index not building returns error`() {
-      val expectedIndexStatus = indexStatus(currentIndex = SyncIndex.GREEN, state = IndexState.COMPLETED)
-      whenever(indexStatusService.getOrCreateCurrentIndexStatus()).thenReturn(expectedIndexStatus)
+      val expectedIndexStatus = indexStatus(otherIndex = SyncIndex.BLUE, otherIndexState = IndexState.COMPLETED)
+      whenever(indexStatusService.getIndexStatus()).thenReturn(expectedIndexStatus)
 
       val result = indexService.markIndexingComplete()
 
-      verify(indexStatusService).getOrCreateCurrentIndexStatus()
+      verify(indexStatusService).getIndexStatus()
       assertThat(result.getOrHandle { it }).isEqualTo(MarkBuildCompleteError.BuildNotInProgress(expectedIndexStatus))
     }
 
     @Test
     fun `A request is made to mark the index state as complete`() {
-      val expectedIndexStatus = indexStatus(currentIndex = SyncIndex.GREEN, state = IndexState.BUILDING)
-      whenever(indexStatusService.getOrCreateCurrentIndexStatus()).thenReturn(expectedIndexStatus)
+      val expectedIndexStatus = indexStatus(otherIndex = SyncIndex.BLUE, otherIndexState = IndexState.BUILDING)
+      whenever(indexStatusService.getIndexStatus()).thenReturn(expectedIndexStatus)
 
       indexService.markIndexingComplete()
 
-      verify(indexStatusService).markBuildComplete()
+      verify(indexStatusService).markBuildCompleteAndSwitchIndex()
     }
 
     @Test
     fun `A request is made to remove queued index requests`() {
-      val expectedIndexStatus = indexStatus(currentIndex = SyncIndex.GREEN, state = IndexState.BUILDING)
-      whenever(indexStatusService.getOrCreateCurrentIndexStatus()).thenReturn(expectedIndexStatus)
+      val expectedIndexStatus = indexStatus(otherIndex = SyncIndex.BLUE, otherIndexState = IndexState.BUILDING)
+      whenever(indexStatusService.getIndexStatus()).thenReturn(expectedIndexStatus)
 
       indexService.markIndexingComplete()
 
@@ -113,14 +116,14 @@ class IndexServiceTest {
 
     @Test
     fun `Once current index marked as complete, the 'other' index is current`() {
-      val expectedIndexStatus = indexStatus(currentIndex = SyncIndex.GREEN, state = IndexState.COMPLETED)
-      whenever(indexStatusService.getOrCreateCurrentIndexStatus())
-          .thenReturn(indexStatus(currentIndex = SyncIndex.BLUE, state = IndexState.BUILDING))
+      val expectedIndexStatus = indexStatus(otherIndex = SyncIndex.BLUE, otherIndexState = IndexState.COMPLETED)
+      whenever(indexStatusService.getIndexStatus())
+          .thenReturn(indexStatus(otherIndex = SyncIndex.BLUE, otherIndexState = IndexState.BUILDING))
           .thenReturn(expectedIndexStatus)
 
       val result = indexService.markIndexingComplete()
 
-      verify(indexStatusService, times(2)).getOrCreateCurrentIndexStatus()
+      verify(indexStatusService, times(2)).getIndexStatus()
       assertThat(result.getOrHandle { it }).isEqualTo(expectedIndexStatus)
     }
   }
@@ -130,19 +133,19 @@ class IndexServiceTest {
 
     @Test
     fun `Index not building returns error`() {
-      val expectedIndexStatus = indexStatus(currentIndex = SyncIndex.GREEN, state = IndexState.COMPLETED)
-      whenever(indexStatusService.getOrCreateCurrentIndexStatus()).thenReturn(expectedIndexStatus)
+      val expectedIndexStatus = indexStatus(otherIndex = SyncIndex.BLUE, otherIndexState = IndexState.COMPLETED)
+      whenever(indexStatusService.getIndexStatus()).thenReturn(expectedIndexStatus)
 
       val result = indexService.cancelIndexing()
 
-      verify(indexStatusService).getOrCreateCurrentIndexStatus()
+      verify(indexStatusService).getIndexStatus()
       assertThat(result.getOrHandle { it }).isEqualTo(CancelBuildIndexError.BuildNotInProgress(expectedIndexStatus))
     }
 
     @Test
     fun `A request is made to mark the index state as cancelled`() {
-      val expectedIndexStatus = indexStatus(currentIndex = SyncIndex.GREEN, state = IndexState.BUILDING)
-      whenever(indexStatusService.getOrCreateCurrentIndexStatus()).thenReturn(expectedIndexStatus)
+      val expectedIndexStatus = indexStatus(otherIndex = SyncIndex.BLUE, otherIndexState = IndexState.BUILDING)
+      whenever(indexStatusService.getIndexStatus()).thenReturn(expectedIndexStatus)
 
       indexService.cancelIndexing()
 
@@ -151,14 +154,14 @@ class IndexServiceTest {
 
     @Test
     fun `Once current index marked as cancelled, the 'other' index is current`() {
-      val expectedIndexStatus = indexStatus(currentIndex = SyncIndex.GREEN, state = IndexState.CANCELLED)
-      whenever(indexStatusService.getOrCreateCurrentIndexStatus())
-          .thenReturn(indexStatus(currentIndex = SyncIndex.BLUE, state = IndexState.BUILDING))
+      val expectedIndexStatus = indexStatus(otherIndex = SyncIndex.BLUE, otherIndexState = IndexState.CANCELLED)
+      whenever(indexStatusService.getIndexStatus())
+          .thenReturn(indexStatus(otherIndex = SyncIndex.BLUE, otherIndexState = IndexState.BUILDING))
           .thenReturn(expectedIndexStatus)
 
       val result = indexService.cancelIndexing()
 
-      verify(indexStatusService, times(2)).getOrCreateCurrentIndexStatus()
+      verify(indexStatusService, times(2)).getIndexStatus()
       assertThat(result.getOrHandle { it }).isEqualTo(expectedIndexStatus)
     }
 

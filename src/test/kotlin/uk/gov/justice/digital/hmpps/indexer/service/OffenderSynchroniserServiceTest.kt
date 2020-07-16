@@ -10,7 +10,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
-import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.BLUE
+import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.GREEN
 import uk.gov.justice.digital.hmpps.indexer.repository.OffenderRepository
 
 internal class OffenderSynchroniserServiceTest {
@@ -22,7 +22,7 @@ internal class OffenderSynchroniserServiceTest {
   @BeforeEach
   internal fun setUp() {
     whenever(communityApi.getOffender(any())).thenReturn(anOffender())
-    whenever(indexStatusService.getOrCreateCurrentIndexStatus()).thenReturn(IndexStatus.newIndex())
+    whenever(indexStatusService.getIndexStatus()).thenReturn(IndexStatus.newIndex())
   }
 
   @Test
@@ -41,15 +41,14 @@ internal class OffenderSynchroniserServiceTest {
 
   @Test
   internal fun `will save offender to current index`() {
-
     val index = IndexStatus.newIndex().toBuildComplete()
-    assertThat(index.currentIndex).isEqualTo(BLUE)
+    assertThat(index.currentIndex).isEqualTo(GREEN)
 
-    whenever(indexStatusService.getOrCreateCurrentIndexStatus()).thenReturn(index)
+    whenever(indexStatusService.getIndexStatus()).thenReturn(index)
 
     service.synchroniseOffender("X12345")
 
-    verify(offenderRepository).save(isA(), check { assertThat(it).isEqualTo(BLUE) })
+    verify(offenderRepository).save(isA(), check { assertThat(it).isEqualTo(GREEN) })
   }
 }
 
