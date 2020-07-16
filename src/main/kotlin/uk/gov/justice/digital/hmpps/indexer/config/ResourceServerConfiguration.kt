@@ -18,7 +18,7 @@ class ResourceServerConfiguration : WebSecurityConfigurerAdapter() {
         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
         .and().csrf().disable()
         .authorizeRequests { auth ->
-          auth.antMatchers("/favicon.ico",
+          auth.antMatchers("/webjars/**", "/favicon.ico",
               "/health", "/health/ping", "/info",
               "/v2/api-docs",
               "/swagger-ui.html", "/swagger-resources", "/swagger-resources/configuration/ui",

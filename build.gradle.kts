@@ -23,6 +23,9 @@ dependencies {
 	implementation("io.arrow-kt:arrow-core:0.10.5")
 	implementation("org.apache.logging.log4j:log4j-api-kotlin:1.0.0")
 
+	implementation("io.springfox:springfox-swagger2:2.9.2")
+	implementation("io.springfox:springfox-swagger-ui:2.9.2")
+	implementation("io.swagger:swagger-core:1.6.1")
 
 	testImplementation("com.github.tomakehurst:wiremock-standalone:2.26.3")
 	testImplementation("org.testcontainers:localstack:1.14.3")
@@ -32,4 +35,5 @@ dependencies {
 	testImplementation("org.springframework.security:spring-security-test")
 	testImplementation("io.jsonwebtoken:jjwt:0.9.1")
 	testImplementation("net.javacrumbs.json-unit:json-unit-assertj:0.0.15")
+	testImplementation("io.swagger.parser.v3:swagger-parser-v2-converter:2.0.20")
 }
