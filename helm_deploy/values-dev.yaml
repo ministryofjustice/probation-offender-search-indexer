@@ -20,7 +20,7 @@ ingress:
 
 env:
   JAVA_OPTS: "-Xmx512m"
-  OAUTH_ENDPOINT_URL: "https://gateway.t3.nomis-api.hmpps.dsd.io/auth"
+  OAUTH_ENDPOINT_URL: "https://sign-in-dev.hmpps.service.justice.gov.uk/auth"
   COMMUNITY_ENDPOINT_URL: "https://community-api-secure.test.delius.probation.hmpps.dsd.io"
 
 whitelist:
