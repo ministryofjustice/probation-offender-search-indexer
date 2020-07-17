@@ -21,7 +21,6 @@ dependencies {
 
 	implementation("com.google.code.gson:gson:2.8.6")
 	implementation("io.arrow-kt:arrow-core:0.10.5")
-	implementation("org.apache.logging.log4j:log4j-api-kotlin:1.0.0")
 
 	implementation("io.springfox:springfox-swagger2:2.9.2")
 	implementation("io.springfox:springfox-swagger-ui:2.9.2")

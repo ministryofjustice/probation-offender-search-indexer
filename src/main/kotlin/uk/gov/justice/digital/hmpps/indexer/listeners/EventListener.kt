@@ -1,7 +1,8 @@
 package uk.gov.justice.digital.hmpps.indexer.listeners
 
 import com.google.gson.Gson
-import org.apache.logging.log4j.kotlin.Logging
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.jms.annotation.JmsListener
 import org.springframework.stereotype.Service
@@ -11,17 +12,19 @@ import org.springframework.stereotype.Service
 class EventListener(
   @Qualifier("gson") private val gson: Gson
 ) {
-  companion object : Logging
+  companion object {
+    val log: Logger = LoggerFactory.getLogger(this::class.java)
+  }
 
   @JmsListener(destination = "\${event.sqs.queue.name}", containerFactory = "jmsListenerContainerFactory")
   fun processOffenderEvent(requestJson: String?) {
       val ( _, messageId, messageAttributes) = gson.fromJson(requestJson, Message::class.java)
       val eventType = messageAttributes.eventType.Value
-      logger.debug {"Received message $messageId type $eventType"}
+      log.debug("Received message {} type {}", messageId, eventType)
 
 
       when (eventType) {
-        else -> logger.warn {"We received a message of event type $eventType which I really wasn't expecting"}
+        else -> log.warn("We received a message of event type {} which I really wasn't expecting", eventType)
       }
 
     }

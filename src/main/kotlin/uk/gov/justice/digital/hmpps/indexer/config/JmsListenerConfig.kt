@@ -3,7 +3,7 @@ package uk.gov.justice.digital.hmpps.indexer.config
 import com.amazon.sqs.javamessaging.ProviderConfiguration
 import com.amazon.sqs.javamessaging.SQSConnectionFactory
 import com.amazonaws.services.sqs.AmazonSQS
-import org.apache.logging.log4j.kotlin.Logging
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -15,7 +15,9 @@ import javax.jms.Session
 @Configuration
 @EnableJms
 class JmsListenerConfig {
-  companion object : Logging
+  companion object {
+    private val log = LoggerFactory.getLogger(this::class.java)
+  }
 
   @Bean
   fun jmsListenerContainerFactory(@Qualifier("eventAwsSqsClient") eventAwsSqsClient: AmazonSQS)  = defaultJmsListenerContainerFactory(eventAwsSqsClient)
@@ -29,7 +31,7 @@ class JmsListenerConfig {
     factory.setDestinationResolver(DynamicDestinationResolver())
     factory.setConcurrency("1-1")
     factory.setSessionAcknowledgeMode(Session.CLIENT_ACKNOWLEDGE)
-    factory.setErrorHandler { t: Throwable -> logger.error(t) {"Error caught in jms listener"} }
+    factory.setErrorHandler { t: Throwable? -> log.error("Error caught in jms listener", t) }
     return factory
   }
 }
