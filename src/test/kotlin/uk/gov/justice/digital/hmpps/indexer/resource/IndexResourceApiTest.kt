@@ -32,7 +32,7 @@ class IndexResourceApiTest : ResourceIntegrationTest() {
     @Test
     fun `Request build index is successful and calls service`() {
       val expectedIndexStatus = indexStatus(otherIndex = SyncIndex.BLUE, otherIndexState = IndexState.BUILDING)
-      whenever(indexService.buildIndex()).thenReturn(expectedIndexStatus.right())
+      whenever(indexService.prepareIndexForRebuild()).thenReturn(expectedIndexStatus.right())
 
       webTestClient.put()
           .uri("/probation-index/build-index")
@@ -44,7 +44,7 @@ class IndexResourceApiTest : ResourceIntegrationTest() {
           .jsonPath("$.otherIndex").isEqualTo("BLUE")
           .jsonPath("$.otherIndexState").isEqualTo("BUILDING")
 
-      verify(indexService).buildIndex()
+      verify(indexService).prepareIndexForRebuild()
     }
 
     @Test
@@ -56,13 +56,13 @@ class IndexResourceApiTest : ResourceIntegrationTest() {
           .exchange()
           .expectStatus().isForbidden
 
-      verify(indexService, never()).buildIndex()
+      verify(indexService, never()).prepareIndexForRebuild()
     }
 
     @Test
     fun `Request build index already building returns conflict`() {
       val expectedIndexStatus = indexStatus(otherIndex = SyncIndex.BLUE, otherIndexState = IndexState.BUILDING)
-      whenever(indexService.buildIndex()).thenReturn(BuildIndexError.BuildAlreadyInProgress(expectedIndexStatus).left())
+      whenever(indexService.prepareIndexForRebuild()).thenReturn(BuildIndexError.BuildAlreadyInProgress(expectedIndexStatus).left())
 
       webTestClient.put()
           .uri("/probation-index/build-index")
@@ -76,7 +76,7 @@ class IndexResourceApiTest : ResourceIntegrationTest() {
             assertThat(message).contains(expectedIndexStatus.otherIndexState.name)
           }
 
-      verify(indexService).buildIndex()
+      verify(indexService).prepareIndexForRebuild()
     }
 
     @Test
@@ -157,7 +157,7 @@ class IndexResourceApiTest : ResourceIntegrationTest() {
     @Test
     fun `Request to cancel indexing is successful and calls service`() {
       val expectedIndexStatus = indexStatus(otherIndex = SyncIndex.BLUE, otherIndexState = IndexState.CANCELLED)
-      whenever(indexService.buildIndex()).thenReturn(expectedIndexStatus.right())
+      whenever(indexService.prepareIndexForRebuild()).thenReturn(expectedIndexStatus.right())
 
       webTestClient.put()
           .uri("/probation-index/cancel-index")

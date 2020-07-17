@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.indexer.model.IndexState
 import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
+import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
 
 @Service
 class IndexService(
@@ -20,7 +21,7 @@ class IndexService(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  fun buildIndex(): Either<BuildIndexError, IndexStatus> {
+  fun prepareIndexForRebuild(): Either<BuildIndexError, IndexStatus> {
     val indexStatus = indexStatusService.getIndexStatus()
     if (indexStatus.otherIndexState == IndexState.BUILDING) {
       return BuildIndexError.BuildAlreadyInProgress(indexStatus).left()
@@ -28,11 +29,10 @@ class IndexService(
     // TODO DT-961 log index status e.g. "Current index is {} [{}], rebuilding index {} [{}]"
     indexStatusService.markBuildInProgress()
     offenderSynchroniserService.checkExistsAndReset(indexStatus.otherIndex)
-    indexQueueService.sendIndexRequestMessage()
+    indexQueueService.sendPopulateIndexMessage(indexStatus.otherIndex)
 
     return indexStatusService.getIndexStatus().right()
   }
-
   fun markIndexingComplete(): Either<MarkBuildCompleteError, IndexStatus> {
     val indexStatus = indexStatusService.getIndexStatus()
     if (indexStatus.otherIndexState != IndexState.BUILDING) {
@@ -59,6 +59,7 @@ class IndexService(
   }
 
   fun indexOffender(crn: String) = offenderSynchroniserService.synchroniseOffender(crn)
+  fun populateIndex(index: SyncIndex) = log.error("Not implemented yet")
 }
 
 
