@@ -25,7 +25,7 @@ class IndexResource(private val indexService: IndexService) {
   @PutMapping("/build-index")
   @PreAuthorize("hasRole('PROBATION_INDEX')")
   fun buildIndex(): IndexStatus =
-      indexService.buildIndex()
+      indexService.prepareIndexForRebuild()
           .getOrHandle { error ->
             when (error) {
               is BuildIndexError.BuildAlreadyInProgress -> throw ResponseStatusException(HttpStatus.CONFLICT, error.message)

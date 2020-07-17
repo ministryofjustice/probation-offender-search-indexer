@@ -29,7 +29,7 @@ class IndexServiceTest {
       val expectedIndexStatus = indexStatus(otherIndex = SyncIndex.BLUE, otherIndexState = IndexState.BUILDING)
       whenever(indexStatusService.getIndexStatus()).thenReturn(expectedIndexStatus)
 
-      val result = indexService.buildIndex()
+      val result = indexService.prepareIndexForRebuild()
 
       verify(indexStatusService).getIndexStatus()
       assertThat(result.getOrHandle { it }).isEqualTo(BuildIndexError.BuildAlreadyInProgress(expectedIndexStatus))
@@ -40,7 +40,7 @@ class IndexServiceTest {
       whenever(indexStatusService.getIndexStatus())
           .thenReturn(indexStatus(otherIndex = SyncIndex.BLUE, otherIndexState = IndexState.NEW))
 
-      indexService.buildIndex()
+      indexService.prepareIndexForRebuild()
 
       verify(indexStatusService).markBuildInProgress()
     }
@@ -50,7 +50,7 @@ class IndexServiceTest {
       whenever(indexStatusService.getIndexStatus())
           .thenReturn(indexStatus(otherIndex = SyncIndex.BLUE, otherIndexState = IndexState.NEW))
 
-      indexService.buildIndex()
+      indexService.prepareIndexForRebuild()
 
       verify(offenderSynchroniserService).checkExistsAndReset(SyncIndex.BLUE)
     }
@@ -60,9 +60,9 @@ class IndexServiceTest {
       whenever(indexStatusService.getIndexStatus())
           .thenReturn(indexStatus(otherIndex = SyncIndex.BLUE, otherIndexState = IndexState.NEW))
 
-      indexService.buildIndex()
+      indexService.prepareIndexForRebuild()
 
-      verify(indexQueueService).sendIndexRequestMessage()
+      verify(indexQueueService).sendPopulateIndexMessage(any())
     }
 
     @Test
@@ -72,7 +72,7 @@ class IndexServiceTest {
           .thenReturn(indexStatus(SyncIndex.GREEN, IndexState.NEW))
           .thenReturn(expectedIndexStatus)
 
-      val result = indexService.buildIndex()
+      val result = indexService.prepareIndexForRebuild()
 
       verify(indexStatusService, times(2)).getIndexStatus()
       assertThat(result.getOrHandle { it }).isEqualTo(expectedIndexStatus)
