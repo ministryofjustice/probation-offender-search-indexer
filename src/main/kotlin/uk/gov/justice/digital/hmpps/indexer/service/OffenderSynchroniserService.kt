@@ -19,4 +19,10 @@ class OffenderSynchroniserService(val communityService: CommunityService, val of
     offenderRepository.createIndex(index)
   }
 
+  fun splitAllOffendersIntoChunks(): List<OffenderPage> {
+    return listOf(OffenderPage(1, 1000))
+  }
+
 }
+
+data class OffenderPage(val page: Int, val pageSize: Int)

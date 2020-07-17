@@ -5,9 +5,9 @@ import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import uk.gov.justice.digital.hmpps.indexer.integration.readResourceAsText
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.GREEN
 import uk.gov.justice.digital.hmpps.indexer.service.IndexService
+import uk.gov.justice.digital.hmpps.indexer.service.OffenderPage
 
 internal class IndexListenerTest {
   val indexService = mock<IndexService>()
@@ -25,6 +25,24 @@ internal class IndexListenerTest {
       """.trimIndent(), mock())
 
       verify(indexService).populateIndex(GREEN)
+    }
+  }
+
+  @Nested
+  inner class PopulateOffenderPage {
+    @Test
+    internal fun `will call service with page details`() {
+      listener.processIndexRequest("""
+      {
+        "type": "POPULATE_OFFENDER_PAGE",
+        "offenderPage": {
+          "page": 1,
+          "pageSize": 1000
+        }
+      }
+      """.trimIndent(), mock())
+
+      verify(indexService).populateIndexWithOffenderPage(OffenderPage(1, 1000))
     }
   }
 }

@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.indexer.listeners.IndexMessageRequest
+import uk.gov.justice.digital.hmpps.indexer.listeners.IndexRequestType.POPULATE_OFFENDER_PAGE
 import uk.gov.justice.digital.hmpps.indexer.listeners.IndexRequestType.POPULATE_INDEX
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
 
@@ -25,10 +26,14 @@ class IndexQueueService(@Qualifier("indexAwsSqsClient") private val client: Amaz
   val queueUrl = client.getQueueUrl(indexQueueName).queueUrl
 
   fun sendPopulateIndexMessage(index: SyncIndex) {
-    val result = client.sendMessage(SendMessageRequest(queueUrl, gson.toJson(IndexMessageRequest(POPULATE_INDEX, index))))
-    log.info("Sent rebuild index message request {}", result.messageId)
+    val result = client.sendMessage(SendMessageRequest(queueUrl, gson.toJson(IndexMessageRequest(type = POPULATE_INDEX, index = index))))
+    log.info("Sent populate index message request {}", result.messageId)
   }
 
   fun clearAllMessages() = null
-}
 
+  fun sendPopulateOffenderPageMessage(offenderPage: OffenderPage) {
+    val result = client.sendMessage(SendMessageRequest(queueUrl, gson.toJson(IndexMessageRequest(type = POPULATE_OFFENDER_PAGE, offenderPage = offenderPage))))
+    log.info("Sent populate index message request {}", result.messageId)
+  }
+}

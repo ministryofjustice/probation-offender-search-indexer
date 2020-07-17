@@ -53,4 +53,33 @@ internal class IndexQueueServiceTest {
       })
     }
   }
+  @Nested
+  inner class SendPopulateOffenderPageMessage {
+    @BeforeEach
+    internal fun setUp() {
+      whenever(client.sendMessage(any())).thenReturn(SendMessageResult().withMessageId("abc"))
+      indexQueueService.sendPopulateOffenderPageMessage(OffenderPage(1, 1000))
+    }
+
+    @Test
+    fun `will send message with index name`() {
+      verify(client).sendMessage(check {
+        JsonAssert.assertThatJson(it.messageBody).isEqualTo("""{
+          "type": "POPULATE_OFFENDER_PAGE",
+          "offenderPage": {
+            "page": 1,
+            "pageSize": 1000
+          }
+        }
+        """.trimIndent())
+      })
+    }
+
+    @Test
+    fun `will send message to index queue`() {
+      verify(client).sendMessage(check {
+        assertThat(it.queueUrl).isEqualTo("arn:eu-west-1:index-queue")
+      })
+    }
+  }
 }
