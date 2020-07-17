@@ -12,6 +12,11 @@ class OffenderSynchroniserService(val communityService: CommunityService, val of
     return offender.body
   }
 
-  fun checkExistsAndReset(syncIndex: SyncIndex) {}
+  fun checkExistsAndReset(index: SyncIndex) {
+    if (offenderRepository.doesIndexExist(index)) {
+      offenderRepository.deleteIndex(index)
+    }
+    offenderRepository.createIndex(index)
+  }
 
 }
