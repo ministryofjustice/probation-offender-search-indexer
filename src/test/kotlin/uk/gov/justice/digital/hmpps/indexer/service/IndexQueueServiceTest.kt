@@ -82,4 +82,32 @@ internal class IndexQueueServiceTest {
       })
     }
   }
+
+  @Nested
+  inner class SendPopulateOffenderMessage {
+    @BeforeEach
+    internal fun setUp() {
+      whenever(client.sendMessage(any())).thenReturn(SendMessageResult().withMessageId("abc"))
+      indexQueueService.sendPopulateOffenderMessage("X12345")
+    }
+
+    @Test
+    fun `will send message with crn`() {
+      verify(client).sendMessage(check {
+        assertThatJson(it.messageBody).isEqualTo("""
+        {
+          "type":"POPULATE_OFFENDER",
+          "crn":"X12345"
+        }
+        """.trimIndent())
+      })
+    }
+
+    @Test
+    fun `will send message to index queue`() {
+      verify(client).sendMessage(check {
+        assertThat(it.queueUrl).isEqualTo("arn:eu-west-1:index-queue")
+      })
+    }
+  }
 }

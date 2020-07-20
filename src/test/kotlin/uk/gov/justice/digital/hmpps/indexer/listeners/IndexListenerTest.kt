@@ -22,7 +22,7 @@ internal class IndexListenerTest {
         "type": "POPULATE_INDEX",
         "index": "GREEN"
       }
-      """.trimIndent(), mock())
+      """.trimIndent())
 
       verify(indexService).populateIndex(GREEN)
     }
@@ -40,7 +40,7 @@ internal class IndexListenerTest {
           "pageSize": 1000
         }
       }
-      """.trimIndent(), mock())
+      """.trimIndent())
 
       verify(indexService).populateIndexWithOffenderPage(OffenderPage(1, 1000))
     }
@@ -54,7 +54,7 @@ internal class IndexListenerTest {
         "type": "POPULATE_OFFENDER",
         "crn": "X12345"
       }
-      """.trimIndent(), mock())
+      """.trimIndent())
 
       verify(indexService).indexOffender("X12345")
     }

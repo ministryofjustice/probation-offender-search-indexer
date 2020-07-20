@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.indexer.listeners.IndexMessageRequest
 import uk.gov.justice.digital.hmpps.indexer.listeners.IndexRequestType.POPULATE_OFFENDER_PAGE
 import uk.gov.justice.digital.hmpps.indexer.listeners.IndexRequestType.POPULATE_INDEX
+import uk.gov.justice.digital.hmpps.indexer.listeners.IndexRequestType.POPULATE_OFFENDER
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
 
 @Service
@@ -38,7 +39,7 @@ class IndexQueueService(@Qualifier("indexAwsSqsClient") private val client: Amaz
   }
 
   fun sendPopulateOffenderMessage(crn: String) {
-    val result = client.sendMessage(SendMessageRequest(queueUrl, gson.toJson(IndexMessageRequest(type = POPULATE_OFFENDER_PAGE, crn = crn))))
+    val result = client.sendMessage(SendMessageRequest(queueUrl, gson.toJson(IndexMessageRequest(type = POPULATE_OFFENDER, crn = crn))))
     log.info("Sent populate offender message request {}", result.messageId)
   }
 }
