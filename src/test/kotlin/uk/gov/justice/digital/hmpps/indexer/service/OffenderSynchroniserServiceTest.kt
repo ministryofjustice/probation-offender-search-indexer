@@ -19,7 +19,7 @@ internal class OffenderSynchroniserServiceTest {
   private val communityApi = mock<CommunityService>()
   private val offenderRepository = mock<OffenderRepository>()
   private val indexStatusService = mock<IndexStatusService>()
-  private val service = OffenderSynchroniserService(communityApi, offenderRepository, indexStatusService)
+  private val service = OffenderSynchroniserService(communityApi, offenderRepository, indexStatusService, 10)
 
   @Nested
   inner class SynchroniseOffender {
@@ -97,6 +97,104 @@ internal class OffenderSynchroniserServiceTest {
         verify(offenderRepository).createIndex(GREEN)
       }
 
+    }
+  }
+
+  @Nested
+  inner class SplitAllOffendersIntoChunks {
+    @Test
+    internal fun `will split total list by our page size`() {
+      whenever(communityApi.getCountAllOffenders()).thenReturn(OffendersPage(30, 1, listOf(OffenderIdentifier("X12345"))))
+
+      val chunks = service.splitAllOffendersIntoChunks()
+      assertThat(chunks).containsExactly(
+          OffenderPage(0, 10),
+          OffenderPage(1, 10),
+          OffenderPage(2, 10)
+      )
+    }
+    @Test
+    internal fun `will round up last page to page size`() {
+      whenever(communityApi.getCountAllOffenders()).thenReturn(OffendersPage(31, 1, listOf(OffenderIdentifier("X12345"))))
+
+      var chunks = service.splitAllOffendersIntoChunks()
+      assertThat(chunks).containsExactly(
+          OffenderPage(0, 10),
+          OffenderPage(1, 10),
+          OffenderPage(2, 10),
+          OffenderPage(3, 10)
+      )
+
+      whenever(communityApi.getCountAllOffenders()).thenReturn(OffendersPage(29, 1, listOf(OffenderIdentifier("X12345"))))
+
+      chunks = service.splitAllOffendersIntoChunks()
+      assertThat(chunks).containsExactly(
+          OffenderPage(0, 10),
+          OffenderPage(1, 10),
+          OffenderPage(2, 10)
+      )
+    }
+    @Test
+    internal fun `will create a large number of pages for a large number of offenders`() {
+      val service = OffenderSynchroniserService(communityApi, offenderRepository, indexStatusService, 1000)
+
+      whenever(communityApi.getCountAllOffenders()).thenReturn(OffendersPage(2_000_001, 1, listOf(OffenderIdentifier("X12345"))))
+
+      val chunks = service.splitAllOffendersIntoChunks()
+      assertThat(chunks).hasSize(2001)
+    }
+    @Test
+    internal fun `will create a single pages for a tiny number of offenders`() {
+      val service = OffenderSynchroniserService(communityApi, offenderRepository, indexStatusService, 1000)
+
+      whenever(communityApi.getCountAllOffenders()).thenReturn(OffendersPage(1, 1, listOf(OffenderIdentifier("X12345"))))
+
+      val chunks = service.splitAllOffendersIntoChunks()
+      assertThat(chunks).hasSize(1)
+    }
+    @Test
+    internal fun `will create no pages for no offenders`() {
+      val service = OffenderSynchroniserService(communityApi, offenderRepository, indexStatusService, 1000)
+
+      whenever(communityApi.getCountAllOffenders()).thenReturn(OffendersPage(0, 0, listOf()))
+
+      val chunks = service.splitAllOffendersIntoChunks()
+      assertThat(chunks).hasSize(0)
+    }
+  }
+
+  @Nested
+  inner class GetAllOffenderIdentifiersInPage {
+    @BeforeEach
+    internal fun setUp() {
+      whenever(communityApi.getPageOfOffenders(any(), any())).thenReturn(OffendersPage(
+          30,
+          1,
+          listOf(
+              OffenderIdentifier("X12345"),
+              OffenderIdentifier("X12346"),
+              OffenderIdentifier("X12347"),
+              OffenderIdentifier("X12348")
+          )))
+
+    }
+
+    @Test
+    internal fun `will pass through page numbers`() {
+      service.getAllOffenderIdentifiersInPage(OffenderPage(3, 1000))
+      verify(communityApi).getPageOfOffenders(3, 1000)
+    }
+
+    @Test
+    internal fun `will map each identifier`() {
+      val offenders = service.getAllOffenderIdentifiersInPage(OffenderPage(3, 1000))
+
+      assertThat(offenders).containsExactly(
+          OffenderIdentifier("X12345"),
+          OffenderIdentifier("X12346"),
+          OffenderIdentifier("X12347"),
+          OffenderIdentifier("X12348")
+      )
     }
   }
 }

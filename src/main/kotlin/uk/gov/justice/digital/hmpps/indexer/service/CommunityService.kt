@@ -15,6 +15,20 @@ class CommunityService(@Qualifier("communityApiWebClient") private val webClient
         .bodyToMono(String::class.java)
         .block()!!)
   }
+  fun getCountAllOffenders() : OffendersPage {
+    return webClient.get()
+        .uri("/secure/offenders/primaryIdentifiers?includeDeleted=true&size=1")
+        .retrieve()
+        .bodyToMono(OffendersPage::class.java)
+        .block()!!
+  }
+  fun getPageOfOffenders(page: Long, pageSize: Long) : OffendersPage {
+    return webClient.get()
+        .uri("/secure/offenders/primaryIdentifiers?includeDeleted=true&page={page}&size={pageSize}", page, pageSize)
+        .retrieve()
+        .bodyToMono(OffendersPage::class.java)
+        .block()!!
+  }
 }
 
 data class Offender(val body: String) {
@@ -31,4 +45,5 @@ data class Offender(val body: String) {
 
 data class OffenderDetail(val crn: String, val offenderId: Long, val otherIds: IDs? = null)
 data class IDs(val pncNumber: String? = null, val croNumber: String? = null)
+data class OffendersPage(val totalElements: Long, val numberOfElements: Long, val content: List<OffenderIdentifier>)
 data class OffenderIdentifier(val crn: String)
