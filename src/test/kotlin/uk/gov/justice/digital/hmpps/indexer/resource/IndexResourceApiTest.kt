@@ -95,7 +95,7 @@ class IndexResourceApiTest : ResourceIntegrationTest() {
     @Test
     fun `Request to mark index complete is successful and calls service`() {
       val expectedIndexStatus = indexStatus(otherIndex = SyncIndex.BLUE, otherIndexState = IndexState.COMPLETED)
-      whenever(indexService.markIndexingComplete()).thenReturn(expectedIndexStatus.right())
+      doReturn(expectedIndexStatus.right()).whenever(indexService).markIndexingComplete()
 
       webTestClient.put()
           .uri("/probation-index/mark-complete")
@@ -133,7 +133,7 @@ class IndexResourceApiTest : ResourceIntegrationTest() {
     @Test
     fun `Request to mark index complete when index not building returns error`() {
       val expectedIndexStatus = indexStatus(otherIndex = SyncIndex.BLUE, otherIndexState = IndexState.COMPLETED)
-      whenever(indexService.markIndexingComplete()).thenReturn(MarkBuildCompleteError.BuildNotInProgress(expectedIndexStatus).left())
+      doReturn(MarkBuildCompleteError.BuildNotInProgress(expectedIndexStatus).left()).whenever(indexService).markIndexingComplete()
 
       webTestClient.put()
           .uri("/probation-index/mark-complete")
