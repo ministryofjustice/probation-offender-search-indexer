@@ -31,3 +31,4 @@ data class Offender(val body: String) {
 
 data class OffenderDetail(val crn: String, val offenderId: Long, val otherIds: IDs? = null)
 data class IDs(val pncNumber: String? = null, val croNumber: String? = null)
+data class OffenderIdentifier(val crn: String)

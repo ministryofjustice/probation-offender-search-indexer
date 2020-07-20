@@ -5,7 +5,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.jms.annotation.JmsListener
 import org.springframework.stereotype.Service
-import uk.gov.justice.digital.hmpps.indexer.listeners.IndexRequestType.OFFENDER
+import uk.gov.justice.digital.hmpps.indexer.listeners.IndexRequestType.POPULATE_OFFENDER
 import uk.gov.justice.digital.hmpps.indexer.listeners.IndexRequestType.POPULATE_OFFENDER_PAGE
 import uk.gov.justice.digital.hmpps.indexer.listeners.IndexRequestType.POPULATE_INDEX
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
@@ -30,7 +30,7 @@ class IndexListener(
     when(indexRequest.type) {
       POPULATE_INDEX -> indexService.populateIndex(indexRequest.index!!)
       POPULATE_OFFENDER_PAGE -> indexService.populateIndexWithOffenderPage(indexRequest.offenderPage!!)
-      OFFENDER -> TODO()
+      POPULATE_OFFENDER -> indexService.indexOffender(indexRequest.crn!!)
     }
   }
 }
@@ -38,9 +38,10 @@ class IndexListener(
 data class IndexMessageRequest(
     val type: IndexRequestType,
     val index: SyncIndex? = null,
-    val offenderPage: OffenderPage? = null
+    val offenderPage: OffenderPage? = null,
+    val crn: String? = null
 )
 
 enum class IndexRequestType {
-  POPULATE_INDEX, POPULATE_OFFENDER_PAGE, OFFENDER
+  POPULATE_INDEX, POPULATE_OFFENDER_PAGE, POPULATE_OFFENDER
 }

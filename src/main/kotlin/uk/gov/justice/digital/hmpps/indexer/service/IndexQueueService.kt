@@ -34,6 +34,11 @@ class IndexQueueService(@Qualifier("indexAwsSqsClient") private val client: Amaz
 
   fun sendPopulateOffenderPageMessage(offenderPage: OffenderPage) {
     val result = client.sendMessage(SendMessageRequest(queueUrl, gson.toJson(IndexMessageRequest(type = POPULATE_OFFENDER_PAGE, offenderPage = offenderPage))))
-    log.info("Sent populate index message request {}", result.messageId)
+    log.info("Sent populate offender page message request {}", result.messageId)
+  }
+
+  fun sendPopulateOffenderMessage(crn: String) {
+    val result = client.sendMessage(SendMessageRequest(queueUrl, gson.toJson(IndexMessageRequest(type = POPULATE_OFFENDER_PAGE, crn = crn))))
+    log.info("Sent populate offender message request {}", result.messageId)
   }
 }

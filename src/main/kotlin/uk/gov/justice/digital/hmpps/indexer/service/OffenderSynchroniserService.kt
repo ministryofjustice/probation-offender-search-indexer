@@ -20,7 +20,11 @@ class OffenderSynchroniserService(val communityService: CommunityService, val of
   }
 
   fun splitAllOffendersIntoChunks(): List<OffenderPage> {
-    return listOf(OffenderPage(1, 1000))
+    return listOf(OffenderPage(1, 1000)) // TODO
+  }
+
+  fun getAllOffenderIdentifiersInPage(offenderPage: OffenderPage) : List<OffenderIdentifier> {
+    return listOf(OffenderIdentifier("X12345")) // TODO
   }
 
 }
