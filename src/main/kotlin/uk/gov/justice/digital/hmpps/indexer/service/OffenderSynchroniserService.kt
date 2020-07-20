@@ -1,12 +1,13 @@
 package uk.gov.justice.digital.hmpps.indexer.service
 
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
-import uk.gov.justice.digital.hmpps.indexer.repository.OffenderRepository
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
+import uk.gov.justice.digital.hmpps.indexer.repository.OffenderRepository
 
 @Service
-class OffenderSynchroniserService(val communityService: CommunityService, val offenderRepository: OffenderRepository, val indexStatusService: IndexStatusService) {
-  fun synchroniseOffender(crn: String) : String {
+class OffenderSynchroniserService(val communityService: CommunityService, val offenderRepository: OffenderRepository, val indexStatusService: IndexStatusService, @Value("\${index.page.size:1000}") private val pageSize: Long) {
+  fun synchroniseOffender(crn: String): String {
     val offender = communityService.getOffender(crn)
     offenderRepository.save(offender, indexStatusService.getIndexStatus().currentIndex)
     return offender.body
@@ -20,13 +21,16 @@ class OffenderSynchroniserService(val communityService: CommunityService, val of
   }
 
   fun splitAllOffendersIntoChunks(): List<OffenderPage> {
-    return listOf(OffenderPage(1, 1000)) // TODO
+    val totalNumberOfOffenders = communityService.getCountAllOffenders().totalElements
+    return (1..totalNumberOfOffenders step pageSize).asSequence().toList()
+        .map { OffenderPage(it / pageSize, pageSize) }
   }
 
-  fun getAllOffenderIdentifiersInPage(offenderPage: OffenderPage) : List<OffenderIdentifier> {
-    return listOf(OffenderIdentifier("X12345")) // TODO
+  fun getAllOffenderIdentifiersInPage(offenderPage: OffenderPage): List<OffenderIdentifier> {
+    return communityService.getPageOfOffenders(offenderPage.page, offenderPage.pageSize)
+        .content.map { OffenderIdentifier(it.crn) }
   }
 
 }
 
-data class OffenderPage(val page: Int, val pageSize: Int)
+data class OffenderPage(val page: Long, val pageSize: Long)
