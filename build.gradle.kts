@@ -30,7 +30,7 @@ dependencies {
 	testImplementation("org.testcontainers:localstack:1.14.3")
 	testImplementation("org.testcontainers:elasticsearch:1.14.3")
 	testImplementation("org.awaitility:awaitility-kotlin:4.0.3")
-	testImplementation("org.awaitility:awaitility-kotlin:4.0.3")
+	testImplementation("io.kotest:kotest-assertions-arrow-jvm:4.1.1")
 	testImplementation("org.springframework.security:spring-security-test")
 	testImplementation("io.jsonwebtoken:jjwt:0.9.1")
 	testImplementation("net.javacrumbs.json-unit:json-unit-assertj:0.0.15")
