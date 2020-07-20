@@ -13,14 +13,14 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import org.springframework.http.MediaType
 import uk.gov.justice.digital.hmpps.indexer.helpers.indexStatus
-import uk.gov.justice.digital.hmpps.indexer.integration.ResourceIntegrationTest
+import uk.gov.justice.digital.hmpps.indexer.integration.IntegrationTest
 import uk.gov.justice.digital.hmpps.indexer.model.IndexState
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
 import uk.gov.justice.digital.hmpps.indexer.service.BuildIndexError
 import uk.gov.justice.digital.hmpps.indexer.service.CancelBuildIndexError
 import uk.gov.justice.digital.hmpps.indexer.service.MarkBuildCompleteError
 
-class IndexResourceApiTest : ResourceIntegrationTest() {
+class IndexResourceApiTest : IntegrationTest() {
 
   @BeforeEach
   fun `reset mocks`() {
@@ -32,7 +32,8 @@ class IndexResourceApiTest : ResourceIntegrationTest() {
     @Test
     fun `Request build index is successful and calls service`() {
       val expectedIndexStatus = indexStatus(otherIndex = SyncIndex.BLUE, otherIndexState = IndexState.BUILDING)
-      whenever(indexService.prepareIndexForRebuild()).thenReturn(expectedIndexStatus.right())
+      doReturn(expectedIndexStatus.right()).whenever(indexService).prepareIndexForRebuild()
+
 
       webTestClient.put()
           .uri("/probation-index/build-index")
@@ -62,7 +63,7 @@ class IndexResourceApiTest : ResourceIntegrationTest() {
     @Test
     fun `Request build index already building returns conflict`() {
       val expectedIndexStatus = indexStatus(otherIndex = SyncIndex.BLUE, otherIndexState = IndexState.BUILDING)
-      whenever(indexService.prepareIndexForRebuild()).thenReturn(BuildIndexError.BuildAlreadyInProgress(expectedIndexStatus).left())
+      doReturn(BuildIndexError.BuildAlreadyInProgress(expectedIndexStatus).left()).whenever(indexService).prepareIndexForRebuild()
 
       webTestClient.put()
           .uri("/probation-index/build-index")
@@ -157,7 +158,7 @@ class IndexResourceApiTest : ResourceIntegrationTest() {
     @Test
     fun `Request to cancel indexing is successful and calls service`() {
       val expectedIndexStatus = indexStatus(otherIndex = SyncIndex.BLUE, otherIndexState = IndexState.CANCELLED)
-      whenever(indexService.prepareIndexForRebuild()).thenReturn(expectedIndexStatus.right())
+      doReturn(expectedIndexStatus.right()).whenever(indexService).cancelIndexing()
 
       webTestClient.put()
           .uri("/probation-index/cancel-index")
@@ -195,7 +196,7 @@ class IndexResourceApiTest : ResourceIntegrationTest() {
     @Test
     fun `Request to mark index cancelled when index not building returns error`() {
       val expectedIndexStatus = indexStatus(otherIndex = SyncIndex.BLUE, otherIndexState = IndexState.CANCELLED)
-      whenever(indexService.cancelIndexing()).thenReturn(CancelBuildIndexError.BuildNotInProgress(expectedIndexStatus).left())
+      doReturn(CancelBuildIndexError.BuildNotInProgress(expectedIndexStatus).left()).whenever(indexService).cancelIndexing()
 
       webTestClient.put()
           .uri("/probation-index/cancel-index")

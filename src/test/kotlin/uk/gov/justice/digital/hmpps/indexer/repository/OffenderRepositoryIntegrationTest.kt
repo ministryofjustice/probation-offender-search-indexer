@@ -1,6 +1,6 @@
 package uk.gov.justice.digital.hmpps.indexer.repository
 
-import net.javacrumbs.jsonunit.assertj.JsonAssert.assertThatJson
+import net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest
@@ -188,7 +188,7 @@ internal class OffenderRepositoryIntegrationTest : IntegrationTest() {
 
     @Test
     internal fun `will save offender in the correct index`() {
-      offenderRepository.save(Offender(OffenderDetail(crn = "X12345", offenderId = 99).asJson()), BLUE)
+      offenderRepository.save(Offender(OffenderDetail(otherIds = IDs(crn = "X12345"), offenderId = 99).asJson()), BLUE)
 
       assertThat(highLevelClient.get(GetRequest(BLUE.indexName).id("X12345"), RequestOptions.DEFAULT).isExists).isTrue()
       assertThat(highLevelClient.get(GetRequest(GREEN.indexName).id("X12345"), RequestOptions.DEFAULT).isExists).isFalse()
@@ -196,18 +196,18 @@ internal class OffenderRepositoryIntegrationTest : IntegrationTest() {
 
     @Test
     internal fun `will save json`() {
-      offenderRepository.save(Offender(OffenderDetail(crn = "X12345", offenderId = 99).asJson()), BLUE)
+      offenderRepository.save(Offender(OffenderDetail(otherIds = IDs(crn = "X12345"), offenderId = 99).asJson()), BLUE)
 
       val json = highLevelClient.get(GetRequest(BLUE.indexName).id("X12345"), RequestOptions.DEFAULT).sourceAsString
 
-      assertThatJson(json).isEqualTo("{\"offenderId\":99,\"crn\":\"X12345\"}")
+      assertThatJson(json).isEqualTo("""{"offenderId":99,"otherIds":{"crn":"X12345"}}""")
       val offenderDetail = gson.fromJson(json, OffenderDetail::class.java)
-      assertThat(offenderDetail.crn).isEqualTo("X12345")
+      assertThat(offenderDetail.otherIds.crn).isEqualTo("X12345")
     }
 
     @Test
     internal fun `will save two canonical forms of pncNumber in pncNumberLongYear and pncNumberShortYear`() {
-      offenderRepository.save(Offender(OffenderDetail(crn = "X12345", offenderId = 99, otherIds = IDs(pncNumber = "2016/01234Z")).asJson()), BLUE)
+      offenderRepository.save(Offender(OffenderDetail(otherIds = IDs(crn = "X12345", pncNumber = "2016/01234Z"), offenderId = 99).asJson()), BLUE)
 
       val json = highLevelClient.get(GetRequest(BLUE.indexName).id("X12345"), RequestOptions.DEFAULT).sourceAsString
 
@@ -218,7 +218,7 @@ internal class OffenderRepositoryIntegrationTest : IntegrationTest() {
 
     @Test
     internal fun `will save lowercase version of croNumber`() {
-      offenderRepository.save(Offender(OffenderDetail(crn = "X12345", offenderId = 99, otherIds = IDs(croNumber = "16/01234Z")).asJson()), BLUE)
+      offenderRepository.save(Offender(OffenderDetail(offenderId = 99, otherIds = IDs(crn = "X12345", croNumber = "16/01234Z")).asJson()), BLUE)
 
       val json = highLevelClient.get(GetRequest(BLUE.indexName).id("X12345"), RequestOptions.DEFAULT).sourceAsString
 
@@ -228,11 +228,12 @@ internal class OffenderRepositoryIntegrationTest : IntegrationTest() {
 
     @Test
     internal fun `will happily ignore missing pnc and cro numbers`() {
-      offenderRepository.save(Offender(OffenderDetail(crn = "X12345", offenderId = 99, otherIds = IDs(croNumber = null, pncNumber = null)).asJson()), BLUE)
+      offenderRepository.save(Offender(OffenderDetail(offenderId = 99, otherIds = IDs(crn = "X12345", croNumber = null, pncNumber = null)).asJson()), BLUE)
 
       val json = highLevelClient.get(GetRequest(BLUE.indexName).id("X12345"), RequestOptions.DEFAULT).sourceAsString
 
-      assertThatJson(json).node("otherIds").isEqualTo("{}")
+      assertThatJson(json).isObject.doesNotContainKey("otherIds.croNumber")
+      assertThatJson(json).isObject.doesNotContainKey("otherIds.pncNumber")
     }
   }
 

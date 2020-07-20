@@ -33,6 +33,6 @@ dependencies {
 	testImplementation("io.kotest:kotest-assertions-arrow-jvm:4.1.1")
 	testImplementation("org.springframework.security:spring-security-test")
 	testImplementation("io.jsonwebtoken:jjwt:0.9.1")
-	testImplementation("net.javacrumbs.json-unit:json-unit-assertj:0.0.15")
+	testImplementation("net.javacrumbs.json-unit:json-unit-assertj:2.18.0")
 	testImplementation("io.swagger.parser.v3:swagger-parser-v2-converter:2.0.20")
 }
