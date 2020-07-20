@@ -23,7 +23,7 @@ class IndexListener(
   }
 
   @JmsListener(destination = "\${index.sqs.queue.name}", containerFactory = "jmsIndexListenerContainerFactory")
-  fun processIndexRequest(requestJson: String?, msg: javax.jms.Message) {
+  fun processIndexRequest(requestJson: String?) {
     log.debug(requestJson)
     val indexRequest = gson.fromJson(requestJson, IndexMessageRequest::class.java)
     log.info("Received message request {}", indexRequest)
