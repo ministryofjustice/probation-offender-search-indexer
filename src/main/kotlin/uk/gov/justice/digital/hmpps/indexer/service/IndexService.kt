@@ -33,6 +33,7 @@ class IndexService(
 
     return indexStatusService.getIndexStatus().right()
   }
+
   fun markIndexingComplete(): Either<MarkBuildCompleteError, IndexStatus> {
     val indexStatus = indexStatusService.getIndexStatus()
     if (indexStatus.otherIndexState != IndexState.BUILDING) {
@@ -59,7 +60,7 @@ class IndexService(
   }
 
   fun indexOffender(crn: String) = offenderSynchroniserService.synchroniseOffender(crn)
-  fun populateIndex(index: SyncIndex) : Either<PopulateIndexError, Int> {
+  fun populateIndex(index: SyncIndex): Either<PopulateIndexError, Int> {
     val indexStatus = indexStatusService.getIndexStatus()
     if (indexStatus.otherIndexState != IndexState.BUILDING) {
       return PopulateIndexError.BuildNotInProgress(indexStatus).left()
@@ -74,12 +75,16 @@ class IndexService(
     return chunks.size.right()
   }
 
-  fun populateIndexWithOffenderPage(offenderPage: OffenderPage) = log.error("Not implemented yet")
+  fun populateIndexWithOffenderPage(offenderPage: OffenderPage) {
+    offenderSynchroniserService.getAllOffenderIdentifiersInPage(offenderPage)
+        .forEach { indexQueueService.sendPopulateOffenderMessage(it.crn) }
+  }
+
 }
 
 
 sealed class BuildIndexError(val message: String) {
-  data class BuildAlreadyInProgress(val indexStatus: IndexStatus): BuildIndexError("The build for ${indexStatus.otherIndex} is already ${indexStatus.otherIndexState} (started at ${indexStatus.otherIndexStartBuildTime})")
+  data class BuildAlreadyInProgress(val indexStatus: IndexStatus) : BuildIndexError("The build for ${indexStatus.otherIndex} is already ${indexStatus.otherIndexState} (started at ${indexStatus.otherIndexStartBuildTime})")
 }
 
 sealed class MarkBuildCompleteError(val message: String) {
@@ -87,7 +92,7 @@ sealed class MarkBuildCompleteError(val message: String) {
 }
 
 sealed class CancelBuildIndexError(val message: String) {
-  data class BuildNotInProgress(val indexStatus: IndexStatus): CancelBuildIndexError("The index ${indexStatus.otherIndex} is in state ${indexStatus.otherIndexState} (ended at ${indexStatus.otherIndexEndBuildTime})")
+  data class BuildNotInProgress(val indexStatus: IndexStatus) : CancelBuildIndexError("The index ${indexStatus.otherIndex} is in state ${indexStatus.otherIndexState} (ended at ${indexStatus.otherIndexEndBuildTime})")
 }
 
 sealed class PopulateIndexError(val message: String) {

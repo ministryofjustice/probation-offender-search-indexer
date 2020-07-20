@@ -45,4 +45,18 @@ internal class IndexListenerTest {
       verify(indexService).populateIndexWithOffenderPage(OffenderPage(1, 1000))
     }
   }
+  @Nested
+  inner class PopulateOffender {
+    @Test
+    internal fun `will call service with crn to populate`() {
+      listener.processIndexRequest("""
+      {
+        "type": "POPULATE_OFFENDER",
+        "crn": "X12345"
+      }
+      """.trimIndent(), mock())
+
+      verify(indexService).indexOffender("X12345")
+    }
+  }
 }
