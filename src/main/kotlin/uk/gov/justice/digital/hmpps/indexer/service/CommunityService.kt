@@ -39,11 +39,11 @@ data class Offender(val body: String) {
     }
   val crn: String
     get() {
-      return detail.crn
+      return detail.otherIds.crn
     }
 }
 
-data class OffenderDetail(val crn: String, val offenderId: Long, val otherIds: IDs? = null)
-data class IDs(val pncNumber: String? = null, val croNumber: String? = null)
+data class OffenderDetail(val offenderId: Long, val otherIds: IDs)
+data class IDs(val crn: String, val pncNumber: String? = null, val croNumber: String? = null)
 data class OffendersPage(val totalElements: Long, val numberOfElements: Long, val content: List<OffenderIdentifier>)
 data class OffenderIdentifier(val crn: String)

@@ -23,7 +23,7 @@ data class IndexStatus(
   val id: String = INDEX_STATUS_ID,
 
   @Field(type = FieldType.Keyword)
-  @ApiModelProperty(value = "The index currently activefor searches", example = "GREEN")
+  @ApiModelProperty(value = "The index currently active for searches", example = "GREEN")
   val currentIndex: SyncIndex,
 
   @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second)

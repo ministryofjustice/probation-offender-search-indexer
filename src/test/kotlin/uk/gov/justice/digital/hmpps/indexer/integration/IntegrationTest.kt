@@ -12,15 +12,29 @@ import org.springframework.boot.test.mock.mockito.SpyBean
 import org.springframework.boot.web.server.LocalServerPort
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations
 import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates
+import org.springframework.http.HttpHeaders
 import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.web.reactive.server.WebTestClient
 import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.CommunityApiExtension
 import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.OAuthExtension
 import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
+import uk.gov.justice.digital.hmpps.indexer.service.IndexService
+import java.time.Duration
 
 @ExtendWith(OAuthExtension::class, CommunityApiExtension::class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles(profiles = ["test"])
 abstract class IntegrationTest {
+
+  @Suppress("SpringJavaInjectionPointsAutowiringInspection")
+  @Autowired
+  lateinit var webTestClient: WebTestClient
+
+  @Autowired
+  protected lateinit var jwtAuthHelper: JwtAuthHelper
+
+  @SpyBean
+  protected lateinit var indexService: IndexService
 
   @SpyBean
   @Qualifier("eventAwsSqsClient")
@@ -52,6 +66,14 @@ abstract class IntegrationTest {
 
   fun setupIndexes() {
     createIndexStatusIndex()
+  }
+
+  internal fun setAuthorisation(user: String = "probation-offender-search-indexer-client", roles: List<String> = listOf()): (HttpHeaders) -> Unit {
+    val token = jwtAuthHelper.createJwt(subject = user,
+        scope = listOf("read"),
+        expiryTime = Duration.ofHours(1L),
+        roles = roles)
+    return { it.set(HttpHeaders.AUTHORIZATION, "Bearer $token") }
   }
 
   private fun createIndexStatusIndex() {

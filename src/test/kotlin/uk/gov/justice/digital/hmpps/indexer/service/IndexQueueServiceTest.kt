@@ -9,7 +9,7 @@ import com.nhaarman.mockitokotlin2.check
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
-import net.javacrumbs.jsonunit.assertj.JsonAssert
+import net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
@@ -38,7 +38,7 @@ internal class IndexQueueServiceTest {
     @Test
     fun `will send message with index name`() {
       verify(client).sendMessage(check {
-        JsonAssert.assertThatJson(it.messageBody).isEqualTo("""{
+        assertThatJson(it.messageBody).isEqualTo("""{
           "type": "POPULATE_INDEX",
           "index": "GREEN"
           }
@@ -64,7 +64,7 @@ internal class IndexQueueServiceTest {
     @Test
     fun `will send message with index name`() {
       verify(client).sendMessage(check {
-        JsonAssert.assertThatJson(it.messageBody).isEqualTo("""{
+        assertThatJson(it.messageBody).isEqualTo("""{
           "type": "POPULATE_OFFENDER_PAGE",
           "offenderPage": {
             "page": 1,
