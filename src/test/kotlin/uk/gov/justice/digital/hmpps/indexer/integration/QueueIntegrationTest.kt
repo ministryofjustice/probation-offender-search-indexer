@@ -1,7 +1,6 @@
 package uk.gov.justice.digital.hmpps.indexer.integration
 
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.test.context.ActiveProfiles
 
 
 abstract class QueueIntegrationTest : IntegrationTest() {
