@@ -12,7 +12,6 @@ import uk.gov.justice.digital.hmpps.indexer.model.IndexState
 import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
 import uk.gov.justice.digital.hmpps.indexer.service.IndexStatusService
 
-@Disabled("Being fixed on another branch")
 class IndexStatusIntegrationTest : IntegrationTest() {
 
   companion object {

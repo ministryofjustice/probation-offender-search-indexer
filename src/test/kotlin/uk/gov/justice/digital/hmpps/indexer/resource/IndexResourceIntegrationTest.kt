@@ -10,7 +10,6 @@ import org.elasticsearch.client.RestHighLevelClient
 import org.elasticsearch.client.core.CountRequest
 import org.elasticsearch.client.indices.GetIndexRequest
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.http.MediaType
@@ -43,7 +42,6 @@ class IndexResourceIntegrationTest : QueueIntegrationTest() {
     }
 
     @Nested
-    @Disabled("Being fixed on another branch")
     inner class FirstTimeRun {
       @BeforeEach
       internal fun setUp() {

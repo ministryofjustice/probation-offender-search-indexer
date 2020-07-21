@@ -17,8 +17,7 @@ import uk.gov.justice.digital.hmpps.indexer.repository.OffenderRepository
 internal class OffenderSynchroniserServiceTest {
   private val communityApi = mock<CommunityService>()
   private val offenderRepository = mock<OffenderRepository>()
-  private val indexStatusService = mock<IndexStatusService>()
-  private val service = OffenderSynchroniserService(communityApi, offenderRepository, indexStatusService, 10)
+  private val service = OffenderSynchroniserService(communityApi, offenderRepository, 10)
 
   @Nested
   inner class SynchroniseOffender {
@@ -136,7 +135,7 @@ internal class OffenderSynchroniserServiceTest {
 
     @Test
     internal fun `will create a large number of pages for a large number of offenders`() {
-      val service = OffenderSynchroniserService(communityApi, offenderRepository, indexStatusService, 1000)
+      val service = OffenderSynchroniserService(communityApi, offenderRepository, 1000)
 
       whenever(communityApi.getCountAllOffenders()).thenReturn(OffendersPage(2_000_001, 1, listOf(OffenderIdentifier("X12345"))))
 
@@ -146,7 +145,7 @@ internal class OffenderSynchroniserServiceTest {
 
     @Test
     internal fun `will create a single pages for a tiny number of offenders`() {
-      val service = OffenderSynchroniserService(communityApi, offenderRepository, indexStatusService, 1000)
+      val service = OffenderSynchroniserService(communityApi, offenderRepository, 1000)
 
       whenever(communityApi.getCountAllOffenders()).thenReturn(OffendersPage(1, 1, listOf(OffenderIdentifier("X12345"))))
 
@@ -156,7 +155,7 @@ internal class OffenderSynchroniserServiceTest {
 
     @Test
     internal fun `will create no pages for no offenders`() {
-      val service = OffenderSynchroniserService(communityApi, offenderRepository, indexStatusService, 1000)
+      val service = OffenderSynchroniserService(communityApi, offenderRepository, 1000)
 
       whenever(communityApi.getCountAllOffenders()).thenReturn(OffendersPage(0, 0, listOf()))
 
