@@ -47,7 +47,7 @@ internal class CommunityServiceTest : IntegrationTest() {
       val offender = service.getOffender("X12345")
 
 
-      assertThat(offender.body).contains("\"offenderId\": 99")
+      assertThat(offender.json).contains("\"offenderId\": 99")
     }
 
     @Test

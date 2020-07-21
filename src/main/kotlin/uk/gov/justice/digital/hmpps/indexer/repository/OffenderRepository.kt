@@ -55,5 +55,5 @@ private fun String.resourceAsString() = OffenderRepository::class.java.getResour
 private fun String.resourceAsByteReference() = BytesArray(OffenderRepository::class.java.getResource(this).readBytes())
 private fun Offender.toIndexRequest(): IndexRequest = IndexRequest()
     .setPipeline(pipelineId)
-    .source(this.body, JSON)
+    .source(this.json, JSON)
     .id(this.crn)

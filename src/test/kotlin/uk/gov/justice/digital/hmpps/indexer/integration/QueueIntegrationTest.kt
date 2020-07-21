@@ -4,7 +4,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.context.ActiveProfiles
 
 
-@ActiveProfiles(profiles = ["test"])
 abstract class QueueIntegrationTest : IntegrationTest() {
 
   @Autowired

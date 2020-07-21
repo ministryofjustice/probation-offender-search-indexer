@@ -10,7 +10,7 @@ class OffenderSynchroniserService(val communityService: CommunityService, val of
   fun synchroniseOffender(crn: String): String {
     val offender = communityService.getOffender(crn)
     offenderRepository.save(offender, indexStatusService.getIndexStatus().currentIndex)
-    return offender.body
+    return offender.json
   }
 
   fun checkExistsAndReset(index: SyncIndex) {

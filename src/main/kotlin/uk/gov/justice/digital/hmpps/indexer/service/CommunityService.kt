@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.indexer.service
 
 import com.google.gson.Gson
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
@@ -8,21 +9,26 @@ import org.springframework.web.reactive.function.client.WebClient
 
 @Service
 class CommunityService(@Qualifier("communityApiWebClient") private val webClient: WebClient) {
-  fun getOffender(crn: String) : Offender {
-    return Offender(webClient.get()
+  companion object {
+    private val log = LoggerFactory.getLogger(this::class.java)
+  }
+  fun getOffender(crn: String): Offender =
+    Offender(webClient.get()
         .uri("/secure/offenders/crn/${crn}/all")
         .retrieve()
         .bodyToMono(String::class.java)
+        .doOnError { log.error("Failed to retrieve offender with crn {}", crn, it) }
         .block()!!)
-  }
-  fun getCountAllOffenders() : OffendersPage {
+
+  fun getCountAllOffenders(): OffendersPage {
     return webClient.get()
         .uri("/secure/offenders/primaryIdentifiers?includeDeleted=true&size=1")
         .retrieve()
         .bodyToMono(OffendersPage::class.java)
         .block()!!
   }
-  fun getPageOfOffenders(page: Long, pageSize: Long) : OffendersPage {
+
+  fun getPageOfOffenders(page: Long, pageSize: Long): OffendersPage {
     return webClient.get()
         .uri("/secure/offenders/primaryIdentifiers?includeDeleted=true&page={page}&size={pageSize}", page, pageSize)
         .retrieve()
@@ -31,8 +37,8 @@ class CommunityService(@Qualifier("communityApiWebClient") private val webClient
   }
 }
 
-data class Offender(val body: String) {
-  val detail : OffenderDetail = Gson().fromJson(body, OffenderDetail::class.java)
+data class Offender(val json: String) {
+  private val detail : OffenderDetail = Gson().fromJson(json, OffenderDetail::class.java)
   val offenderId: Long
     get() {
       return detail.offenderId
