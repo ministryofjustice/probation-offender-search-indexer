@@ -56,7 +56,7 @@ internal class IndexListenerTest {
       }
       """.trimIndent())
 
-      verify(indexService).indexOffender("X12345")
+      verify(indexService).populateIndexWithOffender("X12345")
     }
   }
 }

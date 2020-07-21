@@ -4,11 +4,11 @@ import com.google.gson.Gson
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import org.junit.jupiter.api.Test
-import uk.gov.justice.digital.hmpps.indexer.service.OffenderSynchroniserService
+import uk.gov.justice.digital.hmpps.indexer.service.IndexService
 
 class EventListenerTest {
-  private val offenderSynchroniserService = mock<OffenderSynchroniserService>()
-  private val eventListener = EventListener(Gson(), offenderSynchroniserService)
+  private val indexService = mock<IndexService>()
+  private val eventListener = EventListener(Gson(), indexService)
 
   @Test
   fun `Calls offender synchroniser service`() {
@@ -25,6 +25,6 @@ class EventListenerTest {
       }
       """.trimIndent())
 
-    verify(offenderSynchroniserService).synchroniseOffender("X123456")
+    verify(indexService).indexOffender("X123456")
   }
 }

@@ -11,15 +11,13 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.GREEN
 import uk.gov.justice.digital.hmpps.indexer.repository.OffenderRepository
 
 internal class OffenderSynchroniserServiceTest {
   private val communityApi = mock<CommunityService>()
   private val offenderRepository = mock<OffenderRepository>()
-  private val indexStatusService = mock<IndexStatusService>()
-  private val service = OffenderSynchroniserService(communityApi, offenderRepository, indexStatusService, 10)
+  private val service = OffenderSynchroniserService(communityApi, offenderRepository, 10)
 
   @Nested
   inner class SynchroniseOffender {
@@ -27,31 +25,25 @@ internal class OffenderSynchroniserServiceTest {
     @BeforeEach
     internal fun setUp() {
       whenever(communityApi.getOffender(any())).thenReturn(anOffender())
-      whenever(indexStatusService.getIndexStatus()).thenReturn(IndexStatus.newIndex())
     }
 
     @Test
     fun `should retrieve offender`() {
-      service.synchroniseOffender("X12345")
+      service.synchroniseOffender("X12345", GREEN)
 
       verify(communityApi).getOffender("X12345")
     }
 
     @Test
     internal fun `will save offender to repository`() {
-      service.synchroniseOffender("X12345")
+      service.synchroniseOffender("X12345", GREEN)
 
       verify(offenderRepository).save(isA(), isA())
     }
 
     @Test
     internal fun `will save offender to current index`() {
-      val index = IndexStatus.newIndex().toBuildComplete()
-      assertThat(index.currentIndex).isEqualTo(GREEN)
-
-      whenever(indexStatusService.getIndexStatus()).thenReturn(index)
-
-      service.synchroniseOffender("X12345")
+      service.synchroniseOffender("X12345", GREEN)
 
       verify(offenderRepository).save(isA(), check { assertThat(it).isEqualTo(GREEN) })
     }
@@ -67,15 +59,18 @@ internal class OffenderSynchroniserServiceTest {
 
         service.checkExistsAndReset(GREEN)
       }
+
       @Test
       internal fun `will delete the index if it exists`() {
         verify(offenderRepository).deleteIndex(GREEN)
       }
+
       @Test
       internal fun `will recreate the index`() {
         verify(offenderRepository).createIndex(GREEN)
       }
     }
+
     @Nested
     inner class IndexDoesNotExists {
       @BeforeEach
@@ -84,6 +79,7 @@ internal class OffenderSynchroniserServiceTest {
 
         service.checkExistsAndReset(GREEN)
       }
+
       @Test
       internal fun `won't bother deleting index if it does not exist`() {
         whenever(offenderRepository.doesIndexExist(GREEN)).thenReturn(false)
@@ -92,6 +88,7 @@ internal class OffenderSynchroniserServiceTest {
 
         verify(offenderRepository, never()).deleteIndex(any())
       }
+
       @Test
       internal fun `will create the index`() {
         verify(offenderRepository).createIndex(GREEN)
@@ -113,6 +110,7 @@ internal class OffenderSynchroniserServiceTest {
           OffenderPage(2, 10)
       )
     }
+
     @Test
     internal fun `will round up last page to page size`() {
       whenever(communityApi.getCountAllOffenders()).thenReturn(OffendersPage(31, 1, listOf(OffenderIdentifier("X12345"))))
@@ -134,27 +132,30 @@ internal class OffenderSynchroniserServiceTest {
           OffenderPage(2, 10)
       )
     }
+
     @Test
     internal fun `will create a large number of pages for a large number of offenders`() {
-      val service = OffenderSynchroniserService(communityApi, offenderRepository, indexStatusService, 1000)
+      val service = OffenderSynchroniserService(communityApi, offenderRepository, 1000)
 
       whenever(communityApi.getCountAllOffenders()).thenReturn(OffendersPage(2_000_001, 1, listOf(OffenderIdentifier("X12345"))))
 
       val chunks = service.splitAllOffendersIntoChunks()
       assertThat(chunks).hasSize(2001)
     }
+
     @Test
     internal fun `will create a single pages for a tiny number of offenders`() {
-      val service = OffenderSynchroniserService(communityApi, offenderRepository, indexStatusService, 1000)
+      val service = OffenderSynchroniserService(communityApi, offenderRepository, 1000)
 
       whenever(communityApi.getCountAllOffenders()).thenReturn(OffendersPage(1, 1, listOf(OffenderIdentifier("X12345"))))
 
       val chunks = service.splitAllOffendersIntoChunks()
       assertThat(chunks).hasSize(1)
     }
+
     @Test
     internal fun `will create no pages for no offenders`() {
-      val service = OffenderSynchroniserService(communityApi, offenderRepository, indexStatusService, 1000)
+      val service = OffenderSynchroniserService(communityApi, offenderRepository, 1000)
 
       whenever(communityApi.getCountAllOffenders()).thenReturn(OffendersPage(0, 0, listOf()))
 

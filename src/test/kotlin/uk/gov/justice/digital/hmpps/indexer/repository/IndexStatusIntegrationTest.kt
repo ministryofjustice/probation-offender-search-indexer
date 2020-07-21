@@ -2,16 +2,14 @@ package uk.gov.justice.digital.hmpps.indexer.repository
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.fail
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.indexer.integration.IntegrationTest
 import uk.gov.justice.digital.hmpps.indexer.model.INDEX_STATUS_ID
 import uk.gov.justice.digital.hmpps.indexer.model.IndexState
-import uk.gov.justice.digital.hmpps.indexer.service.IndexStatusService
+import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
 
-@Disabled("Being fixed on another branch")
 class IndexStatusIntegrationTest : IntegrationTest() {
 
   companion object {
@@ -19,18 +17,15 @@ class IndexStatusIntegrationTest : IntegrationTest() {
   }
 
   @Autowired
-  private lateinit var indexStatusService: IndexStatusService
-
-  @Autowired
   private lateinit var indexStatusRepository: IndexStatusRepository
 
   @BeforeEach
   fun `initialise and clear database`() {
     if (indexesCreated.not()) {
-      setupIndexes()
+      indexStatusService.initialiseIndexWhenRequired()
       indexesCreated = true
     }
-    indexStatusRepository.deleteAll()
+    indexStatusRepository.save(IndexStatus.newIndex())
   }
 
   @Test
@@ -43,8 +38,6 @@ class IndexStatusIntegrationTest : IntegrationTest() {
 
   @Test
   fun `Should save index status to repository`() {
-    indexStatusService.getIndexStatus()
-
     indexStatusService.markBuildInProgress()
 
     val actual = getActualIndexStatus()
@@ -54,7 +47,6 @@ class IndexStatusIntegrationTest : IntegrationTest() {
 
   @Test
   fun `Should mark build index complete and switch to current`() {
-    indexStatusService.getIndexStatus()
     indexStatusService.markBuildInProgress()
 
     indexStatusService.markBuildCompleteAndSwitchIndex()
@@ -66,7 +58,6 @@ class IndexStatusIntegrationTest : IntegrationTest() {
 
   @Test
   fun `Should mark build index cancelled`() {
-    indexStatusService.getIndexStatus()
     indexStatusService.markBuildInProgress()
 
     indexStatusService.markBuildCancelled()
@@ -78,7 +69,6 @@ class IndexStatusIntegrationTest : IntegrationTest() {
 
   @Test
   fun `Should not mark cancelled if not building`() {
-    indexStatusService.getIndexStatus()
     indexStatusService.markBuildInProgress()
     indexStatusService.markBuildCompleteAndSwitchIndex()
 
@@ -90,7 +80,6 @@ class IndexStatusIntegrationTest : IntegrationTest() {
 
   @Test
   fun `Should not mark completed if not building`() {
-    indexStatusService.getIndexStatus()
     indexStatusService.markBuildInProgress()
     indexStatusService.markBuildCancelled()
 

@@ -30,7 +30,7 @@ class IndexListener(
     when(indexRequest.type) {
       POPULATE_INDEX -> indexService.populateIndex(indexRequest.index!!)
       POPULATE_OFFENDER_PAGE -> indexService.populateIndexWithOffenderPage(indexRequest.offenderPage!!)
-      POPULATE_OFFENDER -> indexService.indexOffender(indexRequest.crn!!)
+      POPULATE_OFFENDER -> indexService.populateIndexWithOffender(indexRequest.crn!!)
     }
   }
 }

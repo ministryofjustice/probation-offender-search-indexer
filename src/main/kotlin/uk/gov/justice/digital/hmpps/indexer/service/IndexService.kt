@@ -22,7 +22,7 @@ class IndexService(
   }
 
   fun prepareIndexForRebuild(): Either<BuildIndexError, IndexStatus> {
-    val indexStatus = indexStatusService.getIndexStatus()
+    val indexStatus = indexStatusService.initialiseIndexWhenRequired().getIndexStatus()
     if (indexStatus.otherIndexState == IndexState.BUILDING) {
       return BuildIndexError.BuildAlreadyInProgress(indexStatus).left()
     }
@@ -59,7 +59,11 @@ class IndexService(
     return indexStatusService.getIndexStatus().right()
   }
 
-  fun indexOffender(crn: String) = offenderSynchroniserService.synchroniseOffender(crn)
+  fun indexOffender(crn: String) : String {
+    val indexStatus = indexStatusService.getIndexStatus()
+    // TODO - this needs to go to both indexes (unless one is new maybe?)
+    return offenderSynchroniserService.synchroniseOffender(crn, indexStatus.currentIndex)
+  }
   fun populateIndex(index: SyncIndex): Either<PopulateIndexError, Int> {
     val indexStatus = indexStatusService.getIndexStatus()
     if (indexStatus.otherIndexState != IndexState.BUILDING) {
@@ -78,6 +82,15 @@ class IndexService(
   fun populateIndexWithOffenderPage(offenderPage: OffenderPage) {
     offenderSynchroniserService.getAllOffenderIdentifiersInPage(offenderPage)
         .forEach { indexQueueService.sendPopulateOffenderMessage(it.crn) }
+  }
+
+  fun populateIndexWithOffender(crn: String) : Either<PopulateIndexError, String> {
+    val indexStatus = indexStatusService.getIndexStatus()
+    if (indexStatus.otherIndexState != IndexState.BUILDING) {
+      return PopulateIndexError.BuildNotInProgress(indexStatus).left()
+    }
+
+    return offenderSynchroniserService.synchroniseOffender(crn, indexStatus.currentIndex.otherIndex()).right()
   }
 
 }

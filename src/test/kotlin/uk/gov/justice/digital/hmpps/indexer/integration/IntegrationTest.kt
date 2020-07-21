@@ -5,7 +5,6 @@ import com.google.gson.Gson
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest
 import org.elasticsearch.action.search.SearchRequest
 import org.elasticsearch.action.search.SearchResponse
-import org.elasticsearch.client.Request
 import org.elasticsearch.client.RequestOptions
 import org.elasticsearch.client.RestHighLevelClient
 import org.elasticsearch.client.core.CountRequest
@@ -18,16 +17,15 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.SpyBean
 import org.springframework.boot.web.server.LocalServerPort
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations
-import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates
 import org.springframework.http.HttpHeaders
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.reactive.server.WebTestClient
 import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.CommunityApiExtension
 import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.OAuthExtension
-import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
 import uk.gov.justice.digital.hmpps.indexer.repository.OffenderRepository
 import uk.gov.justice.digital.hmpps.indexer.service.IndexService
+import uk.gov.justice.digital.hmpps.indexer.service.IndexStatusService
 import java.time.Duration
 
 @ExtendWith(OAuthExtension::class, CommunityApiExtension::class)
@@ -73,6 +71,9 @@ abstract class IntegrationTest {
   @Autowired
   lateinit var offenderRespository: OffenderRepository
 
+  @Autowired
+  lateinit var indexStatusService: IndexStatusService
+
   @LocalServerPort
   protected var port: Int = 0
 
@@ -95,12 +96,10 @@ abstract class IntegrationTest {
   }
 
   private fun createIndexStatusIndex() {
-    val response = elasticSearchClient.lowLevelClient.performRequest(Request("HEAD", "/offender-index-status"))
-    if (response.statusLine.statusCode == 404) {
-      val indexOperations = elasticsearchOperations.indexOps(IndexCoordinates.of("offender-index-status"))
-      indexOperations.create()
-      indexOperations.putMapping(indexOperations.createMapping(IndexStatus::class.java))
-    }
+    indexStatusService
+        .initialiseIndexWhenRequired()
+        .markBuildInProgress()
+        .markBuildCompleteAndSwitchIndex()
   }
 
   private fun deleteIndexStatusIndex() {
