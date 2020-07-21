@@ -35,4 +35,5 @@ dependencies {
 	testImplementation("io.jsonwebtoken:jjwt:0.9.1")
 	testImplementation("net.javacrumbs.json-unit:json-unit-assertj:2.18.0")
 	testImplementation("io.swagger.parser.v3:swagger-parser-v2-converter:2.0.20")
+	testImplementation("org.mockito:mockito-inline:2.28.2")
 }

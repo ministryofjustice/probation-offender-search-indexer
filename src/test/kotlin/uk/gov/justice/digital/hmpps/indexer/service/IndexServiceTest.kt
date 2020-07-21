@@ -14,6 +14,8 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import uk.gov.justice.digital.hmpps.indexer.helpers.indexStatus
 import uk.gov.justice.digital.hmpps.indexer.model.IndexState
+import uk.gov.justice.digital.hmpps.indexer.model.IndexState.BUILDING
+import uk.gov.justice.digital.hmpps.indexer.model.IndexState.COMPLETED
 import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.BLUE
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.GREEN
@@ -29,10 +31,14 @@ class IndexServiceTest {
 
   @Nested
   inner class BuildIndex {
+    @BeforeEach
+    internal fun setUp() {
+      whenever(indexStatusService.initialiseIndexWhenRequired()).thenReturn(indexStatusService)
+    }
 
     @Test
     fun `Index already building returns error`() {
-      val expectedIndexStatus = indexStatus(otherIndex = BLUE, otherIndexState = IndexState.BUILDING)
+      val expectedIndexStatus = indexStatus(otherIndex = BLUE, otherIndexState = BUILDING)
       whenever(indexStatusService.getIndexStatus()).thenReturn(expectedIndexStatus)
 
       val result = indexService.prepareIndexForRebuild()
@@ -73,7 +79,7 @@ class IndexServiceTest {
 
     @Test
     fun `The updated index is returned`() {
-      val expectedIndexStatus = indexStatus(otherIndex = GREEN, otherIndexState = IndexState.BUILDING)
+      val expectedIndexStatus = indexStatus(otherIndex = GREEN, otherIndexState = BUILDING)
       whenever(indexStatusService.getIndexStatus())
           .thenReturn(indexStatus(GREEN, IndexState.NEW))
           .thenReturn(expectedIndexStatus)
@@ -91,7 +97,7 @@ class IndexServiceTest {
 
     @Test
     fun `Index not building returns error`() {
-      val expectedIndexStatus = indexStatus(otherIndex = BLUE, otherIndexState = IndexState.COMPLETED)
+      val expectedIndexStatus = indexStatus(otherIndex = BLUE, otherIndexState = COMPLETED)
       whenever(indexStatusService.getIndexStatus()).thenReturn(expectedIndexStatus)
 
       val result = indexService.markIndexingComplete()
@@ -102,7 +108,7 @@ class IndexServiceTest {
 
     @Test
     fun `A request is made to mark the index state as complete`() {
-      val expectedIndexStatus = indexStatus(otherIndex = BLUE, otherIndexState = IndexState.BUILDING)
+      val expectedIndexStatus = indexStatus(otherIndex = BLUE, otherIndexState = BUILDING)
       whenever(indexStatusService.getIndexStatus()).thenReturn(expectedIndexStatus)
 
       indexService.markIndexingComplete()
@@ -112,7 +118,7 @@ class IndexServiceTest {
 
     @Test
     fun `A request is made to remove queued index requests`() {
-      val expectedIndexStatus = indexStatus(otherIndex = BLUE, otherIndexState = IndexState.BUILDING)
+      val expectedIndexStatus = indexStatus(otherIndex = BLUE, otherIndexState = BUILDING)
       whenever(indexStatusService.getIndexStatus()).thenReturn(expectedIndexStatus)
 
       indexService.markIndexingComplete()
@@ -122,9 +128,9 @@ class IndexServiceTest {
 
     @Test
     fun `Once current index marked as complete, the 'other' index is current`() {
-      val expectedIndexStatus = indexStatus(otherIndex = BLUE, otherIndexState = IndexState.COMPLETED)
+      val expectedIndexStatus = indexStatus(otherIndex = BLUE, otherIndexState = COMPLETED)
       whenever(indexStatusService.getIndexStatus())
-          .thenReturn(indexStatus(otherIndex = BLUE, otherIndexState = IndexState.BUILDING))
+          .thenReturn(indexStatus(otherIndex = BLUE, otherIndexState = BUILDING))
           .thenReturn(expectedIndexStatus)
 
       val result = indexService.markIndexingComplete()
@@ -139,7 +145,7 @@ class IndexServiceTest {
 
     @Test
     fun `Index not building returns error`() {
-      val expectedIndexStatus = indexStatus(otherIndex = BLUE, otherIndexState = IndexState.COMPLETED)
+      val expectedIndexStatus = indexStatus(otherIndex = BLUE, otherIndexState = COMPLETED)
       whenever(indexStatusService.getIndexStatus()).thenReturn(expectedIndexStatus)
 
       val result = indexService.cancelIndexing()
@@ -150,7 +156,7 @@ class IndexServiceTest {
 
     @Test
     fun `A request is made to mark the index state as cancelled`() {
-      val expectedIndexStatus = indexStatus(otherIndex = BLUE, otherIndexState = IndexState.BUILDING)
+      val expectedIndexStatus = indexStatus(otherIndex = BLUE, otherIndexState = BUILDING)
       whenever(indexStatusService.getIndexStatus()).thenReturn(expectedIndexStatus)
 
       indexService.cancelIndexing()
@@ -162,7 +168,7 @@ class IndexServiceTest {
     fun `Once current index marked as cancelled, the 'other' index is current`() {
       val expectedIndexStatus = indexStatus(otherIndex = BLUE, otherIndexState = IndexState.CANCELLED)
       whenever(indexStatusService.getIndexStatus())
-          .thenReturn(indexStatus(otherIndex = BLUE, otherIndexState = IndexState.BUILDING))
+          .thenReturn(indexStatus(otherIndex = BLUE, otherIndexState = BUILDING))
           .thenReturn(expectedIndexStatus)
 
       val result = indexService.cancelIndexing()
@@ -177,14 +183,17 @@ class IndexServiceTest {
   inner class IndexOffender {
     @BeforeEach
     internal fun setUp() {
-      whenever(offenderSynchroniserService.synchroniseOffender(any())).thenReturn("""{"offenderId": 99}""")
+      whenever(offenderSynchroniserService.synchroniseOffender(any(), any())).thenReturn("""{"offenderId": 99}""")
     }
 
     @Test
     internal fun `will delegate to synchronisation service`() {
+      val indexStatus = IndexStatus(currentIndex = GREEN, currentIndexState = COMPLETED, otherIndexState = COMPLETED)
+      whenever(indexStatusService.getIndexStatus()).thenReturn(indexStatus)
+
       indexService.indexOffender("X12345")
 
-      verify(offenderSynchroniserService).synchroniseOffender("X12345")
+      verify(offenderSynchroniserService).synchroniseOffender("X12345", GREEN)
     }
   }
 
@@ -203,7 +212,8 @@ class IndexServiceTest {
 
     @Test
     internal fun `will return an error if indexing request is for the wrong index`() {
-      val indexStatus = IndexStatus.newIndex().toBuildInProgress()
+      val indexStatus = IndexStatus(currentIndex = GREEN, currentIndexState = COMPLETED, otherIndexState = BUILDING)
+
       whenever(indexStatusService.getIndexStatus()).thenReturn(indexStatus)
 
       val result = indexService.populateIndex(GREEN)
@@ -213,7 +223,7 @@ class IndexServiceTest {
 
     @Test
     internal fun `will return the number of chunks sent for processing`() {
-      val indexStatus = IndexStatus.newIndex().toBuildInProgress()
+      val indexStatus = IndexStatus(currentIndex = GREEN, currentIndexState = COMPLETED, otherIndexState = BUILDING)
       whenever(indexStatusService.getIndexStatus()).thenReturn(indexStatus)
       whenever(offenderSynchroniserService.splitAllOffendersIntoChunks()).thenReturn(listOf(
           OffenderPage(1, 1000),
@@ -228,7 +238,7 @@ class IndexServiceTest {
 
     @Test
     internal fun `For each chunk should send a process chunk message`() {
-      val indexStatus = IndexStatus.newIndex().toBuildInProgress()
+      val indexStatus = IndexStatus(currentIndex = GREEN, currentIndexState = COMPLETED, otherIndexState = BUILDING)
       whenever(indexStatusService.getIndexStatus()).thenReturn(indexStatus)
       whenever(offenderSynchroniserService.splitAllOffendersIntoChunks()).thenReturn(listOf(
           OffenderPage(1, 1000),
@@ -267,4 +277,49 @@ class IndexServiceTest {
       verify(indexQueueService).sendPopulateOffenderMessage("A12345")
     }
   }
+
+  @Nested
+  inner class PopulateIndexWithOffender {
+    @BeforeEach
+    internal fun setUp() {
+      whenever(offenderSynchroniserService.synchroniseOffender(any(), any()))
+          .thenReturn("""{
+            | "offenderId": 99
+            |}""".trimMargin())
+    }
+
+    @Test
+    internal fun `will return error if other index is not building`() {
+      val indexStatus = IndexStatus(currentIndex = GREEN, currentIndexState = COMPLETED, otherIndexState = COMPLETED)
+      whenever(indexStatusService.getIndexStatus()).thenReturn(indexStatus)
+
+      val result = indexService.populateIndexWithOffender("X12345")
+
+      result shouldBeLeft BuildNotInProgress(indexStatus)
+    }
+
+    @Test
+    internal fun `will return offender just indexed`() {
+      val indexStatus = IndexStatus(currentIndex = GREEN, currentIndexState = COMPLETED, otherIndexState = BUILDING)
+      whenever(indexStatusService.getIndexStatus()).thenReturn(indexStatus)
+
+      val result = indexService.populateIndexWithOffender("X12345")
+
+      result shouldBeRight """{
+            | "offenderId": 99
+            |}""".trimMargin()
+    }
+
+    @Test
+    internal fun `will synchronise offender to current building index`() {
+      val indexStatus = IndexStatus(currentIndex = GREEN, currentIndexState = COMPLETED, otherIndexState = BUILDING)
+      whenever(indexStatusService.getIndexStatus()).thenReturn(indexStatus)
+
+      indexService.populateIndexWithOffender("X12345")
+
+      verify(offenderSynchroniserService).synchroniseOffender("X12345", BLUE)
+    }
+
+  }
+
 }

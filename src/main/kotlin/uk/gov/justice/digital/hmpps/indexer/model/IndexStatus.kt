@@ -8,6 +8,7 @@ import org.springframework.data.elasticsearch.annotations.DateFormat
 import org.springframework.data.elasticsearch.annotations.Document
 import org.springframework.data.elasticsearch.annotations.Field
 import org.springframework.data.elasticsearch.annotations.FieldType
+import uk.gov.justice.digital.hmpps.indexer.model.IndexState.NEW
 import java.time.LocalDateTime
 
 internal const val INDEX_STATUS_ID = "STATUS"
@@ -92,6 +93,6 @@ data class IndexStatus(
   }
 
   companion object {
-    fun newIndex() = IndexStatus(currentIndex = SyncIndex.GREEN)
+    fun newIndex() = IndexStatus(currentIndex = SyncIndex.NONE)
   }
 }

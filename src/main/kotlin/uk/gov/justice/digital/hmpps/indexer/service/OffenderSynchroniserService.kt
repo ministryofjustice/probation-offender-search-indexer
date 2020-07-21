@@ -7,7 +7,7 @@ import uk.gov.justice.digital.hmpps.indexer.repository.OffenderRepository
 
 @Service
 class OffenderSynchroniserService(val communityService: CommunityService, val offenderRepository: OffenderRepository, val indexStatusService: IndexStatusService, @Value("\${index.page.size:1000}") private val pageSize: Long) {
-  fun synchroniseOffender(crn: String): String {
+  fun synchroniseOffender(crn: String, index: SyncIndex): String {
     val offender = communityService.getOffender(crn)
     offenderRepository.save(offender, indexStatusService.getIndexStatus().currentIndex)
     return offender.json
