@@ -31,26 +31,27 @@ class IndexStatusService(private val indexStatusRepository: IndexStatusRepositor
   fun getIndexStatus(): IndexStatus =
       indexStatusRepository.findById(INDEX_STATUS_ID).orElseThrow()
 
-  fun markBuildInProgress(): IndexStatusService {
+  fun markBuildInProgress(): IndexStatus {
     val currentIndexStatus = getIndexStatus()
     if (currentIndexStatus.inProgress().not()) {
-      indexStatusRepository.save(currentIndexStatus.toBuildInProgress())
+      return indexStatusRepository.save(currentIndexStatus.toBuildInProgress())
     }
-    return this
+    return currentIndexStatus
   }
 
-  fun markBuildCompleteAndSwitchIndex(): IndexStatusService {
+  fun markBuildCompleteAndSwitchIndex(): IndexStatus {
     val currentIndexStatus = getIndexStatus()
     if (currentIndexStatus.inProgress()) {
-      indexStatusRepository.save(currentIndexStatus.toBuildComplete().toSwitchIndex())
+      return indexStatusRepository.save(currentIndexStatus.toBuildComplete().toSwitchIndex())
     }
-    return this
+    return currentIndexStatus
   }
 
-  fun markBuildCancelled() {
+  fun markBuildCancelled() : IndexStatus {
     val currentIndexStatus = getIndexStatus()
     if (currentIndexStatus.inProgress()) {
-      indexStatusRepository.save(currentIndexStatus.toBuildCancelled())
+      return indexStatusRepository.save(currentIndexStatus.toBuildCancelled())
     }
+    return currentIndexStatus
   }
 }

@@ -94,6 +94,10 @@ class IndexServiceTest {
 
   @Nested
   inner class MarkIndexingComplete {
+    @BeforeEach
+    internal fun setUp() {
+      whenever(indexStatusService.markBuildCompleteAndSwitchIndex()).thenReturn(indexStatus(otherIndex = BLUE, otherIndexState = COMPLETED))
+    }
 
     @Test
     fun `Index not building returns error`() {
