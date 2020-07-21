@@ -114,11 +114,6 @@ abstract class IntegrationTest {
     SyncIndex.values().map { offenderRespository.deleteIndex(it) }
   }
 
-  fun getIndexCount(index: SyncIndex): Long {
-    val request = CountRequest(index.indexName)
-    return elasticSearchClient.count(request, RequestOptions.DEFAULT).count
-  }
-
   fun search(crn: String): SearchResponse {
     val query = QueryBuilders.matchQuery("otherIds.crn", crn)
     val search = SearchSourceBuilder().apply { query(query) }

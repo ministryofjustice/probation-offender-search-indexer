@@ -27,7 +27,7 @@ class OffenderUpdateMessageIntegrationTest : QueueIntegrationTest() {
 
     await untilCallTo { getNumberOfMessagesCurrentlyOnEventQueue() } matches { it == 0 }
     await untilCallTo { CommunityApiExtension.communityApi.getCountFor("/secure/offenders/crn/X123456/all") } matches { it == 1 }
-    await untilCallTo { getIndexCount(SyncIndex.GREEN) } matches { it == 1L }
+    await untilCallTo { indexService.getIndexCount(SyncIndex.GREEN) } matches { it == 1L }
 
     val response = search("X123456")
 
