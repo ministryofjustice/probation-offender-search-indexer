@@ -2,8 +2,15 @@ package uk.gov.justice.digital.hmpps.indexer.integration
 
 import com.amazonaws.services.sqs.AmazonSQS
 import com.google.gson.Gson
+import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest
+import org.elasticsearch.action.search.SearchRequest
+import org.elasticsearch.action.search.SearchResponse
 import org.elasticsearch.client.Request
+import org.elasticsearch.client.RequestOptions
 import org.elasticsearch.client.RestHighLevelClient
+import org.elasticsearch.client.core.CountRequest
+import org.elasticsearch.index.query.QueryBuilders
+import org.elasticsearch.search.builder.SearchSourceBuilder
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
@@ -18,6 +25,8 @@ import org.springframework.test.web.reactive.server.WebTestClient
 import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.CommunityApiExtension
 import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.OAuthExtension
 import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
+import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
+import uk.gov.justice.digital.hmpps.indexer.repository.OffenderRepository
 import uk.gov.justice.digital.hmpps.indexer.service.IndexService
 import java.time.Duration
 
@@ -61,11 +70,20 @@ abstract class IntegrationTest {
   @Autowired
   lateinit var elasticsearchOperations: ElasticsearchOperations
 
+  @Autowired
+  lateinit var offenderRespository: OffenderRepository
+
   @LocalServerPort
   protected var port: Int = 0
 
   fun setupIndexes() {
     createIndexStatusIndex()
+    createOffenderIndexes()
+  }
+
+  fun tearDownIndexes() {
+    deleteIndexStatusIndex()
+    deleteOffenderIndexes()
   }
 
   internal fun setAuthorisation(user: String = "probation-offender-search-indexer-client", roles: List<String> = listOf()): (HttpHeaders) -> Unit {
@@ -85,4 +103,27 @@ abstract class IntegrationTest {
     }
   }
 
+  private fun deleteIndexStatusIndex() {
+    elasticSearchClient.indices().delete(DeleteIndexRequest("offender-index-status"), RequestOptions.DEFAULT)
+  }
+
+  private fun createOffenderIndexes() {
+    SyncIndex.values().map { offenderRespository.createIndex(it) }
+  }
+
+  private fun deleteOffenderIndexes() {
+    SyncIndex.values().map { offenderRespository.deleteIndex(it) }
+  }
+
+  fun getIndexCount(index: SyncIndex): Long {
+    val request = CountRequest(index.indexName)
+    return elasticSearchClient.count(request, RequestOptions.DEFAULT).count
+  }
+
+  fun search(crn: String): SearchResponse {
+    val query = QueryBuilders.matchQuery("otherIds.crn", crn)
+    val search = SearchSourceBuilder().apply { query(query) }
+    val request = SearchRequest(arrayOf(SyncIndex.GREEN.indexName), search)
+    return elasticSearchClient.search(request, RequestOptions.DEFAULT)
+  }
 }
