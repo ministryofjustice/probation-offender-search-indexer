@@ -9,6 +9,9 @@ import com.nhaarman.mockitokotlin2.whenever
 import io.kotest.assertions.arrow.either.shouldBeLeft
 import io.kotest.assertions.arrow.either.shouldBeRight
 import org.assertj.core.api.Assertions.assertThat
+import org.elasticsearch.ElasticsearchStatusException
+import org.elasticsearch.client.RestHighLevelClient
+import org.elasticsearch.client.core.CountResponse
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -27,7 +30,8 @@ class IndexServiceTest {
   private val indexStatusService = mock<IndexStatusService>()
   private val offenderSynchroniserService = mock<OffenderSynchroniserService>()
   private val indexQueueService = mock<IndexQueueService>()
-  private val indexService = IndexService(indexStatusService, offenderSynchroniserService, indexQueueService)
+  private val elasticSearchClient = mock<RestHighLevelClient>()
+  private val indexService = IndexService(indexStatusService, offenderSynchroniserService, indexQueueService, elasticSearchClient)
 
   @Nested
   inner class BuildIndex {
@@ -270,7 +274,7 @@ class IndexServiceTest {
     }
 
     @Test
-    internal fun `for each offender will send populate offeder message`() {
+    internal fun `for each offender will send populate offender message`() {
       indexService.populateIndexWithOffenderPage(OffenderPage(page = 99, pageSize = 1000))
 
       verify(indexQueueService).sendPopulateOffenderMessage("X12345")
@@ -322,4 +326,21 @@ class IndexServiceTest {
 
   }
 
+
+  @Nested
+  inner class CountIndex {
+    @Test
+    fun `Should return count from elasticsearch client`() {
+      whenever(elasticSearchClient.count(any(), any())).thenReturn(CountResponse(10L, null, null))
+
+      assertThat(indexService.getIndexCount(BLUE)).isEqualTo(10L)
+    }
+
+    @Test
+    fun `Should return negative count from elasticsearch client for missing index`() {
+      whenever(elasticSearchClient.count(any(), any())).thenThrow(ElasticsearchStatusException("no such index [probation-search-green]", null, null))
+
+      assertThat(indexService.getIndexCount(BLUE)).isEqualTo(-1L)
+    }
+  }
 }

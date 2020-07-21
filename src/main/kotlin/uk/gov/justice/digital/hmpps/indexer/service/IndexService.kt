@@ -3,6 +3,9 @@ package uk.gov.justice.digital.hmpps.indexer.service
 import arrow.core.Either
 import arrow.core.left
 import arrow.core.right
+import org.elasticsearch.client.RequestOptions
+import org.elasticsearch.client.RestHighLevelClient
+import org.elasticsearch.client.core.CountRequest
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -14,7 +17,8 @@ import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
 class IndexService(
     private val indexStatusService: IndexStatusService,
     private val offenderSynchroniserService: OffenderSynchroniserService,
-    private val indexQueueService: IndexQueueService
+    private val indexQueueService: IndexQueueService,
+    private val elasticSearchClient: RestHighLevelClient
 ) {
 
   companion object {
@@ -26,12 +30,19 @@ class IndexService(
     if (indexStatus.otherIndexState == IndexState.BUILDING) {
       return BuildIndexError.BuildAlreadyInProgress(indexStatus).left()
     }
-    // TODO DT-961 log index status e.g. "Current index is {} [{}], rebuilding index {} [{}]"
+    logIndexStatuses(indexStatus)
     indexStatusService.markBuildInProgress()
     offenderSynchroniserService.checkExistsAndReset(indexStatus.otherIndex)
     indexQueueService.sendPopulateIndexMessage(indexStatus.otherIndex)
 
     return indexStatusService.getIndexStatus().right()
+  }
+
+  private fun logIndexStatuses(indexStatus: IndexStatus) {
+    log.info("Current index is {} with state {} [{}], other index is {} with state {} [{}]",
+        indexStatus.currentIndex.indexName, indexStatus.currentIndexState, getIndexCount(indexStatus.currentIndex),
+        indexStatus.otherIndex.indexName, indexStatus.otherIndexState, getIndexCount(indexStatus.otherIndex)
+    )
   }
 
   fun markIndexingComplete(): Either<MarkBuildCompleteError, IndexStatus> {
@@ -91,6 +102,11 @@ class IndexService(
     }
 
     return offenderSynchroniserService.synchroniseOffender(crn, indexStatus.currentIndex.otherIndex()).right()
+  }
+
+  fun getIndexCount(index: SyncIndex): Long {
+    val request = CountRequest(index.indexName)
+    return try { elasticSearchClient.count(request, RequestOptions.DEFAULT).count } catch (e: Exception) { -1L }
   }
 
 }
