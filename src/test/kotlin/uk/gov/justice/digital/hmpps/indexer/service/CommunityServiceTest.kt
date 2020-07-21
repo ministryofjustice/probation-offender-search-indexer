@@ -22,8 +22,10 @@ internal class CommunityServiceTest : IntegrationTest() {
       CommunityApiExtension.communityApi.stubFor(WireMock.get(WireMock.anyUrl()).willReturn(WireMock.aResponse()
           .withHeader("Content-Type", "application/json")
           .withBody("""{
-          "offenderId": 99,
-          "crn": "X12345"
+            "offenderId": 99,
+            "otherIds": {
+              "crn": "X12345"
+            }
           }""")
           .withStatus(HttpURLConnection.HTTP_OK)))
 
@@ -39,15 +41,17 @@ internal class CommunityServiceTest : IntegrationTest() {
       CommunityApiExtension.communityApi.stubFor(WireMock.get(WireMock.anyUrl()).willReturn(WireMock.aResponse()
           .withHeader("Content-Type", "application/json")
           .withBody("""{
-          "offenderId": 99,
-          "crn": "X12345"
+            "offenderId": 99,
+            "otherIds": {
+              "crn": "X12345"
+            }
           }""")
           .withStatus(HttpURLConnection.HTTP_OK)))
 
       val offender = service.getOffender("X12345")
 
 
-      assertThat(offender.json).contains("\"offenderId\": 99")
+      assertThat(offender.json).contains(""""crn": "X12345"""")
     }
 
     @Test
@@ -55,15 +59,17 @@ internal class CommunityServiceTest : IntegrationTest() {
       CommunityApiExtension.communityApi.stubFor(WireMock.get(WireMock.anyUrl()).willReturn(WireMock.aResponse()
           .withHeader("Content-Type", "application/json")
           .withBody("""{
-          "offenderId": 99,
-          "crn": "X12345"
+            "offenderId": 99,
+            "otherIds": {
+              "crn": "X12345"
+            }
           }""")
           .withStatus(HttpURLConnection.HTTP_OK)))
 
       val offender = service.getOffender("X12345")
 
 
-      assertThat(offender.offenderId).isEqualTo(99)
+      assertThat(offender.crn).isEqualTo("X12345")
     }
 
     @Test
