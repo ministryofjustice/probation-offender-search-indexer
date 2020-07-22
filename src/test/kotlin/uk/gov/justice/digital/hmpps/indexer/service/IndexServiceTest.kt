@@ -54,7 +54,7 @@ class IndexServiceTest {
     @Test
     fun `A request is made to mark the index build is in progress`() {
       whenever(indexStatusService.getIndexStatus())
-          .thenReturn(indexStatus(otherIndex = BLUE, otherIndexState = IndexState.NEW))
+          .thenReturn(indexStatus(otherIndex = BLUE, otherIndexState = IndexState.ABSENT))
 
       indexService.prepareIndexForRebuild()
 
@@ -64,7 +64,7 @@ class IndexServiceTest {
     @Test
     fun `A request is made to reset the other index`() {
       whenever(indexStatusService.getIndexStatus())
-          .thenReturn(indexStatus(otherIndex = BLUE, otherIndexState = IndexState.NEW))
+          .thenReturn(indexStatus(otherIndex = BLUE, otherIndexState = IndexState.ABSENT))
 
       indexService.prepareIndexForRebuild()
 
@@ -74,7 +74,7 @@ class IndexServiceTest {
     @Test
     fun `A request is made to build other index`() {
       whenever(indexStatusService.getIndexStatus())
-          .thenReturn(indexStatus(otherIndex = BLUE, otherIndexState = IndexState.NEW))
+          .thenReturn(indexStatus(otherIndex = BLUE, otherIndexState = IndexState.ABSENT))
 
       indexService.prepareIndexForRebuild()
 
@@ -85,7 +85,7 @@ class IndexServiceTest {
     fun `The updated index is returned`() {
       val expectedIndexStatus = indexStatus(otherIndex = GREEN, otherIndexState = BUILDING)
       whenever(indexStatusService.getIndexStatus())
-          .thenReturn(indexStatus(GREEN, IndexState.NEW))
+          .thenReturn(indexStatus(GREEN, IndexState.ABSENT))
           .thenReturn(expectedIndexStatus)
 
       val result = indexService.prepareIndexForRebuild()
@@ -123,6 +123,7 @@ class IndexServiceTest {
 
       verify(indexStatusService).markBuildCompleteAndSwitchIndex()
     }
+
     @Test
     fun `A request is made to switch alias`() {
       val expectedIndexStatus = indexStatus(otherIndex = BLUE, otherIndexState = BUILDING)

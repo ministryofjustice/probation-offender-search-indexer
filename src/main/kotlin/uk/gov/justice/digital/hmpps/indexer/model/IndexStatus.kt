@@ -8,48 +8,47 @@ import org.springframework.data.elasticsearch.annotations.DateFormat
 import org.springframework.data.elasticsearch.annotations.Document
 import org.springframework.data.elasticsearch.annotations.Field
 import org.springframework.data.elasticsearch.annotations.FieldType
-import uk.gov.justice.digital.hmpps.indexer.model.IndexState.NEW
 import java.time.LocalDateTime
 
 internal const val INDEX_STATUS_ID = "STATUS"
 
-enum class IndexState { NEW, BUILDING, CANCELLED, COMPLETED }
+enum class IndexState { ABSENT, BUILDING, CANCELLED, COMPLETED }
 
 @Document(indexName = "offender-index-status")
 @ApiModel(description = "The status of the two indexes, the current index being actively used for searches and the other index being inactive but available for rebuilding ")
 data class IndexStatus(
-  @Id
-  @Field(type = FieldType.Keyword)
-  @JsonIgnore
-  val id: String = INDEX_STATUS_ID,
+    @Id
+    @Field(type = FieldType.Keyword)
+    @JsonIgnore
+    val id: String = INDEX_STATUS_ID,
 
-  @Field(type = FieldType.Keyword)
-  @ApiModelProperty(value = "The index currently active for searches", example = "GREEN")
-  val currentIndex: SyncIndex,
+    @Field(type = FieldType.Keyword)
+    @ApiModelProperty(value = "The index currently active for searches", example = "GREEN")
+    val currentIndex: SyncIndex,
 
-  @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second)
-  @ApiModelProperty(value = "The last time the current index started building", example = "2020-07-17T10:25:49.842Z")
-  val currentIndexStartBuildTime: LocalDateTime? = null,
+    @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second)
+    @ApiModelProperty(value = "The last time the current index started building", example = "2020-07-17T10:25:49.842Z")
+    val currentIndexStartBuildTime: LocalDateTime? = null,
 
-  @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second)
-  @ApiModelProperty(value = "The last time the current index finished building", example = "2020-07-17T11:35:29.833Z")
-  val currentIndexEndBuildTime: LocalDateTime? = null,
+    @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second)
+    @ApiModelProperty(value = "The last time the current index finished building", example = "2020-07-17T11:35:29.833Z")
+    val currentIndexEndBuildTime: LocalDateTime? = null,
 
-  @Field(type = FieldType.Text)
-  @ApiModelProperty(value = "The status of the current index before it became active", example = "COMPLETED")
-  val currentIndexState: IndexState = IndexState.NEW,
+    @Field(type = FieldType.Text)
+    @ApiModelProperty(value = "The status of the current index before it became active", example = "COMPLETED")
+    val currentIndexState: IndexState = IndexState.ABSENT,
 
-  @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second)
-  @ApiModelProperty(value = "The time the inactive index started building", example = "2020-07-17T12:26:48.822Z")
-  val otherIndexStartBuildTime: LocalDateTime? = null,
+    @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second)
+    @ApiModelProperty(value = "The time the inactive index started building", example = "2020-07-17T12:26:48.822Z")
+    val otherIndexStartBuildTime: LocalDateTime? = null,
 
-  @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second)
-  @ApiModelProperty(value = "The time the inactive index ended building", example = "null")
-  val otherIndexEndBuildTime: LocalDateTime? = null,
+    @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second)
+    @ApiModelProperty(value = "The time the inactive index ended building", example = "null")
+    val otherIndexEndBuildTime: LocalDateTime? = null,
 
-  @Field(type = FieldType.Text)
-  @ApiModelProperty(value = "The status of the inactive index", example = "BUILDING")
-  val otherIndexState: IndexState = IndexState.NEW
+    @Field(type = FieldType.Text)
+    @ApiModelProperty(value = "The status of the inactive index", example = "BUILDING")
+    val otherIndexState: IndexState = IndexState.ABSENT
 
 ) {
 
@@ -82,9 +81,9 @@ data class IndexStatus(
         currentIndexStartBuildTime = otherIndexStartBuildTime,
         currentIndexEndBuildTime = otherIndexEndBuildTime,
         currentIndexState = otherIndexState,
-        otherIndexStartBuildTime = null,
-        otherIndexEndBuildTime = null,
-        otherIndexState = IndexState.NEW
+        otherIndexStartBuildTime = currentIndexStartBuildTime,
+        otherIndexEndBuildTime = currentIndexEndBuildTime,
+        otherIndexState = currentIndexState
     )
   }
 

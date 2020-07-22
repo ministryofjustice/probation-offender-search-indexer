@@ -9,7 +9,6 @@ import com.nhaarman.mockitokotlin2.whenever
 import org.assertj.core.api.Assertions.assertThat
 import org.elasticsearch.client.IndicesClient
 import org.elasticsearch.client.RestHighLevelClient
-import org.elasticsearch.client.indices.CreateIndexRequest
 import org.elasticsearch.client.indices.GetIndexRequest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
@@ -83,7 +82,7 @@ class IndexStatusServiceTest {
 
     @Test
     fun `Not currently building index saves status building`() {
-      val existingIndexNotInProgress = indexStatus(otherIndex = SyncIndex.BLUE, otherIndexState = IndexState.NEW)
+      val existingIndexNotInProgress = indexStatus(otherIndex = SyncIndex.BLUE, otherIndexState = IndexState.ABSENT)
       whenever(indexStatusRepository.findById(INDEX_STATUS_ID)).thenReturn(Optional.ofNullable(existingIndexNotInProgress))
 
       val newIndexStatus = indexStatusService.markBuildInProgress()

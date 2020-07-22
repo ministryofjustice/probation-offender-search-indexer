@@ -20,3 +20,6 @@ oauth:
 
 community:
   endpoint.url: http://localhost:8096
+
+
+index.page.size: 10
