@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.indexer.resource
 
+import com.amazonaws.services.sqs.model.PurgeQueueRequest
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.matches
 import org.awaitility.kotlin.untilCallTo
@@ -23,7 +24,8 @@ class IndexResourceIntegrationTest : QueueIntegrationTest() {
 
   @BeforeEach
   internal fun setUp() {
-    CommunityApiExtension.communityApi.resetAll()
+    indexAwsSqsClient.purgeQueue(PurgeQueueRequest(indexQueueUrl))
+    CommunityApiExtension.communityApi.resetMappings()
   }
 
   @Nested
