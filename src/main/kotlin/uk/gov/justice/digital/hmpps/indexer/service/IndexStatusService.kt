@@ -1,5 +1,8 @@
 package uk.gov.justice.digital.hmpps.indexer.service
 
+import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest
+import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest.AliasActions
+import org.elasticsearch.action.support.master.AcknowledgedResponse
 import org.elasticsearch.client.RequestOptions
 import org.elasticsearch.client.RestHighLevelClient
 import org.elasticsearch.client.indices.CreateIndexRequest
@@ -10,18 +13,19 @@ import org.springframework.data.elasticsearch.annotations.Document
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.indexer.model.INDEX_STATUS_ID
 import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
+import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
 import uk.gov.justice.digital.hmpps.indexer.repository.IndexStatusRepository
 
 @Service
 class IndexStatusService(private val indexStatusRepository: IndexStatusRepository, private val elasticSearchClient: RestHighLevelClient) {
   companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
+    val indexName: String = (IndexStatus::class.annotations.find { it is Document } as? Document)?.indexName!!
   }
 
   fun initialiseIndexWhenRequired(): IndexStatusService {
-    val document = IndexStatus::class.annotations.find { it is Document } as? Document
-    if (elasticSearchClient.indices().exists(GetIndexRequest(document?.indexName!!), RequestOptions.DEFAULT).not()) {
-      elasticSearchClient.indices().create(CreateIndexRequest(document.indexName), RequestOptions.DEFAULT)
+    if (elasticSearchClient.indices().exists(GetIndexRequest(indexName), RequestOptions.DEFAULT).not()) {
+      elasticSearchClient.indices().create(CreateIndexRequest(indexName), RequestOptions.DEFAULT)
       indexStatusRepository.save(IndexStatus.newIndex())
     }
 
@@ -42,12 +46,14 @@ class IndexStatusService(private val indexStatusRepository: IndexStatusRepositor
   fun markBuildCompleteAndSwitchIndex(): IndexStatus {
     val currentIndexStatus = getIndexStatus()
     if (currentIndexStatus.inProgress()) {
-      return indexStatusRepository.save(currentIndexStatus.toBuildComplete().toSwitchIndex())
+      val newStatus = indexStatusRepository.save(currentIndexStatus.toBuildComplete().toSwitchIndex())
+      elasticSearchClient.switchOffenderAlias(newStatus.currentIndex)
+      return newStatus
     }
     return currentIndexStatus
   }
 
-  fun markBuildCancelled() : IndexStatus {
+  fun markBuildCancelled(): IndexStatus {
     val currentIndexStatus = getIndexStatus()
     if (currentIndexStatus.inProgress()) {
       return indexStatusRepository.save(currentIndexStatus.toBuildCancelled())
@@ -55,3 +61,6 @@ class IndexStatusService(private val indexStatusRepository: IndexStatusRepositor
     return currentIndexStatus
   }
 }
+
+fun RestHighLevelClient.switchOffenderAlias(index: SyncIndex): AcknowledgedResponse? = this.indices()
+    .updateAliases(IndicesAliasesRequest().addAliasAction(AliasActions(AliasActions.Type.ADD).index(index.indexName).alias("offender")), RequestOptions.DEFAULT)

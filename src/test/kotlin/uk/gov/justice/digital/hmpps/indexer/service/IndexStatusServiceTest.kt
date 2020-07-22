@@ -7,6 +7,7 @@ import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import org.assertj.core.api.Assertions.assertThat
+import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest.AliasActions
 import org.elasticsearch.client.IndicesClient
 import org.elasticsearch.client.RestHighLevelClient
 import org.elasticsearch.client.indices.CreateIndexRequest
@@ -35,7 +36,6 @@ class IndexStatusServiceTest {
     inner class NoIndex {
       @BeforeEach
       internal fun setUp() {
-
         whenever(elasticSearchClient.indices()).thenReturn(indexClient)
         whenever(indexClient.exists(any<GetIndexRequest>(), any())).thenReturn(false)
       }
@@ -139,6 +139,7 @@ class IndexStatusServiceTest {
     @BeforeEach
     internal fun setUp() {
       whenever(indexStatusRepository.save(any<IndexStatus>())).thenAnswer { it.getArgument(0) }
+      whenever(elasticSearchClient.indices()).thenReturn(indexClient)
     }
 
     @Test
@@ -163,6 +164,16 @@ class IndexStatusServiceTest {
       })
 
       assertThat(newIndexStatus).isNotNull
+    }
+    @Test
+    fun `offender alias will be switched to new index`() {
+      val existingIndexInProgress = indexStatus(otherIndex = SyncIndex.GREEN, otherIndexState = IndexState.BUILDING)
+      whenever(indexStatusRepository.findById(INDEX_STATUS_ID)).thenReturn(Optional.ofNullable(existingIndexInProgress))
+
+      indexStatusService.markBuildCompleteAndSwitchIndex()
+      verify(indexClient).updateAliases(check {
+        assertThat(it.aliasActions).containsExactly(AliasActions.add().alias("offender").index("probation-search-green"))
+      }, any())
     }
   }
 
