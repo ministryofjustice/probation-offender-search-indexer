@@ -82,7 +82,7 @@ abstract class IntegrationTest {
     createOffenderIndexes()
   }
 
-  fun tearDownIndexes() {
+  fun deleteIndexes() {
     deleteIndexStatusIndex()
     deleteOffenderIndexes()
   }
@@ -103,7 +103,7 @@ abstract class IntegrationTest {
   }
 
   private fun deleteIndexStatusIndex() {
-    elasticSearchClient.indices().delete(DeleteIndexRequest("offender-index-status"), RequestOptions.DEFAULT)
+    elasticSearchClient.indices().delete(DeleteIndexRequest(IndexStatusService.indexName), RequestOptions.DEFAULT)
   }
 
   private fun createOffenderIndexes() {
@@ -113,6 +113,13 @@ abstract class IntegrationTest {
   private fun deleteOffenderIndexes() {
     SyncIndex.values().map { offenderRespository.deleteIndex(it) }
   }
+
+  fun getIndexCount(index: SyncIndex): Long {
+    return getIndexCount(index.indexName)
+  }
+
+  fun getIndexCount(index: String): Long = elasticSearchClient.count(CountRequest(index), RequestOptions.DEFAULT).count
+
 
   fun search(crn: String): SearchResponse {
     val query = QueryBuilders.matchQuery("otherIds.crn", crn)

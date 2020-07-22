@@ -16,12 +16,12 @@ import uk.gov.justice.digital.hmpps.indexer.repository.IndexStatusRepository
 class IndexStatusService(private val indexStatusRepository: IndexStatusRepository, private val elasticSearchClient: RestHighLevelClient) {
   companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
+    val indexName: String = (IndexStatus::class.annotations.find { it is Document } as? Document)?.indexName!!
   }
 
   fun initialiseIndexWhenRequired(): IndexStatusService {
-    val document = IndexStatus::class.annotations.find { it is Document } as? Document
-    if (elasticSearchClient.indices().exists(GetIndexRequest(document?.indexName!!), RequestOptions.DEFAULT).not()) {
-      elasticSearchClient.indices().create(CreateIndexRequest(document.indexName), RequestOptions.DEFAULT)
+    if (elasticSearchClient.indices().exists(GetIndexRequest(indexName), RequestOptions.DEFAULT).not()) {
+      elasticSearchClient.indices().create(CreateIndexRequest(indexName), RequestOptions.DEFAULT)
       indexStatusRepository.save(IndexStatus.newIndex())
     }
 
@@ -47,7 +47,7 @@ class IndexStatusService(private val indexStatusRepository: IndexStatusRepositor
     return currentIndexStatus
   }
 
-  fun markBuildCancelled() : IndexStatus {
+  fun markBuildCancelled(): IndexStatus {
     val currentIndexStatus = getIndexStatus()
     if (currentIndexStatus.inProgress()) {
       return indexStatusRepository.save(currentIndexStatus.toBuildCancelled())

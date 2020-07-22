@@ -12,7 +12,7 @@ class InfoIntegrationTest : IntegrationTest() {
 
   @BeforeEach
   fun init() {
-    tearDownIndexes()
+    deleteIndexes()
     setupIndexes()
   }
 

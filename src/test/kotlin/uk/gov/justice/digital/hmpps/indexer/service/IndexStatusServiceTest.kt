@@ -35,7 +35,6 @@ class IndexStatusServiceTest {
     inner class NoIndex {
       @BeforeEach
       internal fun setUp() {
-
         whenever(elasticSearchClient.indices()).thenReturn(indexClient)
         whenever(indexClient.exists(any<GetIndexRequest>(), any())).thenReturn(false)
       }
@@ -139,6 +138,7 @@ class IndexStatusServiceTest {
     @BeforeEach
     internal fun setUp() {
       whenever(indexStatusRepository.save(any<IndexStatus>())).thenAnswer { it.getArgument(0) }
+      whenever(elasticSearchClient.indices()).thenReturn(indexClient)
     }
 
     @Test

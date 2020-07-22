@@ -13,7 +13,7 @@ class OffenderUpdateMessageIntegrationTest : QueueIntegrationTest() {
 
   @BeforeEach
   fun initialise() {
-    tearDownIndexes()
+    deleteIndexes()
     setupIndexes()
   }
 

@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.indexer.repository
 import net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest
 import org.elasticsearch.action.get.GetRequest
 import org.elasticsearch.action.ingest.GetPipelineRequest
@@ -302,6 +303,59 @@ internal class OffenderRepositoryIntegrationTest : IntegrationTest() {
       assertThat(offenderRepository.doesIndexExist(GREEN)).isFalse()
     }
   }
+
+  @Nested
+  inner class SwitchAliasIndex {
+    @BeforeEach
+    internal fun setUp() {
+      highLevelClient.safeIndexCreate(BLUE.indexName)
+      highLevelClient.safeIndexCreate(GREEN.indexName)
+    }
+
+    @Nested
+    inner class BeforeAliasExists {
+      @Test
+      fun `can create an alias for active index`() {
+        offenderRepository.switchAliasIndex(GREEN)
+        assertThat(highLevelClient.indices().exists(GetIndexRequest("offender"), RequestOptions.DEFAULT)).isTrue()
+        assertThat(highLevelClient.indices().getAlias(GetAliasesRequest().aliases("offender"), RequestOptions.DEFAULT).aliases).containsKey(GREEN.indexName)
+        assertThat(highLevelClient.indices().getAlias(GetAliasesRequest().aliases("offender"), RequestOptions.DEFAULT).aliases).doesNotContainKey(BLUE.indexName)
+      }
+    }
+
+    @Nested
+    inner class WhenAliasExists {
+      @BeforeEach
+      internal fun setUp() {
+        offenderRepository.switchAliasIndex(GREEN)
+      }
+
+      @Test
+      fun `can switch an alias for active index`() {
+        offenderRepository.switchAliasIndex(BLUE)
+        assertThat(highLevelClient.indices().exists(GetIndexRequest("offender"), RequestOptions.DEFAULT)).isTrue()
+        assertThat(highLevelClient.indices().getAlias(GetAliasesRequest().aliases("offender"), RequestOptions.DEFAULT).aliases).containsKey(BLUE.indexName)
+        assertThat(highLevelClient.indices().getAlias(GetAliasesRequest().aliases("offender"), RequestOptions.DEFAULT).aliases).doesNotContainKey(GREEN.indexName)
+      }
+    }
+
+    @Nested
+    inner class WhenAliasExistsOnCorrectIndex {
+      @BeforeEach
+      internal fun setUp() {
+        offenderRepository.switchAliasIndex(BLUE)
+      }
+
+      @Test
+      fun `will keep an alias for active index`() {
+        offenderRepository.switchAliasIndex(BLUE)
+        assertThat(highLevelClient.indices().exists(GetIndexRequest("offender"), RequestOptions.DEFAULT)).isTrue()
+        assertThat(highLevelClient.indices().getAlias(GetAliasesRequest().aliases("offender"), RequestOptions.DEFAULT).aliases).containsKey(BLUE.indexName)
+        assertThat(highLevelClient.indices().getAlias(GetAliasesRequest().aliases("offender"), RequestOptions.DEFAULT).aliases).doesNotContainKey(GREEN.indexName)
+      }
+    }
+  }
+
   private fun Any.asJson() = gson.toJson(this)
 }
 

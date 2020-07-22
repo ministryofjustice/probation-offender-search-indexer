@@ -13,6 +13,7 @@ import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import java.net.HttpURLConnection
+import java.util.Arrays.asList
 import kotlin.random.Random
 
 class CommunityApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback {
@@ -59,7 +60,13 @@ class CommunityApiMockServer : WireMockServer(WIREMOCK_PORT) {
       verify(getRequestedFor(urlEqualTo("/secure/offenders/crn/$crn/all"))
           .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")))
 
-
+  fun stubAllOffenderGets(vararg crns: String) {
+    stubAllOffenders(crns.size.toLong())
+    stubPageOfOffenders(*crns)
+    crns.forEach {
+      stubGetOffender(it)
+    }
+  }
   private fun anOffenderDetail(
       offenderId: Long = 490001467,
       crn: String = "X123456",
@@ -269,7 +276,7 @@ class CommunityApiMockServer : WireMockServer(WIREMOCK_PORT) {
                 .withStatus(HttpURLConnection.HTTP_OK)))
   }
 
-  fun stubPageOfOffenders(crns: List<String>) {
+  fun stubPageOfOffenders(vararg crns: String) {
     val offenders = crns.map { mapOf("offenderId" to Random(1).nextInt(), "crn" to it) }
     val offenderList = Gson().toJson(offenders)
 
