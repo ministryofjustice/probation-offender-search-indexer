@@ -58,12 +58,13 @@ class OffenderRepository(@Qualifier("elasticSearchClient") private val client: R
 
   fun switchAliasIndex(index: SyncIndex) {
     val alias = client.indices().getAlias(GetAliasesRequest().aliases("offender"), RequestOptions.DEFAULT)
+    client.indices()
+        .updateAliases(IndicesAliasesRequest().addAliasAction(AliasActions(ADD).index(index.indexName).alias("offender")), RequestOptions.DEFAULT)
+
     alias.aliases[index.otherIndex().indexName]?.forEach {
       client.indices()
           .deleteAlias(DeleteAliasRequest(index.otherIndex().indexName, it.alias), RequestOptions.DEFAULT)
     }
-    client.indices()
-        .updateAliases(IndicesAliasesRequest().addAliasAction(AliasActions(ADD).index(index.indexName).alias("offender")), RequestOptions.DEFAULT)
   }
 }
 
