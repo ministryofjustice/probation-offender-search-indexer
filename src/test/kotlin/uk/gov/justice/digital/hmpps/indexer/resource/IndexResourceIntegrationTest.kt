@@ -8,18 +8,12 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.http.MediaType
-import org.springframework.test.annotation.DirtiesContext
-import org.springframework.test.context.TestPropertySource
 import uk.gov.justice.digital.hmpps.indexer.integration.QueueIntegrationTest
 import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.CommunityApiExtension
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.BLUE
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.GREEN
 
-@DirtiesContext
-@TestPropertySource(properties = [
-  "index.page.size=10"
-])
 class IndexResourceIntegrationTest : QueueIntegrationTest() {
 
   @BeforeEach
