@@ -40,9 +40,9 @@ class IndexService(
       return MarkBuildCompleteError.BuildNotInProgress(indexStatus).left()
     }
 
-    indexStatusService.markBuildCompleteAndSwitchIndex()
+    val newIndexStatus = indexStatusService.markBuildCompleteAndSwitchIndex()
     indexQueueService.clearAllMessages()
-    log.info("Index ${indexStatus.otherIndex} marked as ${indexStatus.otherIndexState}, ${indexStatus.currentIndex} is now current")
+    log.info("Index ${newIndexStatus.otherIndex} marked as ${newIndexStatus.otherIndexState}, ${newIndexStatus.currentIndex} is now current")
 
     return indexStatusService.getIndexStatus().right()
   }

@@ -99,7 +99,7 @@ abstract class IntegrationTest {
     indexStatusService
         .initialiseIndexWhenRequired()
         .markBuildInProgress()
-        .markBuildCompleteAndSwitchIndex()
+    indexStatusService.markBuildCompleteAndSwitchIndex()
   }
 
   private fun deleteIndexStatusIndex() {
