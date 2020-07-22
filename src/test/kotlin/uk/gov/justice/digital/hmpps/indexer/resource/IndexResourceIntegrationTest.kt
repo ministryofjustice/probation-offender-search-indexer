@@ -25,8 +25,7 @@ class IndexResourceIntegrationTest : QueueIntegrationTest() {
     inner class FirstTimeRun {
       @BeforeEach
       internal fun setUp() {
-        deleteOffenderIndexes()
-        deleteIndexStatusIndex()
+        deleteIndexes()
       }
 
       @Test

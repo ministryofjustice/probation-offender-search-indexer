@@ -82,7 +82,7 @@ abstract class IntegrationTest {
     createOffenderIndexes()
   }
 
-  fun tearDownIndexes() {
+  fun deleteIndexes() {
     deleteIndexStatusIndex()
     deleteOffenderIndexes()
   }
@@ -102,7 +102,7 @@ abstract class IntegrationTest {
     indexStatusService.markBuildCompleteAndSwitchIndex()
   }
 
-  internal fun deleteIndexStatusIndex() {
+  private fun deleteIndexStatusIndex() {
     elasticSearchClient.indices().delete(DeleteIndexRequest(IndexStatusService.indexName), RequestOptions.DEFAULT)
   }
 
@@ -110,7 +110,7 @@ abstract class IntegrationTest {
     SyncIndex.values().map { offenderRespository.createIndex(it) }
   }
 
-  internal fun deleteOffenderIndexes() {
+  private fun deleteOffenderIndexes() {
     SyncIndex.values().map { offenderRespository.deleteIndex(it) }
   }
 
