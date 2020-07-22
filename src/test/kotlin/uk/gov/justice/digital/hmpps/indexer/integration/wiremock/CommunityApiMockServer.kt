@@ -236,6 +236,7 @@ class CommunityApiMockServer : WireMockServer(WIREMOCK_PORT) {
     CommunityApiExtension.communityApi.stubFor(
         get(urlPathEqualTo("/secure/offenders/primaryIdentifiers"))
             .withQueryParam("size", WireMock.equalTo("1"))
+            .withQueryParam("includeDeleted", WireMock.equalTo("true"))
             .willReturn(aResponse()
                 .withHeader("Content-Type", "application/json")
                 .withBody("""
@@ -288,6 +289,7 @@ class CommunityApiMockServer : WireMockServer(WIREMOCK_PORT) {
           get(urlPathEqualTo("/secure/offenders/primaryIdentifiers"))
               .withQueryParam("size", WireMock.equalTo(pageSize.toString()))
               .withQueryParam("page", WireMock.equalTo(it.index.toString()))
+              .withQueryParam("includeDeleted", WireMock.equalTo("true"))
               .willReturn(aResponse()
                   .withHeader("Content-Type", "application/json")
                   .withBody("""
