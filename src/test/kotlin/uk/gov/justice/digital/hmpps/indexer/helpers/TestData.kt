@@ -10,8 +10,8 @@ internal fun indexStatus(otherIndex: SyncIndex, otherIndexState: IndexState) =
         currentIndex = otherIndex.otherIndex(),
         currentIndexStartBuildTime = null,
         currentIndexEndBuildTime = null,
-        currentIndexState = IndexState.NEW,
-        otherIndexStartBuildTime = if (otherIndexState == IndexState.NEW) null else LocalDateTime.now().minusHours(1),
-        otherIndexEndBuildTime = if (listOf(IndexState.NEW, IndexState.BUILDING).contains(otherIndexState)) null else LocalDateTime.now().minusMinutes(1),
+        currentIndexState = IndexState.ABSENT,
+        otherIndexStartBuildTime = if (otherIndexState == IndexState.ABSENT) null else LocalDateTime.now().minusHours(1),
+        otherIndexEndBuildTime = if (listOf(IndexState.ABSENT, IndexState.BUILDING).contains(otherIndexState)) null else LocalDateTime.now().minusMinutes(1),
         otherIndexState = otherIndexState
     )

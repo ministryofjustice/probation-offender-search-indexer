@@ -20,7 +20,7 @@ class IndexStatusIntegrationTest : IntegrationTest() {
     indexStatusService.getIndexStatus()
 
     val actual = getActualIndexStatus()
-    assertThat(actual.otherIndexState).isEqualTo(IndexState.NEW)
+    assertThat(actual.otherIndexState).isEqualTo(IndexState.ABSENT)
   }
 
   @Test

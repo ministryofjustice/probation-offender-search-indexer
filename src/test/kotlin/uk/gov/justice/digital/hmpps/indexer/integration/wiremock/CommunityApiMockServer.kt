@@ -13,7 +13,6 @@ import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import java.net.HttpURLConnection
-import java.util.Arrays.asList
 import kotlin.random.Random
 
 class CommunityApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback {
@@ -60,13 +59,14 @@ class CommunityApiMockServer : WireMockServer(WIREMOCK_PORT) {
       verify(getRequestedFor(urlEqualTo("/secure/offenders/crn/$crn/all"))
           .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")))
 
-  fun stubAllOffenderGets(vararg crns: String) {
+  fun stubAllOffenderGets(pageSize: Long = 1000L, vararg crns: String) {
     stubAllOffenders(crns.size.toLong())
-    stubPageOfOffenders(*crns)
+    stubPageOfOffenders(pageSize, *crns)
     crns.forEach {
       stubGetOffender(it)
     }
   }
+
   private fun anOffenderDetail(
       offenderId: Long = 490001467,
       crn: String = "X123456",
@@ -276,16 +276,21 @@ class CommunityApiMockServer : WireMockServer(WIREMOCK_PORT) {
                 .withStatus(HttpURLConnection.HTTP_OK)))
   }
 
-  fun stubPageOfOffenders(vararg crns: String) {
-    val offenders = crns.map { mapOf("offenderId" to Random(1).nextInt(), "crn" to it) }
-    val offenderList = Gson().toJson(offenders)
+  fun stubPageOfOffenders(pageSize: Long = 1000, vararg crns: String) {
+    // group CRNs for each page
+    val pagesOfCrns = listOf(*crns).withIndex().groupBy { it.index / pageSize }
+        .map { it.value.map { crn -> crn.value } }
+    pagesOfCrns.withIndex().forEach {
+      val offenders = it.value.map { crn -> mapOf("offenderId" to Random(1).nextInt(), "crn" to crn) }
+      val offenderList = Gson().toJson(offenders)
 
-    CommunityApiExtension.communityApi.stubFor(
-        get(urlPathEqualTo("/secure/offenders/primaryIdentifiers"))
-            .withQueryParam("size", WireMock.equalTo("1000"))
-            .willReturn(aResponse()
-                .withHeader("Content-Type", "application/json")
-                .withBody("""
+      CommunityApiExtension.communityApi.stubFor(
+          get(urlPathEqualTo("/secure/offenders/primaryIdentifiers"))
+              .withQueryParam("size", WireMock.equalTo(pageSize.toString()))
+              .withQueryParam("page", WireMock.equalTo(it.index.toString()))
+              .willReturn(aResponse()
+                  .withHeader("Content-Type", "application/json")
+                  .withBody("""
                 {
                     "content": $offenderList,
                     "pageable": {
@@ -315,7 +320,9 @@ class CommunityApiMockServer : WireMockServer(WIREMOCK_PORT) {
                     "empty": false
                 }            
                 """)
-                .withStatus(HttpURLConnection.HTTP_OK)))
+                  .withStatus(HttpURLConnection.HTTP_OK)))
+    }
+
   }
 
 }
