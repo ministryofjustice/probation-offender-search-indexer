@@ -23,7 +23,7 @@ class IndexResourceIntegrationTest : QueueIntegrationTest() {
 
   @BeforeEach
   internal fun setUp() {
-    CommunityApiExtension.communityApi.resetRequests()
+    CommunityApiExtension.communityApi.resetAll()
   }
 
   @Nested
