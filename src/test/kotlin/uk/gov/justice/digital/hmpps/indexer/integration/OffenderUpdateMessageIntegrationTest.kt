@@ -13,8 +13,10 @@ class OffenderUpdateMessageIntegrationTest : QueueIntegrationTest() {
 
   @BeforeEach
   fun initialise() {
-    deleteIndexes()
-    setupIndexes()
+    deleteOffenderIndexes()
+    createOffenderIndexes()
+    initialiseIndexStatus()
+    buildInitialIndex()
   }
 
   @Test

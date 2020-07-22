@@ -2,7 +2,6 @@ package uk.gov.justice.digital.hmpps.indexer.integration
 
 import com.amazonaws.services.sqs.AmazonSQS
 import com.google.gson.Gson
-import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest
 import org.elasticsearch.action.search.SearchRequest
 import org.elasticsearch.action.search.SearchResponse
 import org.elasticsearch.client.RequestOptions
@@ -22,7 +21,9 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.reactive.server.WebTestClient
 import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.CommunityApiExtension
 import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.OAuthExtension
+import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
+import uk.gov.justice.digital.hmpps.indexer.repository.IndexStatusRepository
 import uk.gov.justice.digital.hmpps.indexer.repository.OffenderRepository
 import uk.gov.justice.digital.hmpps.indexer.service.IndexService
 import uk.gov.justice.digital.hmpps.indexer.service.IndexStatusService
@@ -72,19 +73,30 @@ abstract class IntegrationTest {
   lateinit var offenderRespository: OffenderRepository
 
   @Autowired
+  lateinit var indexStatusRepository: IndexStatusRepository
+
+  @Autowired
   lateinit var indexStatusService: IndexStatusService
 
   @LocalServerPort
   protected var port: Int = 0
 
-  fun setupIndexes() {
-    createIndexStatusIndex()
-    createOffenderIndexes()
+  fun createOffenderIndexes() {
+    SyncIndex.values().map { offenderRespository.createIndex(it) }
   }
 
-  fun deleteIndexes() {
-    deleteIndexStatusIndex()
-    deleteOffenderIndexes()
+  fun deleteOffenderIndexes() {
+    SyncIndex.values().map { offenderRespository.deleteIndex(it) }
+  }
+
+  fun initialiseIndexStatus() {
+    indexStatusRepository.deleteAll()
+    indexStatusRepository.save(IndexStatus.newIndex())
+  }
+
+  fun buildInitialIndex() {
+    indexService.prepareIndexForRebuild()
+    indexService.markIndexingComplete()
   }
 
   internal fun setAuthorisation(user: String = "probation-offender-search-indexer-client", roles: List<String> = listOf()): (HttpHeaders) -> Unit {
@@ -93,25 +105,6 @@ abstract class IntegrationTest {
         expiryTime = Duration.ofHours(1L),
         roles = roles)
     return { it.set(HttpHeaders.AUTHORIZATION, "Bearer $token") }
-  }
-
-  private fun createIndexStatusIndex() {
-    indexStatusService
-        .initialiseIndexWhenRequired()
-        .markBuildInProgress()
-    indexStatusService.markBuildCompleteAndSwitchIndex()
-  }
-
-  private fun deleteIndexStatusIndex() {
-    elasticSearchClient.indices().delete(DeleteIndexRequest(IndexStatusService.indexName), RequestOptions.DEFAULT)
-  }
-
-  private fun createOffenderIndexes() {
-    SyncIndex.values().map { offenderRespository.createIndex(it) }
-  }
-
-  private fun deleteOffenderIndexes() {
-    SyncIndex.values().map { offenderRespository.deleteIndex(it) }
   }
 
   fun getIndexCount(index: SyncIndex): Long {

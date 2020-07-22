@@ -32,34 +32,6 @@ class IndexStatusServiceTest {
   @Nested
   inner class InitialiseIndexWhenRequired {
     @Nested
-    inner class NoIndex {
-      @BeforeEach
-      internal fun setUp() {
-        whenever(elasticSearchClient.indices()).thenReturn(indexClient)
-        whenever(indexClient.exists(any<GetIndexRequest>(), any())).thenReturn(false)
-      }
-
-      @Test
-      internal fun `will create a new index`() {
-        indexStatusService.initialiseIndexWhenRequired()
-
-        verify(indexClient).create(check<CreateIndexRequest> {
-          assertThat(it.index()).isEqualTo("offender-index-status")
-        }, any())
-      }
-
-      @Test
-      internal fun `will add initial status to index`() {
-        val expectedNewIndexStatus = IndexStatus(otherIndexState = IndexState.NEW, currentIndex = SyncIndex.NONE, currentIndexState = IndexState.NEW)
-
-        indexStatusService.initialiseIndexWhenRequired()
-        verify(indexStatusRepository).save<IndexStatus>(check { savedIndexStatus ->
-          assertThat(savedIndexStatus).isEqualTo(expectedNewIndexStatus)
-        })
-
-      }
-    }
-    @Nested
     inner class IndexAlreadyExists {
       @BeforeEach
       internal fun setUp() {
@@ -69,16 +41,9 @@ class IndexStatusServiceTest {
       }
 
       @Test
-      internal fun `will not create a new index`() {
+      internal fun `will add initial status to index`() {
         indexStatusService.initialiseIndexWhenRequired()
-
-        verify(indexClient, never()).create(any<CreateIndexRequest>(), any())
-      }
-
-      @Test
-      internal fun `will not add initial status to index`() {
-        indexStatusService.initialiseIndexWhenRequired()
-        verify(indexStatusRepository, never()).save<IndexStatus>(any())
+        verify(indexStatusRepository).save<IndexStatus>(any())
       }
     }
   }

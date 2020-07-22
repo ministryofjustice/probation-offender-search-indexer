@@ -4,28 +4,15 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.fail
-import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.indexer.integration.IntegrationTest
 import uk.gov.justice.digital.hmpps.indexer.model.INDEX_STATUS_ID
 import uk.gov.justice.digital.hmpps.indexer.model.IndexState
-import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
 
 class IndexStatusIntegrationTest : IntegrationTest() {
 
-  companion object {
-    var indexesCreated = false
-  }
-
-  @Autowired
-  private lateinit var indexStatusRepository: IndexStatusRepository
-
   @BeforeEach
   fun `initialise and clear database`() {
-    if (indexesCreated.not()) {
-      indexStatusService.initialiseIndexWhenRequired()
-      indexesCreated = true
-    }
-    indexStatusRepository.save(IndexStatus.newIndex())
+    initialiseIndexStatus()
   }
 
   @Test
