@@ -25,6 +25,7 @@ class IndexResourceIntegrationTest : QueueIntegrationTest() {
   @BeforeEach
   internal fun setUp() {
     indexAwsSqsClient.purgeQueue(PurgeQueueRequest(indexQueueUrl))
+    CommunityApiExtension.communityApi.resetMappings()
   }
 
   @Nested

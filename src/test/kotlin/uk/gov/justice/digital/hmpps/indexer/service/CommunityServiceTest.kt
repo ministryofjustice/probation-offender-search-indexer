@@ -15,6 +15,11 @@ internal class CommunityServiceTest : IntegrationTest() {
   @Autowired
   private lateinit var service: CommunityService
 
+  @BeforeEach
+  internal fun setUp() {
+    CommunityApiExtension.communityApi.resetMappings()
+  }
+
   @Nested
   inner class GetOffender {
     @Test
