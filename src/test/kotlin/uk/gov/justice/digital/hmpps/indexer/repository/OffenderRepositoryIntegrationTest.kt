@@ -4,7 +4,6 @@ import net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest
-import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest
 import org.elasticsearch.action.get.GetRequest
 import org.elasticsearch.action.ingest.GetPipelineRequest
 import org.elasticsearch.client.RequestOptions
@@ -42,8 +41,7 @@ internal class OffenderRepositoryIntegrationTest : IntegrationTest() {
     inner class NoIndexExists {
       @BeforeEach
       internal fun setUp() {
-        highLevelClient.safeIndexDelete(BLUE.indexName)
-        highLevelClient.safeIndexDelete(GREEN.indexName)
+        deleteOffenderIndexes()
       }
 
       @Test
@@ -67,7 +65,7 @@ internal class OffenderRepositoryIntegrationTest : IntegrationTest() {
     inner class OneIndexExists {
       @BeforeEach
       internal fun setUp() {
-        highLevelClient.safeIndexDelete(BLUE.indexName)
+        deleteOffenderIndexes()
         highLevelClient.safeIndexCreate(GREEN.indexName)
       }
 
@@ -90,10 +88,8 @@ internal class OffenderRepositoryIntegrationTest : IntegrationTest() {
       lateinit var mappingProperties: Map<String, Any>
       @BeforeEach
       internal fun setUp() {
-        highLevelClient.safeIndexDelete(BLUE.indexName)
-        highLevelClient.safeIndexDelete(GREEN.indexName)
-
-        offenderRepository.createIndex(BLUE)
+        deleteOffenderIndexes()
+        createOffenderIndexes()
 
         val mappings = highLevelClient.indices()
             .getMapping(GetMappingsRequest().indices(BLUE.indexName), RequestOptions.DEFAULT)
@@ -152,8 +148,7 @@ internal class OffenderRepositoryIntegrationTest : IntegrationTest() {
     inner class Pipeline {
       @BeforeEach
       internal fun setUp() {
-        highLevelClient.safeIndexDelete(BLUE.indexName)
-        highLevelClient.safeIndexDelete(GREEN.indexName)
+        deleteOffenderIndexes()
       }
 
       @Test
@@ -181,10 +176,8 @@ internal class OffenderRepositoryIntegrationTest : IntegrationTest() {
   inner class Save {
     @BeforeEach
     internal fun setUp() {
-      highLevelClient.safeIndexDelete(BLUE.indexName)
-      highLevelClient.safeIndexDelete(GREEN.indexName)
-      offenderRepository.createIndex(BLUE)
-      offenderRepository.createIndex(GREEN)
+      deleteOffenderIndexes()
+      createOffenderIndexes()
     }
 
     @Test
@@ -242,8 +235,7 @@ internal class OffenderRepositoryIntegrationTest : IntegrationTest() {
   inner class DeleteIndex {
     @BeforeEach
     internal fun setUp() {
-      highLevelClient.safeIndexDelete(BLUE.indexName)
-      highLevelClient.safeIndexDelete(GREEN.indexName)
+      deleteOffenderIndexes()
     }
 
     @Test
@@ -287,8 +279,7 @@ internal class OffenderRepositoryIntegrationTest : IntegrationTest() {
   inner class DoesIndexExist {
     @BeforeEach
     internal fun setUp() {
-      highLevelClient.safeIndexDelete(BLUE.indexName)
-      highLevelClient.safeIndexDelete(GREEN.indexName)
+      deleteOffenderIndexes()
     }
 
     @Test
@@ -308,8 +299,8 @@ internal class OffenderRepositoryIntegrationTest : IntegrationTest() {
   inner class SwitchAliasIndex {
     @BeforeEach
     internal fun setUp() {
-      highLevelClient.safeIndexCreate(BLUE.indexName)
-      highLevelClient.safeIndexCreate(GREEN.indexName)
+      deleteOffenderIndexes()
+      createOffenderIndexes()
     }
 
     @Nested
@@ -357,12 +348,6 @@ internal class OffenderRepositoryIntegrationTest : IntegrationTest() {
   }
 
   private fun Any.asJson() = gson.toJson(this)
-}
-
-fun RestHighLevelClient.safeIndexDelete(name: String) {
-  if (this.indices().exists(GetIndexRequest(name), RequestOptions.DEFAULT)) {
-    this.indices().delete(DeleteIndexRequest(name), RequestOptions.DEFAULT)
-  }
 }
 
 fun RestHighLevelClient.safeIndexCreate(name: String) {

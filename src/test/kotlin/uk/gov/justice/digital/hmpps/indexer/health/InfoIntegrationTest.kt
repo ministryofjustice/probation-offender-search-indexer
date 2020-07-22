@@ -12,12 +12,14 @@ class InfoIntegrationTest : IntegrationTest() {
 
   @BeforeEach
   fun init() {
-    deleteIndexes()
-    setupIndexes()
+    deleteOffenderIndexes()
+    createOffenderIndexes()
+    initialiseIndexStatus()
+    buildInitialIndex()
   }
 
   @Test
-  fun `Info page reports relevant details after initial build`() {
+  fun `Info page reports relevant details`() {
     webTestClient.get()
         .uri("/info")
         .exchange()

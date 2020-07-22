@@ -1,9 +1,6 @@
 package uk.gov.justice.digital.hmpps.indexer.service
 
-import org.elasticsearch.client.RequestOptions
 import org.elasticsearch.client.RestHighLevelClient
-import org.elasticsearch.client.indices.CreateIndexRequest
-import org.elasticsearch.client.indices.GetIndexRequest
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.data.elasticsearch.annotations.Document
@@ -16,15 +13,12 @@ import uk.gov.justice.digital.hmpps.indexer.repository.IndexStatusRepository
 class IndexStatusService(private val indexStatusRepository: IndexStatusRepository, private val elasticSearchClient: RestHighLevelClient) {
   companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
-    val indexName: String = (IndexStatus::class.annotations.find { it is Document } as? Document)?.indexName!!
   }
 
   fun initialiseIndexWhenRequired(): IndexStatusService {
-    if (elasticSearchClient.indices().exists(GetIndexRequest(indexName), RequestOptions.DEFAULT).not()) {
-      elasticSearchClient.indices().create(CreateIndexRequest(indexName), RequestOptions.DEFAULT)
-      indexStatusRepository.save(IndexStatus.newIndex())
-    }
-
+      if (!indexStatusRepository.existsById("STATUS")) {
+        indexStatusRepository.save(IndexStatus.newIndex())
+      }
     return this
   }
 
