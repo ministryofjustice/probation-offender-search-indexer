@@ -20,6 +20,10 @@ class OffenderSynchroniserService(val communityService: CommunityService, val of
     offenderRepository.createIndex(index)
   }
 
+  fun switchAliasIndex(index: SyncIndex) {
+    offenderRepository.switchAliasIndex(index)
+  }
+
   fun splitAllOffendersIntoChunks(): List<OffenderPage> {
     val totalNumberOfOffenders = communityService.getCountAllOffenders().totalElements
     return (1..totalNumberOfOffenders step pageSize).asSequence().toList()

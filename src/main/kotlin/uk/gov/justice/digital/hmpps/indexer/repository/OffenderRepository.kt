@@ -1,11 +1,16 @@
 package uk.gov.justice.digital.hmpps.indexer.repository
 
+import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest
+import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest.AliasActions
+import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest.AliasActions.Type.ADD
+import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest
 import org.elasticsearch.action.index.IndexRequest
 import org.elasticsearch.action.ingest.PutPipelineRequest
 import org.elasticsearch.client.RequestOptions
 import org.elasticsearch.client.RestHighLevelClient
 import org.elasticsearch.client.indices.CreateIndexRequest
+import org.elasticsearch.client.indices.DeleteAliasRequest
 import org.elasticsearch.client.indices.GetIndexRequest
 import org.elasticsearch.client.indices.PutMappingRequest
 import org.elasticsearch.common.bytes.BytesArray
@@ -45,9 +50,20 @@ class OffenderRepository(@Qualifier("elasticSearchClient") private val client: R
       log.warn("index {} was never there in the first place", index.indexName)
     }
   }
-  fun doesIndexExist(index: SyncIndex) : Boolean{
+
+  fun doesIndexExist(index: SyncIndex): Boolean {
     log.info("deleting index {}", index.indexName)
     return client.indices().exists(GetIndexRequest(index.indexName), RequestOptions.DEFAULT)
+  }
+
+  fun switchAliasIndex(index: SyncIndex) {
+    val alias = client.indices().getAlias(GetAliasesRequest().aliases("offender"), RequestOptions.DEFAULT)
+    alias.aliases[index.otherIndex().indexName]?.forEach {
+      client.indices()
+          .deleteAlias(DeleteAliasRequest(index.otherIndex().indexName, it.alias), RequestOptions.DEFAULT)
+    }
+    client.indices()
+        .updateAliases(IndicesAliasesRequest().addAliasAction(AliasActions(ADD).index(index.indexName).alias("offender")), RequestOptions.DEFAULT)
   }
 }
 

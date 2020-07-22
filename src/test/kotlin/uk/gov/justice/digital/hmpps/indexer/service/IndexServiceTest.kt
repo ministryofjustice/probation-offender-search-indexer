@@ -123,6 +123,16 @@ class IndexServiceTest {
 
       verify(indexStatusService).markBuildCompleteAndSwitchIndex()
     }
+    @Test
+    fun `A request is made to switch alias`() {
+      val expectedIndexStatus = indexStatus(otherIndex = BLUE, otherIndexState = BUILDING)
+      whenever(indexStatusService.getIndexStatus()).thenReturn(expectedIndexStatus)
+      whenever(indexStatusService.markBuildCompleteAndSwitchIndex()).thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
+
+      indexService.markIndexingComplete()
+
+      verify(offenderSynchroniserService).switchAliasIndex(BLUE)
+    }
 
     @Test
     fun `A request is made to remove queued index requests`() {

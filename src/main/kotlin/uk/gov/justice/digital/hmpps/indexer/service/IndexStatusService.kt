@@ -1,8 +1,5 @@
 package uk.gov.justice.digital.hmpps.indexer.service
 
-import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest
-import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest.AliasActions
-import org.elasticsearch.action.support.master.AcknowledgedResponse
 import org.elasticsearch.client.RequestOptions
 import org.elasticsearch.client.RestHighLevelClient
 import org.elasticsearch.client.indices.CreateIndexRequest
@@ -13,7 +10,6 @@ import org.springframework.data.elasticsearch.annotations.Document
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.indexer.model.INDEX_STATUS_ID
 import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
-import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
 import uk.gov.justice.digital.hmpps.indexer.repository.IndexStatusRepository
 
 @Service
@@ -46,9 +42,7 @@ class IndexStatusService(private val indexStatusRepository: IndexStatusRepositor
   fun markBuildCompleteAndSwitchIndex(): IndexStatus {
     val currentIndexStatus = getIndexStatus()
     if (currentIndexStatus.inProgress()) {
-      val newStatus = indexStatusRepository.save(currentIndexStatus.toBuildComplete().toSwitchIndex())
-      elasticSearchClient.switchOffenderAlias(newStatus.currentIndex)
-      return newStatus
+      return indexStatusRepository.save(currentIndexStatus.toBuildComplete().toSwitchIndex())
     }
     return currentIndexStatus
   }
@@ -61,6 +55,3 @@ class IndexStatusService(private val indexStatusRepository: IndexStatusRepositor
     return currentIndexStatus
   }
 }
-
-fun RestHighLevelClient.switchOffenderAlias(index: SyncIndex): AcknowledgedResponse? = this.indices()
-    .updateAliases(IndicesAliasesRequest().addAliasAction(AliasActions(AliasActions.Type.ADD).index(index.indexName).alias("offender")), RequestOptions.DEFAULT)

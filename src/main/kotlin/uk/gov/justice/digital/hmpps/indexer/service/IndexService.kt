@@ -52,6 +52,8 @@ class IndexService(
     }
 
     val newIndexStatus = indexStatusService.markBuildCompleteAndSwitchIndex()
+    offenderSynchroniserService.switchAliasIndex(newIndexStatus.currentIndex)
+
     indexQueueService.clearAllMessages()
     log.info("Index ${newIndexStatus.otherIndex} marked as ${newIndexStatus.otherIndexState}, ${newIndexStatus.currentIndex} is now current")
 
