@@ -1,5 +1,7 @@
 package uk.gov.justice.digital.hmpps.indexer.service
 
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
@@ -7,6 +9,10 @@ import uk.gov.justice.digital.hmpps.indexer.repository.OffenderRepository
 
 @Service
 class OffenderSynchroniserService(val communityService: CommunityService, val offenderRepository: OffenderRepository, @Value("\${index.page.size:1000}") private val pageSize: Long) {
+  companion object {
+    val log: Logger = LoggerFactory.getLogger(this::class.java)
+  }
+
   fun synchroniseOffender(crn: String, index: SyncIndex): String {
     val offender = communityService.getOffender(crn)
     offenderRepository.save(offender, index)
@@ -26,6 +32,7 @@ class OffenderSynchroniserService(val communityService: CommunityService, val of
 
   fun splitAllOffendersIntoChunks(): List<OffenderPage> {
     val totalNumberOfOffenders = communityService.getCountAllOffenders().totalElements
+    log.info("Splitting $totalNumberOfOffenders in to pages each of size $pageSize")
     return (1..totalNumberOfOffenders step pageSize).asSequence().toList()
         .map { OffenderPage(it / pageSize, pageSize) }
   }
