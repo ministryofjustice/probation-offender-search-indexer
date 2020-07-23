@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.indexer.service
 
 import com.amazonaws.services.sqs.AmazonSQS
+import com.amazonaws.services.sqs.model.PurgeQueueRequest
 import com.amazonaws.services.sqs.model.SendMessageRequest
 import com.google.gson.Gson
 import org.slf4j.Logger
@@ -31,7 +32,10 @@ class IndexQueueService(@Qualifier("indexAwsSqsClient") private val client: Amaz
     log.info("Sent populate index message request {}", result.messageId)
   }
 
-  fun clearAllMessages() = null
+  fun clearAllMessages()  {
+    client.purgeQueue(PurgeQueueRequest(queueUrl))
+    log.info("Clear all messages on index queue")
+  }
 
   fun sendPopulateOffenderPageMessage(offenderPage: OffenderPage) {
     val result = client.sendMessage(SendMessageRequest(queueUrl, gson.toJson(IndexMessageRequest(type = POPULATE_OFFENDER_PAGE, offenderPage = offenderPage))))
