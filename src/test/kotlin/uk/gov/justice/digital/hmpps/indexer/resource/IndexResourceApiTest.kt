@@ -15,10 +15,12 @@ import org.springframework.http.MediaType
 import uk.gov.justice.digital.hmpps.indexer.helpers.indexStatus
 import uk.gov.justice.digital.hmpps.indexer.integration.IntegrationTest
 import uk.gov.justice.digital.hmpps.indexer.model.IndexState
+import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
 import uk.gov.justice.digital.hmpps.indexer.service.BuildIndexError
 import uk.gov.justice.digital.hmpps.indexer.service.CancelBuildIndexError
 import uk.gov.justice.digital.hmpps.indexer.service.MarkBuildCompleteError
+import uk.gov.justice.digital.hmpps.indexer.service.UpdateOffenderError
 
 class IndexResourceApiTest : IntegrationTest() {
 
@@ -218,7 +220,7 @@ class IndexResourceApiTest : IntegrationTest() {
   inner class IndexOffender {
     @Test
     fun `Request to index offender is successful and calls service`() {
-      doReturn("{}").whenever(indexService).indexOffender("SOME_CRN")
+      doReturn("{}".right()).whenever(indexService).updateOffender("SOME_CRN")
 
       webTestClient.put()
           .uri("/probation-index/index/offender/SOME_CRN")
@@ -227,7 +229,7 @@ class IndexResourceApiTest : IntegrationTest() {
           .exchange()
           .expectStatus().isOk
 
-      verify(indexService).indexOffender("SOME_CRN")
+      verify(indexService).updateOffender("SOME_CRN")
     }
 
     @Test
@@ -239,7 +241,7 @@ class IndexResourceApiTest : IntegrationTest() {
           .exchange()
           .expectStatus().isForbidden
 
-      verify(indexService, never()).indexOffender("SOME_CRN")
+      verify(indexService, never()).updateOffender("SOME_CRN")
     }
 
     @Test
@@ -250,7 +252,22 @@ class IndexResourceApiTest : IntegrationTest() {
           .exchange()
           .expectStatus().isUnauthorized
 
-      verify(indexService, never()).indexOffender("SOME_CRN")
+      verify(indexService, never()).updateOffender("SOME_CRN")
+    }
+
+    @Test
+    fun `Request to index offender without active indexes returns conflict`() {
+      val expectedIndexStatus = IndexStatus.newIndex()
+      doReturn(UpdateOffenderError.NoActiveIndexes(expectedIndexStatus).left()).whenever(indexService).updateOffender("SOME_CRN")
+
+      webTestClient.put()
+          .uri("/probation-index/index/offender/SOME_CRN")
+          .accept(MediaType.APPLICATION_JSON)
+          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+          .exchange()
+          .expectStatus().isEqualTo(409)
+
+      verify(indexService).updateOffender("SOME_CRN")
     }
   }
 }

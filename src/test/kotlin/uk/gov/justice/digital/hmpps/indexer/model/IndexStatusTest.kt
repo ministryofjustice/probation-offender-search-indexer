@@ -2,7 +2,9 @@ package uk.gov.justice.digital.hmpps.indexer.model
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import uk.gov.justice.digital.hmpps.indexer.model.IndexState.ABSENT
 import uk.gov.justice.digital.hmpps.indexer.model.IndexState.BUILDING
+import uk.gov.justice.digital.hmpps.indexer.model.IndexState.CANCELLED
 import uk.gov.justice.digital.hmpps.indexer.model.IndexState.COMPLETED
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.BLUE
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.GREEN
@@ -25,5 +27,13 @@ internal class IndexStatusTest {
     assertThat(newStatus.otherIndexEndBuildTime).isEqualTo(oldEndTime)
     assertThat(newStatus.otherIndexStartBuildTime).isEqualTo(oldStartTime)
     assertThat(newStatus.otherIndexState).isEqualTo(COMPLETED)
+  }
+
+  @Test
+  fun `Will find active indexes`() {
+    assertThat(IndexStatus(currentIndex = BLUE, currentIndexState = ABSENT, otherIndexState = ABSENT).activeIndexes()).containsExactlyInAnyOrder()
+    assertThat(IndexStatus(currentIndex = BLUE, currentIndexState = BUILDING, otherIndexState = ABSENT).activeIndexes()).containsExactlyInAnyOrder(BLUE)
+    assertThat(IndexStatus(currentIndex = BLUE, currentIndexState = CANCELLED, otherIndexState = BUILDING).activeIndexes()).containsExactlyInAnyOrder(GREEN)
+    assertThat(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED, otherIndexState = BUILDING).activeIndexes()).containsExactlyInAnyOrder(BLUE, GREEN)
   }
 }

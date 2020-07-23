@@ -13,9 +13,9 @@ class OffenderSynchroniserService(val communityService: CommunityService, val of
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  fun synchroniseOffender(crn: String, index: SyncIndex): String {
+  fun synchroniseOffender(crn: String, vararg indexes: SyncIndex): String {
     val offender = communityService.getOffender(crn)
-    offenderRepository.save(offender, index)
+    indexes.map { offenderRepository.save(offender, it) }
     return offender.json
   }
 

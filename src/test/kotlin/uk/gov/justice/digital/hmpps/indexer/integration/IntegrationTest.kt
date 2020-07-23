@@ -23,6 +23,7 @@ import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.CommunityApiExt
 import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.OAuthExtension
 import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
+import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.GREEN
 import uk.gov.justice.digital.hmpps.indexer.repository.IndexStatusRepository
 import uk.gov.justice.digital.hmpps.indexer.repository.OffenderRepository
 import uk.gov.justice.digital.hmpps.indexer.service.IndexService
@@ -114,10 +115,10 @@ abstract class IntegrationTest {
   fun getIndexCount(index: String): Long = elasticSearchClient.count(CountRequest(index), RequestOptions.DEFAULT).count
 
 
-  fun search(crn: String): SearchResponse {
+  fun search(crn: String, index: SyncIndex = GREEN): SearchResponse {
     val query = QueryBuilders.matchQuery("otherIds.crn", crn)
     val search = SearchSourceBuilder().apply { query(query) }
-    val request = SearchRequest(arrayOf(SyncIndex.GREEN.indexName), search)
+    val request = SearchRequest(arrayOf(index.indexName), search)
     return elasticSearchClient.search(request, RequestOptions.DEFAULT)
   }
 }

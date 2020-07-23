@@ -12,7 +12,12 @@ import java.time.LocalDateTime
 
 internal const val INDEX_STATUS_ID = "STATUS"
 
-enum class IndexState { ABSENT, BUILDING, CANCELLED, COMPLETED }
+enum class IndexState(val active: Boolean) {
+  ABSENT(false),
+  BUILDING(true),
+  CANCELLED(false),
+  COMPLETED(true)
+}
 
 @Document(indexName = "offender-index-status")
 @ApiModel(description = "The status of the two indexes, the current index being actively used for searches and the other index being inactive but available for rebuilding ")
@@ -90,6 +95,11 @@ data class IndexStatus(
   fun toBuildCancelled(): IndexStatus {
     return this.copy(otherIndexEndBuildTime = LocalDateTime.now(), otherIndexState = IndexState.CANCELLED)
   }
+
+  fun activeIndexes(): List<SyncIndex> =
+    listOf(Pair(currentIndexState, currentIndex), Pair(otherIndexState, otherIndex))
+        .filter { it.first.active }
+        .map { it.second }
 
   companion object {
     fun newIndex() = IndexStatus(currentIndex = SyncIndex.NONE)

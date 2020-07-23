@@ -25,6 +25,6 @@ class EventListenerTest {
       }
       """.trimIndent())
 
-    verify(indexService).indexOffender("X123456")
+    verify(indexService).updateOffender("X123456")
   }
 }
