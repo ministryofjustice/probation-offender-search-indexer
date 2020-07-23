@@ -182,6 +182,15 @@ class IndexServiceTest {
 
       verify(indexStatusService).markBuildCancelled()
     }
+    @Test
+    fun `all messages are cleared`() {
+      val expectedIndexStatus = indexStatus(otherIndex = BLUE, otherIndexState = BUILDING)
+      whenever(indexStatusService.getIndexStatus()).thenReturn(expectedIndexStatus)
+
+      indexService.cancelIndexing()
+
+      verify(indexQueueService).clearAllMessages()
+    }
 
     @Test
     fun `Once current index marked as cancelled, the 'other' index is current`() {

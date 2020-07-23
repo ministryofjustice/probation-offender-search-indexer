@@ -67,6 +67,7 @@ class IndexService(
     }
 
     indexStatusService.markBuildCancelled()
+    indexQueueService.clearAllMessages()
     log.info("Index ${indexStatus.currentIndex.otherIndex()} marked as ${indexStatus.otherIndexState}, ${indexStatus.currentIndex} is still current")
 
     return indexStatusService.getIndexStatus().right()

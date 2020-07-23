@@ -110,4 +110,15 @@ internal class IndexQueueServiceTest {
       })
     }
   }
+
+  @Nested
+  inner class ClearAllMessages {
+    @Test
+    internal fun `will purge index queue of messages`() {
+      indexQueueService.clearAllMessages()
+      verify(client).purgeQueue(check {
+        assertThat(it.queueUrl).isEqualTo("arn:eu-west-1:index-queue")
+      })
+    }
+  }
 }

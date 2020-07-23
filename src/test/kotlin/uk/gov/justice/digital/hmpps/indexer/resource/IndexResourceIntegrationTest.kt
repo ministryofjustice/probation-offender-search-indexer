@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.indexer.resource
 
 import com.amazonaws.services.sqs.model.PurgeQueueRequest
+import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.matches
 import org.awaitility.kotlin.untilCallTo
@@ -23,7 +24,7 @@ class IndexResourceIntegrationTest : QueueIntegrationTest() {
   }
 
   @Nested
-  inner class BuildIndex {
+  inner class BuildIndexAndMarkComplete {
     @BeforeEach
     internal fun setUp() {
       deleteOffenderIndexes()
@@ -158,8 +159,7 @@ class IndexResourceIntegrationTest : QueueIntegrationTest() {
     inner class Paging {
       @BeforeEach
       internal fun setUp() {
-        val crns = (1..31).asSequence().map { "X%05d".format(it) }.toList().toTypedArray()
-        CommunityApiExtension.communityApi.stubAllOffenderGets(10, *crns)
+        CommunityApiExtension.communityApi.stubAllOffenderGets(10, numberOfOffenders = 31)
       }
 
       @Test
@@ -214,6 +214,49 @@ class IndexResourceIntegrationTest : QueueIntegrationTest() {
         .expectStatus().isOk
 
     await untilCallTo { getIndexCount("offender") } matches { it == expectedCount }
+  }
+  @Nested
+  inner class BuildIndexAndCancel {
+    @BeforeEach
+    internal fun setUp() {
+      deleteOffenderIndexes()
+      initialiseIndexStatus()
+      CommunityApiExtension.communityApi.stubAllOffenderGets(10, numberOfOffenders = 1)
+      buildAndSwitchIndex(GREEN, 1)
+      CommunityApiExtension.communityApi.stubAllOffenderGets(10, numberOfOffenders = 20)
+    }
+
+    @Test
+    internal fun `will cancel a build index`() {
+      assertThat(getIndexCount("offender")).isEqualTo(1)
+
+      webTestClient.put()
+          .uri("/probation-index/build-index")
+          .accept(MediaType.APPLICATION_JSON)
+          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.currentIndex").isEqualTo("GREEN")
+          .jsonPath("$.currentIndexState").isEqualTo("COMPLETED")
+          .jsonPath("$.otherIndex").isEqualTo("BLUE")
+          .jsonPath("$.otherIndexState").isEqualTo("BUILDING")
+
+      webTestClient.put()
+          .uri("/probation-index/cancel-index")
+          .accept(MediaType.APPLICATION_JSON)
+          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.currentIndex").isEqualTo("GREEN")
+          .jsonPath("$.currentIndexState").isEqualTo("COMPLETED")
+          .jsonPath("$.otherIndex").isEqualTo("BLUE")
+          .jsonPath("$.otherIndexState").isEqualTo("CANCELLED")
+
+      assertThat(getIndexCount("offender")).isEqualTo(1)
+      assertThat(getNumberOfMessagesCurrentlyOnIndexQueue()).isEqualTo(0)
+    }
   }
 }
 

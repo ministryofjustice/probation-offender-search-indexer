@@ -67,6 +67,11 @@ class CommunityApiMockServer : WireMockServer(WIREMOCK_PORT) {
     }
   }
 
+  fun stubAllOffenderGets(pageSize: Long = 1000L, numberOfOffenders: Long = 1L) {
+    val crns = (1..numberOfOffenders).asSequence().map { "X%05d".format(it) }.toList().toTypedArray()
+    stubAllOffenderGets(pageSize, *crns)
+  }
+
   private fun anOffenderDetail(
       offenderId: Long = 490001467,
       crn: String = "X123456",
