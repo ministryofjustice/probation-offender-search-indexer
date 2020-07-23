@@ -73,11 +73,16 @@ class IndexService(
     return indexStatusService.getIndexStatus().right()
   }
 
-  fun indexOffender(crn: String) : String {
+  fun updateOffender(crn: String) : Either<UpdateOffenderError, String> {
     val indexStatus = indexStatusService.getIndexStatus()
-    // TODO - this needs to go to both indexes (unless one is new maybe?)
-    return offenderSynchroniserService.synchroniseOffender(crn, indexStatus.currentIndex)
+    val activeIndexes = indexStatus.activeIndexes()
+    if (activeIndexes.isEmpty()) {
+      log.info("Ignoring update of offender {} as no indexes were active", crn)
+      return UpdateOffenderError.NoActiveIndexes(indexStatus).left()
+    }
+    return offenderSynchroniserService.synchroniseOffender(crn, *activeIndexes.toTypedArray()).right()
   }
+
   fun populateIndex(index: SyncIndex): Either<PopulateIndexError, Int> {
     val indexStatus = indexStatusService.getIndexStatus()
     if (indexStatus.otherIndexState != IndexState.BUILDING) {
@@ -130,4 +135,8 @@ sealed class CancelBuildIndexError(val message: String) {
 sealed class PopulateIndexError(val message: String) {
   data class BuildNotInProgress(val indexStatus: IndexStatus) : PopulateIndexError("The index ${indexStatus.otherIndex} is in state ${indexStatus.otherIndexState} (ended at ${indexStatus.otherIndexEndBuildTime})")
   data class WrongIndexRequested(val indexStatus: IndexStatus) : PopulateIndexError("The index ${indexStatus.otherIndex} is in state ${indexStatus.otherIndexState} (ended at ${indexStatus.otherIndexEndBuildTime})")
+}
+
+sealed class UpdateOffenderError(val message: String) {
+  data class NoActiveIndexes(val indexStatus: IndexStatus) : UpdateOffenderError("Cannot update offender as current index ${indexStatus.currentIndex} is in state ${indexStatus.currentIndexState} and other index ${indexStatus.otherIndex} is in state ${indexStatus.otherIndexState}")
 }

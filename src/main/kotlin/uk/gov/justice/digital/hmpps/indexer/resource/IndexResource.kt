@@ -6,7 +6,6 @@ import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiResponse
 import io.swagger.annotations.ApiResponses
 import org.slf4j.LoggerFactory
-import org.springframework.boot.web.servlet.error.DefaultErrorAttributes
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.security.access.prepost.PreAuthorize
@@ -20,6 +19,7 @@ import uk.gov.justice.digital.hmpps.indexer.service.BuildIndexError
 import uk.gov.justice.digital.hmpps.indexer.service.CancelBuildIndexError
 import uk.gov.justice.digital.hmpps.indexer.service.IndexService
 import uk.gov.justice.digital.hmpps.indexer.service.MarkBuildCompleteError
+import uk.gov.justice.digital.hmpps.indexer.service.UpdateOffenderError
 
 @Api(tags = ["probation-index"])
 @RestController
@@ -94,8 +94,14 @@ class IndexResource(private val indexService: IndexService) {
   @ApiResponses(value = [
     ApiResponse(code = 200, message = "OK", response = String::class),
     ApiResponse(code = 401, message = "Unauthorised, requires a valid Oauth2 token"),
-    ApiResponse(code = 403, message = "Forbidden, requires an authorisation with role PROBATION_INDEX")
+    ApiResponse(code = 403, message = "Forbidden, requires an authorisation with role PROBATION_INDEX"),
+    ApiResponse(code = 409, message = "Conflict, no indexes could be updated")
   ])
-  fun indexOffender(@PathVariable("crn") crn: String) = indexService.indexOffender(crn)
+  fun indexOffender(@PathVariable("crn") crn: String) = indexService.updateOffender(crn)
+      .getOrHandle { error ->
+        when (error) {
+          is UpdateOffenderError.NoActiveIndexes -> throw ResponseStatusException(HttpStatus.CONFLICT, error.message)
+        }
+      }
 
 }

@@ -59,6 +59,10 @@ class CommunityApiMockServer : WireMockServer(WIREMOCK_PORT) {
       verify(getRequestedFor(urlEqualTo("/secure/offenders/crn/$crn/all"))
           .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")))
 
+  fun verifyNotGetOffender(crn: String = "X123456") =
+      verify(0, getRequestedFor(urlEqualTo("/secure/offenders/crn/$crn/all"))
+          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")))
+
   fun stubAllOffenderGets(pageSize: Long = 1000L, vararg crns: String) {
     stubAllOffenders(crns.size.toLong())
     stubPageOfOffenders(pageSize, *crns)

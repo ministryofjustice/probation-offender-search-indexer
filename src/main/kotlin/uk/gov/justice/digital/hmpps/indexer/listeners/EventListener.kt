@@ -26,7 +26,7 @@ class EventListener(
 
 
     when (eventType) {
-      "OFFENDER_CHANGED" -> indexService.indexOffender(gson.fromJson(message, OffenderChangedEvent::class.java).crn)
+      "OFFENDER_CHANGED" -> indexService.updateOffender(gson.fromJson(message, OffenderChangedEvent::class.java).crn)
       else -> log.warn("We received a message of event type {} which I really wasn't expecting", eventType)
     }
 

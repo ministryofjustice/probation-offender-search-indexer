@@ -2,9 +2,11 @@ package uk.gov.justice.digital.hmpps.indexer.service
 
 import arrow.core.getOrHandle
 import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import io.kotest.assertions.arrow.either.shouldBeLeft
 import io.kotest.assertions.arrow.either.shouldBeRight
@@ -17,6 +19,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import uk.gov.justice.digital.hmpps.indexer.helpers.indexStatus
 import uk.gov.justice.digital.hmpps.indexer.model.IndexState
+import uk.gov.justice.digital.hmpps.indexer.model.IndexState.ABSENT
 import uk.gov.justice.digital.hmpps.indexer.model.IndexState.BUILDING
 import uk.gov.justice.digital.hmpps.indexer.model.IndexState.COMPLETED
 import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
@@ -54,7 +57,7 @@ class IndexServiceTest {
     @Test
     fun `A request is made to mark the index build is in progress`() {
       whenever(indexStatusService.getIndexStatus())
-          .thenReturn(indexStatus(otherIndex = BLUE, otherIndexState = IndexState.ABSENT))
+          .thenReturn(indexStatus(otherIndex = BLUE, otherIndexState = ABSENT))
 
       indexService.prepareIndexForRebuild()
 
@@ -64,7 +67,7 @@ class IndexServiceTest {
     @Test
     fun `A request is made to reset the other index`() {
       whenever(indexStatusService.getIndexStatus())
-          .thenReturn(indexStatus(otherIndex = BLUE, otherIndexState = IndexState.ABSENT))
+          .thenReturn(indexStatus(otherIndex = BLUE, otherIndexState = ABSENT))
 
       indexService.prepareIndexForRebuild()
 
@@ -74,7 +77,7 @@ class IndexServiceTest {
     @Test
     fun `A request is made to build other index`() {
       whenever(indexStatusService.getIndexStatus())
-          .thenReturn(indexStatus(otherIndex = BLUE, otherIndexState = IndexState.ABSENT))
+          .thenReturn(indexStatus(otherIndex = BLUE, otherIndexState = ABSENT))
 
       indexService.prepareIndexForRebuild()
 
@@ -85,7 +88,7 @@ class IndexServiceTest {
     fun `The updated index is returned`() {
       val expectedIndexStatus = indexStatus(otherIndex = GREEN, otherIndexState = BUILDING)
       whenever(indexStatusService.getIndexStatus())
-          .thenReturn(indexStatus(GREEN, IndexState.ABSENT))
+          .thenReturn(indexStatus(GREEN, ABSENT))
           .thenReturn(expectedIndexStatus)
 
       val result = indexService.prepareIndexForRebuild()
@@ -216,10 +219,10 @@ class IndexServiceTest {
 
     @Test
     internal fun `will delegate to synchronisation service`() {
-      val indexStatus = IndexStatus(currentIndex = GREEN, currentIndexState = COMPLETED, otherIndexState = COMPLETED)
+      val indexStatus = IndexStatus(currentIndex = GREEN, currentIndexState = COMPLETED, otherIndexState = ABSENT)
       whenever(indexStatusService.getIndexStatus()).thenReturn(indexStatus)
 
-      indexService.indexOffender("X12345")
+      indexService.updateOffender("X12345")
 
       verify(offenderSynchroniserService).synchroniseOffender("X12345", GREEN)
     }
@@ -365,6 +368,58 @@ class IndexServiceTest {
       whenever(elasticSearchClient.count(any(), any())).thenThrow(ElasticsearchStatusException("no such index [probation-search-green]", null, null))
 
       assertThat(indexService.getIndexCount(BLUE)).isEqualTo(-1L)
+    }
+  }
+
+  @Nested
+  inner class UpdateOffender {
+    @Test
+    fun `No active indexes, update is not requested`() {
+      whenever(indexStatusService.getIndexStatus()).thenReturn(IndexStatus.newIndex())
+
+      indexService.updateOffender("SOME_CRN")
+
+      verifyZeroInteractions(offenderSynchroniserService)
+    }
+
+    @Test
+    fun `No active indexes, error is returned`() {
+      val indexStatus = IndexStatus.newIndex()
+      whenever(indexStatusService.getIndexStatus()).thenReturn(indexStatus)
+
+      val result = indexService.updateOffender("SOME_CRN")
+
+      result shouldBeLeft UpdateOffenderError.NoActiveIndexes(indexStatus)
+    }
+
+    @Test
+    fun `Current index active, offender is updated`() {
+      val indexStatus = IndexStatus.newIndex().toBuildInProgress().toBuildComplete().toSwitchIndex()
+      whenever(indexStatusService.getIndexStatus()).thenReturn(indexStatus)
+
+      indexService.updateOffender("SOME_CRN")
+
+      verify(offenderSynchroniserService).synchroniseOffender("SOME_CRN", indexStatus.currentIndex)
+    }
+
+    @Test
+    fun `Other index active, offender is updated`() {
+      val indexStatus = IndexStatus.newIndex().toBuildInProgress()
+      whenever(indexStatusService.getIndexStatus()).thenReturn(indexStatus)
+
+      indexService.updateOffender("SOME_CRN")
+
+      verify(offenderSynchroniserService).synchroniseOffender("SOME_CRN", indexStatus.otherIndex)
+    }
+
+    @Test
+    fun `Both indexes active, offender is updated on both indexes`() {
+      val indexStatus = IndexStatus.newIndex().toBuildInProgress().toBuildComplete().toSwitchIndex().toBuildInProgress()
+      whenever(indexStatusService.getIndexStatus()).thenReturn(indexStatus)
+
+      indexService.updateOffender("SOME_CRN")
+
+      verify(offenderSynchroniserService).synchroniseOffender(eq("SOME_CRN"), eq(GREEN), eq(BLUE))
     }
   }
 }
