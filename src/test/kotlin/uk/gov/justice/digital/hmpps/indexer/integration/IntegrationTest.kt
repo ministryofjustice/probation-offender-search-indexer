@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.indexer.integration
 
 import com.amazonaws.services.sqs.AmazonSQS
 import com.google.gson.Gson
+import org.elasticsearch.action.get.GetRequest
 import org.elasticsearch.action.search.SearchRequest
 import org.elasticsearch.action.search.SearchResponse
 import org.elasticsearch.client.RequestOptions
@@ -119,5 +120,9 @@ abstract class IntegrationTest {
     val search = SearchSourceBuilder().apply { query(query) }
     val request = SearchRequest(arrayOf(SyncIndex.GREEN.indexName), search)
     return elasticSearchClient.search(request, RequestOptions.DEFAULT)
+  }
+
+  fun getById(index: String, crn: String): String {
+    return elasticSearchClient.get(GetRequest(index).id(crn), RequestOptions.DEFAULT).sourceAsString
   }
 }

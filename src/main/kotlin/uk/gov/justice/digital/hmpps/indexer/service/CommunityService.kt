@@ -50,6 +50,6 @@ data class Offender(val json: String) {
 }
 
 data class OffenderDetail(val offenderId: Long, val otherIds: IDs)
-data class IDs(val crn: String, val pncNumber: String? = null, val croNumber: String? = null)
+data class IDs(val crn: String, val pncNumber: String? = null, val croNumber: String? = null, val nomsNumber: String? = null)
 data class OffendersPage(val totalElements: Long, val numberOfElements: Long, val content: List<OffenderIdentifier>)
 data class OffenderIdentifier(val crn: String)

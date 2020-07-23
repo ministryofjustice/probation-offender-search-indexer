@@ -14,6 +14,7 @@ import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.CommunityApiExt
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.BLUE
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.GREEN
+import uk.gov.justice.digital.hmpps.indexer.service.OffenderDetail
 
 class IndexResourceIntegrationTest : QueueIntegrationTest() {
 
@@ -215,6 +216,7 @@ class IndexResourceIntegrationTest : QueueIntegrationTest() {
 
     await untilCallTo { getIndexCount("offender") } matches { it == expectedCount }
   }
+
   @Nested
   inner class BuildIndexAndCancel {
     @BeforeEach
@@ -255,8 +257,90 @@ class IndexResourceIntegrationTest : QueueIntegrationTest() {
           .jsonPath("$.otherIndexState").isEqualTo("CANCELLED")
 
       assertThat(getIndexCount("offender")).isEqualTo(1)
-      assertThat(getNumberOfMessagesCurrentlyOnIndexQueue()).isEqualTo(0)
+      await untilCallTo { getNumberOfMessagesCurrentlyOnIndexQueue() } matches { it == 0 }
     }
+  }
+
+  @Nested
+  inner class IndexOffender {
+    @BeforeEach
+    internal fun setUp() {
+      deleteOffenderIndexes()
+      initialiseIndexStatus()
+      CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345")
+      buildAndSwitchIndex(GREEN, 1)
+    }
+
+    @Nested
+    inner class NewOffender {
+      @BeforeEach
+      internal fun setUp() {
+        CommunityApiExtension.communityApi.stubGetOffender("X99999")
+      }
+
+      @Test
+      internal fun `will add offender to elastic search`() {
+        assertThat(getIndexCount(GREEN)).isEqualTo(1)
+        assertThat(getIndexCount("offender")).isEqualTo(1)
+
+        webTestClient.put()
+            .uri("/probation-index/index/offender/{crn}", "X99999")
+            .accept(MediaType.APPLICATION_JSON)
+            .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+            .exchange()
+            .expectStatus().isOk
+            .expectBody()
+            .jsonPath("$.otherIds.crn").isEqualTo("X99999")
+
+        await untilCallTo { getIndexCount(GREEN) } matches { it == 2L }
+        await untilCallTo { getIndexCount("offender") } matches { it == 2L }
+      }
+    }
+
+    @Nested
+    inner class ExistingOffender {
+      @BeforeEach
+      internal fun setUp() {
+        CommunityApiExtension.communityApi.stubGetOffender(crn = "X99999", nomsNumber = "A9999BB")
+      }
+
+      @Test
+      internal fun `will update offender in elastic search`() {
+        webTestClient.put()
+            .uri("/probation-index/index/offender/{crn}", "X99999")
+            .accept(MediaType.APPLICATION_JSON)
+            .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+            .exchange()
+            .expectStatus().isOk
+            .expectBody()
+            .jsonPath("$.otherIds.crn").isEqualTo("X99999")
+
+
+        await untilCallTo { getIndexCount("offender") } matches { it == 2L }
+        await untilCallTo { nomsNumberOf("X99999") } matches { it == "A9999BB" }
+
+        CommunityApiExtension.communityApi.stubGetOffender(crn = "X99999", nomsNumber = "A0000BB")
+
+        webTestClient.put()
+            .uri("/probation-index/index/offender/{crn}", "X99999")
+            .accept(MediaType.APPLICATION_JSON)
+            .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+            .exchange()
+            .expectStatus().isOk
+            .expectBody()
+            .jsonPath("$.otherIds.crn").isEqualTo("X99999")
+
+        await untilCallTo { nomsNumberOf("X99999") } matches { it == "A0000BB" }
+        await untilCallTo { getIndexCount("offender") } matches { it == 2L }
+      }
+    }
+  }
+
+
+  fun nomsNumberOf(crn: String): String? {
+    val offender = getById(index = "offender", crn = crn)
+    val offenderDetail = gson.fromJson<OffenderDetail>(offender, OffenderDetail::class.java)
+    return offenderDetail.otherIds.nomsNumber
   }
 }
 
