@@ -49,10 +49,10 @@ class CommunityApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   }
 
-  fun stubGetOffender(crn: String = "X123456") =
+  fun stubGetOffender(crn: String = "X123456", nomsNumber: String = "A1234BC") =
       stubFor(get("/secure/offenders/crn/$crn/all").willReturn(aResponse()
           .withHeader("Content-Type", "application/json")
-          .withBody(anOffenderDetail(crn = crn))
+          .withBody(anOffenderDetail(crn = crn, nomsNumber = nomsNumber))
           .withStatus(200)))
 
   fun verifyGetOffender(crn: String = "X123456") =
