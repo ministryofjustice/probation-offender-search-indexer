@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.indexer.service
 
 import arrow.core.Either
+import arrow.core.getOrHandle
 import arrow.core.left
 import arrow.core.right
 import org.elasticsearch.client.RequestOptions
@@ -81,7 +82,13 @@ class IndexService(
       return UpdateOffenderError.NoActiveIndexes(indexStatus).left()
     }
     log.info("Updating offender {} on indexes {}", crn, activeIndexes)
-    return offenderSynchroniserService.synchroniseOffender(crn, *activeIndexes.toTypedArray()).right()
+    return offenderSynchroniserService.synchroniseOffender(crn, *activeIndexes.toTypedArray())
+        .map { it.right() }
+        .getOrHandle {
+          when (it) {
+            is SynchroniseOffenderError.OffenderNotFound -> UpdateOffenderError.OffenderNotFound(it.message).left()
+          }
+        }
   }
 
   fun populateIndex(index: SyncIndex): Either<PopulateIndexError, Int> {
@@ -110,7 +117,9 @@ class IndexService(
       return PopulateIndexError.BuildNotInProgress(indexStatus).left()
     }
 
-    return offenderSynchroniserService.synchroniseOffender(crn, indexStatus.currentIndex.otherIndex()).right()
+    return offenderSynchroniserService.synchroniseOffender(crn, indexStatus.currentIndex.otherIndex())
+        .map { it.right() }
+        .getOrHandle { PopulateIndexError.OffenderNotFound(crn).left() }
   }
 
   fun getIndexCount(index: SyncIndex): Long {
@@ -136,8 +145,10 @@ sealed class CancelBuildIndexError(val message: String) {
 sealed class PopulateIndexError(val message: String) {
   data class BuildNotInProgress(val indexStatus: IndexStatus) : PopulateIndexError("The index ${indexStatus.otherIndex} is in state ${indexStatus.otherIndexState} (ended at ${indexStatus.otherIndexEndBuildTime})")
   data class WrongIndexRequested(val indexStatus: IndexStatus) : PopulateIndexError("The index ${indexStatus.otherIndex} is in state ${indexStatus.otherIndexState} (ended at ${indexStatus.otherIndexEndBuildTime})")
+  data class OffenderNotFound(val crn: String) : PopulateIndexError("The offender $crn could not be found")
 }
 
 sealed class UpdateOffenderError(val message: String) {
   data class NoActiveIndexes(val indexStatus: IndexStatus) : UpdateOffenderError("Cannot update offender as current index ${indexStatus.currentIndex} is in state ${indexStatus.currentIndexState} and other index ${indexStatus.otherIndex} is in state ${indexStatus.otherIndexState}")
+  data class OffenderNotFound(val crn: String) : UpdateOffenderError("The offender $crn could not be found")
 }

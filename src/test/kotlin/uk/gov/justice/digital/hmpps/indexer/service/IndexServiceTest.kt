@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.indexer.service
 
 import arrow.core.getOrHandle
+import arrow.core.right
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
@@ -215,7 +216,7 @@ class IndexServiceTest {
   inner class IndexOffender {
     @BeforeEach
     internal fun setUp() {
-      whenever(offenderSynchroniserService.synchroniseOffender(any(), any())).thenReturn("""{"offenderId": 99}""")
+      whenever(offenderSynchroniserService.synchroniseOffender(any(), any())).thenReturn("""{"offenderId": 99}""".right())
     }
 
     @Test
@@ -317,7 +318,7 @@ class IndexServiceTest {
       whenever(offenderSynchroniserService.synchroniseOffender(any(), any()))
           .thenReturn("""{
             | "offenderId": 99
-            |}""".trimMargin())
+            |}""".trimMargin().right())
     }
 
     @Test
@@ -396,8 +397,8 @@ class IndexServiceTest {
     @Test
     fun `Current index active, offender is updated`() {
       val indexStatus = IndexStatus(currentIndex = GREEN, currentIndexState = COMPLETED)
-
       whenever(indexStatusService.getIndexStatus()).thenReturn(indexStatus)
+      whenever(offenderSynchroniserService.synchroniseOffender(any(), any())).thenReturn("".right())
 
       indexService.updateOffender("SOME_CRN")
 
@@ -408,6 +409,7 @@ class IndexServiceTest {
     fun `Other index active, offender is updated`() {
       val indexStatus = IndexStatus(currentIndex = NONE, otherIndexState = BUILDING, currentIndexState = ABSENT)
       whenever(indexStatusService.getIndexStatus()).thenReturn(indexStatus)
+      whenever(offenderSynchroniserService.synchroniseOffender(any(), any())).thenReturn("".right())
 
       indexService.updateOffender("SOME_CRN")
 
@@ -417,8 +419,8 @@ class IndexServiceTest {
     @Test
     fun `Both indexes active, offender is updated on both indexes`() {
       val indexStatus = IndexStatus(currentIndex = GREEN, otherIndexState = BUILDING, currentIndexState = COMPLETED)
-
       whenever(indexStatusService.getIndexStatus()).thenReturn(indexStatus)
+      whenever(offenderSynchroniserService.synchroniseOffender(any(), any())).thenReturn("".right())
 
       indexService.updateOffender("SOME_CRN")
 

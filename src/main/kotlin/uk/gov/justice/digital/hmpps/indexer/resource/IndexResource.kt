@@ -95,12 +95,14 @@ class IndexResource(private val indexService: IndexService) {
     ApiResponse(code = 200, message = "OK", response = String::class),
     ApiResponse(code = 401, message = "Unauthorised, requires a valid Oauth2 token"),
     ApiResponse(code = 403, message = "Forbidden, requires an authorisation with role PROBATION_INDEX"),
+    ApiResponse(code = 404, message = "Not Found, the offender could not be found"),
     ApiResponse(code = 409, message = "Conflict, no indexes could be updated")
   ])
   fun indexOffender(@PathVariable("crn") crn: String) = indexService.updateOffender(crn)
       .getOrHandle { error ->
         when (error) {
           is UpdateOffenderError.NoActiveIndexes -> throw ResponseStatusException(HttpStatus.CONFLICT, error.message)
+          is UpdateOffenderError.OffenderNotFound -> throw ResponseStatusException(HttpStatus.NOT_FOUND, error.message)
         }
       }
 

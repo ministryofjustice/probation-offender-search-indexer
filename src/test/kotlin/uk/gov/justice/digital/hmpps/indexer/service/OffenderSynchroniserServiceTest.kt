@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.indexer.service
 
+import arrow.core.right
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.check
 import com.nhaarman.mockitokotlin2.isA
@@ -24,7 +25,7 @@ internal class OffenderSynchroniserServiceTest {
 
     @BeforeEach
     internal fun setUp() {
-      whenever(communityApi.getOffender(any())).thenReturn(Offender("{}"))
+      whenever(communityApi.getOffender(any())).thenReturn(Offender("{}").right())
     }
 
     @Test

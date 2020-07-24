@@ -1,5 +1,9 @@
 package uk.gov.justice.digital.hmpps.indexer.service
 
+import arrow.core.Either
+import arrow.core.getOrHandle
+import arrow.core.left
+import arrow.core.right
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -13,11 +17,17 @@ class OffenderSynchroniserService(val communityService: CommunityService, val of
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  fun synchroniseOffender(crn: String, vararg indexes: SyncIndex): String {
-    val offender = communityService.getOffender(crn)
-    indexes.map { offenderRepository.save(offender, it) }
-    return offender.json
-  }
+  fun synchroniseOffender(crn: String, vararg indexes: SyncIndex): Either<SynchroniseOffenderError, String> =
+    communityService.getOffender(crn)
+        .map {
+          indexes.map { index -> offenderRepository.save(it, index) }
+          it.json.right()
+        }
+        .getOrHandle {
+          when(it) {
+            is GetOffenderError.OffenderNotFound -> SynchroniseOffenderError.OffenderNotFound(it.message).left()
+          }
+        }
 
   fun checkExistsAndReset(index: SyncIndex) {
     if (offenderRepository.doesIndexExist(index)) {
@@ -45,3 +55,7 @@ class OffenderSynchroniserService(val communityService: CommunityService, val of
 }
 
 data class OffenderPage(val page: Long, val pageSize: Long)
+
+sealed class SynchroniseOffenderError(val message: String) {
+  data class OffenderNotFound(val crn: String) : SynchroniseOffenderError("The offender $crn could not be found")
+}

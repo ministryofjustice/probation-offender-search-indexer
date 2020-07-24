@@ -1,6 +1,8 @@
 package uk.gov.justice.digital.hmpps.indexer.integration.service
 
+import arrow.core.right
 import com.github.tomakehurst.wiremock.client.WireMock
+import io.kotest.assertions.arrow.either.shouldBeRight
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -54,10 +56,11 @@ internal class CommunityServiceTest : IntegrationTestBase() {
           }""")
           .withStatus(HttpURLConnection.HTTP_OK)))
 
-      val offender = service.getOffender("X12345")
+      val offender = service.getOffender("X12345").right()
 
-
-      assertThat(offender.json).contains(""""crn": "X12345"""")
+      offender shouldBeRight {
+        it.map { offender -> assertThat(offender.json).contains(""""crn": "X12345"""") }
+      }
     }
 
     @Test
@@ -74,8 +77,9 @@ internal class CommunityServiceTest : IntegrationTestBase() {
 
       val offender = service.getOffender("X12345")
 
-
-      assertThat(offender.crn).isEqualTo("X12345")
+      offender shouldBeRight {
+        assertThat(it.crn).isEqualTo("X12345")
+      }
     }
 
     @Test
