@@ -21,7 +21,6 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.SpyBean
 import org.springframework.boot.web.server.LocalServerPort
-import org.springframework.data.elasticsearch.core.ElasticsearchOperations
 import org.springframework.http.HttpHeaders
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.reactive.server.WebTestClient
@@ -59,22 +58,11 @@ abstract class IntegrationTestBase {
   @Qualifier("indexAwsSqsClient")
   internal lateinit var indexAwsSqsClient: AmazonSQS
 
-  @SpyBean
-  @Qualifier("eventAwsSqsDlqClient")
-  internal lateinit var eventAwsSqsDlqClient: AmazonSQS
-
-  @SpyBean
-  @Qualifier("indexAwsSqsDlqClient")
-  internal lateinit var indexAwsSqsDlqClient: AmazonSQS
-
   @Autowired
   internal lateinit var gson: Gson
 
   @Autowired
   lateinit var elasticSearchClient: RestHighLevelClient
-
-  @Autowired
-  lateinit var elasticsearchOperations: ElasticsearchOperations
 
   @Autowired
   lateinit var offenderRespository: OffenderRepository
@@ -87,6 +75,10 @@ abstract class IntegrationTestBase {
 
   @LocalServerPort
   protected var port: Int = 0
+  @Autowired
+  lateinit var eventQueueUrl: String
+  @Autowired
+  lateinit var indexQueueUrl: String
 
   internal fun setAuthorisation(
       user: String = "probation-offender-search-indexer-client",
@@ -144,4 +136,15 @@ abstract class IntegrationTestBase {
   infix fun List<ILoggingEvent>?.hasLogMessageContaining(partialMessage: String) =
       this?.find { logEvent -> logEvent.message.contains(partialMessage) } != null
 
+  fun getNumberOfMessagesCurrentlyOnEventQueue(): Int? {
+    val queueAttributes = eventAwsSqsClient.getQueueAttributes(eventQueueUrl, listOf("ApproximateNumberOfMessages"))
+    return queueAttributes.attributes["ApproximateNumberOfMessages"]?.toInt()
+  }
+
+  fun getNumberOfMessagesCurrentlyOnIndexQueue(): Int? {
+    val queueAttributes = indexAwsSqsClient.getQueueAttributes(indexQueueUrl, listOf("ApproximateNumberOfMessages"))
+    return queueAttributes.attributes["ApproximateNumberOfMessages"]?.toInt()
+  }
+
+  fun String.readResourceAsText(): String = this::class.java.getResource(this).readText()
 }
