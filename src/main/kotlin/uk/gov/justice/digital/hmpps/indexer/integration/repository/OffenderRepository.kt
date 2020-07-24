@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.indexer.repository
+package uk.gov.justice.digital.hmpps.indexer.integration.repository
 
 import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest
 import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest.AliasActions

@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.indexer.resource
+package uk.gov.justice.digital.hmpps.indexer.integration.e2e
 
 import com.amazonaws.services.sqs.model.PurgeQueueRequest
 import org.assertj.core.api.Assertions.assertThat
@@ -10,14 +10,14 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.http.MediaType
-import uk.gov.justice.digital.hmpps.indexer.integration.QueueIntegrationTest
+import uk.gov.justice.digital.hmpps.indexer.integration.QueueIntegrationTestBase
 import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.CommunityApiExtension
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.BLUE
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.GREEN
 import uk.gov.justice.digital.hmpps.indexer.service.OffenderDetail
 
-class IndexResourceIntegrationTest : QueueIntegrationTest() {
+class IndexResourceTest : QueueIntegrationTestBase() {
 
   @BeforeEach
   internal fun setUp() {

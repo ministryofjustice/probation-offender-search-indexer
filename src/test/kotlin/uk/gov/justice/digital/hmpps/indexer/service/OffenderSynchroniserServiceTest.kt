@@ -12,7 +12,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.GREEN
-import uk.gov.justice.digital.hmpps.indexer.repository.OffenderRepository
+import uk.gov.justice.digital.hmpps.indexer.integration.repository.OffenderRepository
 
 internal class OffenderSynchroniserServiceTest {
   private val communityApi = mock<CommunityService>()
@@ -24,7 +24,7 @@ internal class OffenderSynchroniserServiceTest {
 
     @BeforeEach
     internal fun setUp() {
-      whenever(communityApi.getOffender(any())).thenReturn(anOffender())
+      whenever(communityApi.getOffender(any())).thenReturn(Offender("{}"))
     }
 
     @Test

@@ -1,32 +1,26 @@
-package uk.gov.justice.digital.hmpps.indexer.integration
+package uk.gov.justice.digital.hmpps.indexer.integration.helpers
 
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.SignatureAlgorithm
-import org.springframework.context.annotation.Bean
-import org.springframework.security.oauth2.jwt.JwtDecoder
-import org.springframework.security.oauth2.jwt.NimbusJwtDecoder
+import org.springframework.http.HttpHeaders
 import org.springframework.stereotype.Component
 import java.security.KeyPair
-import java.security.KeyPairGenerator
-import java.security.interfaces.RSAPublicKey
 import java.time.Duration
 import java.util.*
 import kotlin.collections.HashMap
 
 @Component
-class JwtAuthHelper {
-  private val keyPair: KeyPair
+class JwtAuthHelper(private val keyPair: KeyPair) {
 
-  init {
-    val gen = KeyPairGenerator.getInstance("RSA")
-    gen.initialize(2048)
-    keyPair = gen.generateKeyPair()
+  fun setAuthorisation(user: String = "probation-offender-search-indexer-client", roles: List<String> = listOf()): (HttpHeaders) -> Unit {
+    val token = createJwt(subject = user,
+        scope = listOf("read"),
+        expiryTime = Duration.ofHours(1L),
+        roles = roles)
+    return { it.set(HttpHeaders.AUTHORIZATION, "Bearer $token") }
   }
 
-  @Bean
-  fun jwtDecoder(): JwtDecoder = NimbusJwtDecoder.withPublicKey(keyPair.public as RSAPublicKey).build()
-
-  fun createJwt(subject: String,
+  private fun createJwt(subject: String,
                 scope: List<String>? = listOf(),
                 roles: List<String>? = listOf(),
                 expiryTime: Duration = Duration.ofHours(1),

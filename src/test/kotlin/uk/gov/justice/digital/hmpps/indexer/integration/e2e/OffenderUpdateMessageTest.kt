@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.indexer.integration
+package uk.gov.justice.digital.hmpps.indexer.integration.e2e
 
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -9,11 +9,13 @@ import org.elasticsearch.ElasticsearchStatusException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import uk.gov.justice.digital.hmpps.indexer.integration.QueueIntegrationTestBase
+import uk.gov.justice.digital.hmpps.indexer.integration.readResourceAsText
 import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.CommunityApiExtension
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
 import uk.gov.justice.digital.hmpps.indexer.service.IndexService
 
-class OffenderUpdateMessageIntegrationTest : QueueIntegrationTest() {
+class OffenderUpdateMessageTest : QueueIntegrationTestBase() {
 
   @Nested
   inner class OffenderIndexesOk {

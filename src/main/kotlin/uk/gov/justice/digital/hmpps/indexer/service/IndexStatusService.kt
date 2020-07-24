@@ -3,11 +3,10 @@ package uk.gov.justice.digital.hmpps.indexer.service
 import org.elasticsearch.client.RestHighLevelClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.data.elasticsearch.annotations.Document
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.indexer.model.INDEX_STATUS_ID
 import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
-import uk.gov.justice.digital.hmpps.indexer.repository.IndexStatusRepository
+import uk.gov.justice.digital.hmpps.indexer.integration.repository.IndexStatusRepository
 
 @Service
 class IndexStatusService(private val indexStatusRepository: IndexStatusRepository, private val elasticSearchClient: RestHighLevelClient) {

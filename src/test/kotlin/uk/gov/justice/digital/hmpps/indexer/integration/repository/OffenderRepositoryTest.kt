@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.indexer.repository
+package uk.gov.justice.digital.hmpps.indexer.integration.repository
 
 import net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson
 import org.assertj.core.api.Assertions.assertThat
@@ -18,14 +18,14 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.fail
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
-import uk.gov.justice.digital.hmpps.indexer.integration.IntegrationTest
+import uk.gov.justice.digital.hmpps.indexer.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.BLUE
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.GREEN
 import uk.gov.justice.digital.hmpps.indexer.service.IDs
 import uk.gov.justice.digital.hmpps.indexer.service.Offender
 import uk.gov.justice.digital.hmpps.indexer.service.OffenderDetail
 
-internal class OffenderRepositoryIntegrationTest : IntegrationTest() {
+internal class OffenderRepositoryTest : IntegrationTestBase() {
 
   @Qualifier("elasticSearchClient")
   @Autowired

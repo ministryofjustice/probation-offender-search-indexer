@@ -3,7 +3,7 @@ package uk.gov.justice.digital.hmpps.indexer.integration
 import org.springframework.beans.factory.annotation.Autowired
 
 
-abstract class QueueIntegrationTest : IntegrationTest() {
+abstract class QueueIntegrationTestBase : IntegrationTestBase() {
 
   @Autowired
   lateinit var eventQueueUrl: String
@@ -25,4 +25,4 @@ abstract class QueueIntegrationTest : IntegrationTest() {
 
 }
 
-fun String.readResourceAsText(): String = QueueIntegrationTest::class.java.getResource(this).readText()
+fun String.readResourceAsText(): String = QueueIntegrationTestBase::class.java.getResource(this).readText()
