@@ -38,10 +38,10 @@ class OffenderUpdateMessageIntegrationTest : QueueIntegrationTest() {
       await untilCallTo { CommunityApiExtension.communityApi.getCountFor("/secure/offenders/crn/X123456/all") } matches { it == 1 }
       await untilCallTo { indexService.getIndexCount(SyncIndex.GREEN) } matches { it == 1L }
 
-      val response = search("X123456")
+      val response = searchByCrn("X123456")
 
       CommunityApiExtension.communityApi.verifyGetOffender()
-      assertThat(response.hits.hits.asList()).extracting<String> { it.id }.containsExactly("X123456")
+      assertThat(response.hits.asList()).extracting<String> { it.id }.containsExactly("X123456")
     }
   }
 
@@ -65,7 +65,7 @@ class OffenderUpdateMessageIntegrationTest : QueueIntegrationTest() {
 
       sleep(1) // There is nothing to wait for to prove the test has finished, so we just give the message a chance to fail
 
-      assertThatThrownBy { search("X123456") }
+      assertThatThrownBy { searchByCrn("X123456") }
           .isInstanceOf(ElasticsearchStatusException::class.java)
           .hasMessageContaining("no such index")
 
