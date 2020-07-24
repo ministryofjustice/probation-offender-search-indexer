@@ -13,7 +13,6 @@ import org.elasticsearch.client.indices.GetIndexRequest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import uk.gov.justice.digital.hmpps.indexer.helpers.indexStatus
 import uk.gov.justice.digital.hmpps.indexer.model.INDEX_STATUS_ID
 import uk.gov.justice.digital.hmpps.indexer.model.IndexState
 import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus

@@ -17,8 +17,6 @@ import org.elasticsearch.client.core.CountResponse
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import uk.gov.justice.digital.hmpps.indexer.helpers.indexStatus
-import uk.gov.justice.digital.hmpps.indexer.model.IndexState
 import uk.gov.justice.digital.hmpps.indexer.model.IndexState.ABSENT
 import uk.gov.justice.digital.hmpps.indexer.model.IndexState.BUILDING
 import uk.gov.justice.digital.hmpps.indexer.model.IndexState.CANCELLED
@@ -187,6 +185,7 @@ class IndexServiceTest {
 
       verify(indexStatusService).markBuildCancelled()
     }
+
     @Test
     fun `all messages are cleared`() {
       val expectedIndexStatus = IndexStatus(currentIndex = GREEN, otherIndexState = BUILDING)
