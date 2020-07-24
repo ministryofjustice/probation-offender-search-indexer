@@ -31,8 +31,8 @@ import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.OAuthExtension
 import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.GREEN
-import uk.gov.justice.digital.hmpps.indexer.integration.repository.IndexStatusRepository
-import uk.gov.justice.digital.hmpps.indexer.integration.repository.OffenderRepository
+import uk.gov.justice.digital.hmpps.indexer.repository.IndexStatusRepository
+import uk.gov.justice.digital.hmpps.indexer.repository.OffenderRepository
 import uk.gov.justice.digital.hmpps.indexer.service.IndexService
 import uk.gov.justice.digital.hmpps.indexer.service.IndexStatusService
 
