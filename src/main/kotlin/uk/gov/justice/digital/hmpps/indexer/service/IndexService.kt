@@ -80,6 +80,7 @@ class IndexService(
       log.info("Ignoring update of offender {} as no indexes were active", crn)
       return UpdateOffenderError.NoActiveIndexes(indexStatus).left()
     }
+    log.info("Updating offender {} on indexes {}", crn, activeIndexes)
     return offenderSynchroniserService.synchroniseOffender(crn, *activeIndexes.toTypedArray()).right()
   }
 

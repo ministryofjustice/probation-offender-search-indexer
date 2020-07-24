@@ -11,10 +11,9 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.CommunityApiExtension
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
-import java.lang.Thread.sleep
+import uk.gov.justice.digital.hmpps.indexer.service.IndexService
 
 class OffenderUpdateMessageIntegrationTest : QueueIntegrationTest() {
-
 
   @Nested
   inner class OffenderIndexesOk {
@@ -55,6 +54,7 @@ class OffenderUpdateMessageIntegrationTest : QueueIntegrationTest() {
 
     @Test
     fun `Indexes absent, no update`() {
+      val indexServiceLogAppender = findLogAppender(IndexService::class.java)
       CommunityApiExtension.communityApi.stubGetOffender()
 
       await untilCallTo { getNumberOfMessagesCurrentlyOnEventQueue() } matches { it == 0 }
@@ -62,13 +62,11 @@ class OffenderUpdateMessageIntegrationTest : QueueIntegrationTest() {
       eventAwsSqsClient.sendMessage(eventQueueUrl, "/messages/offenderChanged.json".readResourceAsText())
 
       await untilCallTo { getNumberOfMessagesCurrentlyOnEventQueue() } matches { it == 0 }
-
-      sleep(1) // There is nothing to wait for to prove the test has finished, so we just give the message a chance to fail
+      await untilCallTo { indexServiceLogAppender.list } matches { it hasLogMessageContaining "Ignoring update of offender" }
 
       assertThatThrownBy { searchByCrn("X123456") }
           .isInstanceOf(ElasticsearchStatusException::class.java)
           .hasMessageContaining("no such index")
-
       CommunityApiExtension.communityApi.verifyNotGetOffender("X123456")
     }
   }
