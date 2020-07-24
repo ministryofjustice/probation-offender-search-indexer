@@ -146,4 +146,7 @@ abstract class IntegrationTest {
     return listAppender
   }
 
+  infix fun MutableList<ILoggingEvent>?.hasLogMessageContaining(partialMessage: String) =
+      this?.find { logEvent -> logEvent.message.contains(partialMessage) } != null
+
 }

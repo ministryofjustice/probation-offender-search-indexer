@@ -62,7 +62,7 @@ class OffenderUpdateMessageIntegrationTest : QueueIntegrationTest() {
       eventAwsSqsClient.sendMessage(eventQueueUrl, "/messages/offenderChanged.json".readResourceAsText())
 
       await untilCallTo { getNumberOfMessagesCurrentlyOnEventQueue() } matches { it == 0 }
-      await untilCallTo { indexServiceLogAppender.list.size } matches { it == 1 }
+      await untilCallTo { indexServiceLogAppender.list } matches { it hasLogMessageContaining "Ignoring update of offender" }
 
       assertThatThrownBy { searchByCrn("X123456") }
           .isInstanceOf(ElasticsearchStatusException::class.java)
