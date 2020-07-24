@@ -10,7 +10,7 @@ import java.security.interfaces.RSAPublicKey
 
 @Configuration
 class JwtConfig {
-  private final val keyPair: KeyPair
+  private val keyPair: KeyPair
 
   init {
     val gen = KeyPairGenerator.getInstance("RSA")
