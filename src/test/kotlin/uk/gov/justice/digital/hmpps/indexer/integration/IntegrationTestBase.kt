@@ -145,6 +145,5 @@ abstract class IntegrationTestBase {
     val queueAttributes = indexAwsSqsClient.getQueueAttributes(indexQueueUrl, listOf("ApproximateNumberOfMessages"))
     return queueAttributes.attributes["ApproximateNumberOfMessages"]?.toInt()
   }
-
-  fun String.readResourceAsText(): String = this::class.java.getResource(this).readText()
 }
+fun String.readResourceAsText(): String = IntegrationTestBase::class.java.getResource(this).readText()
