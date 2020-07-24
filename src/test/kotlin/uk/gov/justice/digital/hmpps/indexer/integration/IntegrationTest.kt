@@ -8,7 +8,10 @@ import org.elasticsearch.action.search.SearchResponse
 import org.elasticsearch.client.RequestOptions
 import org.elasticsearch.client.RestHighLevelClient
 import org.elasticsearch.client.core.CountRequest
+import org.elasticsearch.index.query.MatchQueryBuilder
+import org.elasticsearch.index.query.QueryBuilder
 import org.elasticsearch.index.query.QueryBuilders
+import org.elasticsearch.search.SearchHits
 import org.elasticsearch.search.builder.SearchSourceBuilder
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
@@ -116,11 +119,15 @@ abstract class IntegrationTest {
   fun getIndexCount(index: String): Long = elasticSearchClient.count(CountRequest(index), RequestOptions.DEFAULT).count
 
 
-  fun search(crn: String, index: SyncIndex = GREEN): SearchResponse {
+  fun searchByCrn(crn: String, index: SyncIndex = GREEN): SearchHits {
     val query = QueryBuilders.matchQuery("otherIds.crn", crn)
+    return search(query)
+  }
+
+  fun search(query: QueryBuilder, index: SyncIndex = GREEN): SearchHits {
     val search = SearchSourceBuilder().apply { query(query) }
     val request = SearchRequest(arrayOf(index.indexName), search)
-    return elasticSearchClient.search(request, RequestOptions.DEFAULT)
+    return elasticSearchClient.search(request, RequestOptions.DEFAULT).hits
   }
 
   fun getById(index: String, crn: String): String {

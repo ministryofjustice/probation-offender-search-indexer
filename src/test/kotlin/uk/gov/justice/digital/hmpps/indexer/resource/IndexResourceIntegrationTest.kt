@@ -5,6 +5,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.matches
 import org.awaitility.kotlin.untilCallTo
+import org.elasticsearch.index.query.QueryBuilders
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -332,6 +333,57 @@ class IndexResourceIntegrationTest : QueueIntegrationTest() {
 
         await untilCallTo { nomsNumberOf("X99999") } matches { it == "A0000BB" }
         await untilCallTo { getIndexCount("offender") } matches { it == 2L }
+      }
+    }
+
+    @Nested
+    inner class IndexBehaviour {
+      @BeforeEach
+      internal fun setUp() {
+        deleteOffenderIndexes()
+        initialiseIndexStatus()
+        CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345", "X12346", "X12347")
+        CommunityApiExtension.communityApi.stubGetOffender(crn = "X12345", pncNumber = "1999/0460155D")
+        CommunityApiExtension.communityApi.stubGetOffender(crn = "X12346", pncNumber = "1998/0460155D")
+        CommunityApiExtension.communityApi.stubGetOffender(crn = "X12347", pncNumber = "1999/9460155D")
+        buildAndSwitchIndex(GREEN, 3)
+      }
+
+      @Nested
+      inner class PNCMappingShortForm {
+        @Test
+        internal fun `can search by pnc number when in canonical form`() {
+          val results = search(QueryBuilders.matchQuery("otherIds.pncNumberShortYear", "99/460155d"))
+          assertThat(results.hits.asList()).extracting<String> { it.id }.containsExactly("X12345")
+        }
+        @Test
+        internal fun `must search pnc number using using canonical form`() {
+          val results = search(QueryBuilders.matchQuery("otherIds.pncNumberShortYear", "99/0460155d"))
+          assertThat(results.hits).hasSize(0)
+        }
+        @Test
+        internal fun `must search by pnc number as lowercase`() {
+          val results = search(QueryBuilders.matchQuery("otherIds.pncNumberShortYear", "99/460155D"))
+          assertThat(results.hits).hasSize(0)
+        }
+      }
+      @Nested
+      inner class PNCMappingLongForm {
+        @Test
+        internal fun `can search by pnc number when in canonical form`() {
+          val results = search(QueryBuilders.matchQuery("otherIds.pncNumberLongYear", "1999/460155d"))
+          assertThat(results.hits.asList()).extracting<String> { it.id }.containsExactly("X12345")
+        }
+        @Test
+        internal fun `must search pnc number using using canonical form`() {
+          val results = search(QueryBuilders.matchQuery("otherIds.pncNumberLongYear", "1999/0460155d"))
+          assertThat(results.hits).hasSize(0)
+        }
+        @Test
+        internal fun `must search by pnc number as lowercase`() {
+          val results = search(QueryBuilders.matchQuery("otherIds.pncNumberLongYear", "1999/460155D"))
+          assertThat(results.hits).hasSize(0)
+        }
       }
     }
   }

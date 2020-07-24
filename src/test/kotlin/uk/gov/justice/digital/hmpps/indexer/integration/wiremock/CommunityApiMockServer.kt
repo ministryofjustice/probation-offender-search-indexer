@@ -49,10 +49,10 @@ class CommunityApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   }
 
-  fun stubGetOffender(crn: String = "X123456", nomsNumber: String = "A1234BC") =
+  fun stubGetOffender(crn: String = "X123456", nomsNumber: String = "A1234BC", pncNumber: String? = null) =
       stubFor(get("/secure/offenders/crn/$crn/all").willReturn(aResponse()
           .withHeader("Content-Type", "application/json")
-          .withBody(anOffenderDetail(crn = crn, nomsNumber = nomsNumber))
+          .withBody(anOffenderDetail(crn = crn, nomsNumber = nomsNumber, pncNumber = pncNumber))
           .withStatus(200)))
 
   fun verifyGetOffender(crn: String = "X123456") =
@@ -79,7 +79,8 @@ class CommunityApiMockServer : WireMockServer(WIREMOCK_PORT) {
   private fun anOffenderDetail(
       offenderId: Long = 490001467,
       crn: String = "X123456",
-      nomsNumber: String = "A1234BC"
+      nomsNumber: String = "A1234BC",
+      pncNumber: String? = null
   ): String = """
 {
   "gender": "Male",
@@ -175,9 +176,9 @@ class CommunityApiMockServer : WireMockServer(WIREMOCK_PORT) {
   "surname": "Smith",
   "partitionArea": "Yorkshire",
   "otherIds": {
-    "nomsNumber": "%nomsNumber",
-    "pncNumber": "2018/0654321X",
-    "crn": "%crn"
+    "nomsNumber": "$nomsNumber",
+    "pncNumber": "$pncNumber",
+    "crn": "$crn"
   },
   "offenderAliases": [
     {
@@ -187,7 +188,7 @@ class CommunityApiMockServer : WireMockServer(WIREMOCK_PORT) {
       "dateOfBirth": "1965-07-22"
     }
   ],
-  "offenderId": %offenderId,
+  "offenderId": $offenderId,
   "currentDisposal": "0",
   "currentExclusion": false,
   "offenderProfile": {
@@ -235,10 +236,7 @@ class CommunityApiMockServer : WireMockServer(WIREMOCK_PORT) {
     "religion": "Christian"
   }
 } 
-    """.trimIndent()
-      .replace("%offenderId", offenderId.toString())
-      .replace("%crn", crn)
-      .replace("%nomsNumber", nomsNumber)
+    """.trimIndent().replace("\"pncNumber\": \"null\",", "")
 
 
   fun stubAllOffenders(count: Long) {
