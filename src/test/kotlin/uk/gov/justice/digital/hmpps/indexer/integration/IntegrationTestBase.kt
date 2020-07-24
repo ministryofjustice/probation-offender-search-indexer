@@ -25,6 +25,7 @@ import org.springframework.data.elasticsearch.core.ElasticsearchOperations
 import org.springframework.http.HttpHeaders
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.reactive.server.WebTestClient
+import uk.gov.justice.digital.hmpps.indexer.integration.helpers.JwtAuthHelper
 import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.CommunityApiExtension
 import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.OAuthExtension
 import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
@@ -34,7 +35,6 @@ import uk.gov.justice.digital.hmpps.indexer.integration.repository.IndexStatusRe
 import uk.gov.justice.digital.hmpps.indexer.integration.repository.OffenderRepository
 import uk.gov.justice.digital.hmpps.indexer.service.IndexService
 import uk.gov.justice.digital.hmpps.indexer.service.IndexStatusService
-import java.time.Duration
 
 @ExtendWith(OAuthExtension::class, CommunityApiExtension::class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)

@@ -24,7 +24,7 @@ internal class OffenderSynchroniserServiceTest {
 
     @BeforeEach
     internal fun setUp() {
-      whenever(communityApi.getOffender(any())).thenReturn(anOffender())
+      whenever(communityApi.getOffender(any())).thenReturn(Offender("{}"))
     }
 
     @Test
