@@ -1,5 +1,8 @@
 package uk.gov.justice.digital.hmpps.indexer.integration
 
+import ch.qos.logback.classic.Logger
+import ch.qos.logback.classic.spi.ILoggingEvent
+import ch.qos.logback.core.read.ListAppender
 import com.amazonaws.services.sqs.AmazonSQS
 import com.google.gson.Gson
 import org.elasticsearch.action.get.GetRequest
@@ -14,6 +17,7 @@ import org.elasticsearch.index.query.QueryBuilders
 import org.elasticsearch.search.SearchHits
 import org.elasticsearch.search.builder.SearchSourceBuilder
 import org.junit.jupiter.api.extension.ExtendWith
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.test.context.SpringBootTest
@@ -133,4 +137,13 @@ abstract class IntegrationTest {
   fun getById(index: String, crn: String): String {
     return elasticSearchClient.get(GetRequest(index).id(crn), RequestOptions.DEFAULT).sourceAsString
   }
+
+  fun findLogAppender(javaClass: Class<IndexService>): ListAppender<ILoggingEvent> {
+    val indexServiceLogger = LoggerFactory.getLogger(javaClass) as Logger
+    val listAppender = ListAppender<ILoggingEvent>()
+    listAppender.start()
+    indexServiceLogger.addAppender(listAppender)
+    return listAppender
+  }
+
 }
