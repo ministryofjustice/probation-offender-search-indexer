@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.indexer.resource
+package uk.gov.justice.digital.hmpps.indexer.integration.resource
 
 import arrow.core.left
 import arrow.core.right
@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import org.springframework.http.MediaType
 import uk.gov.justice.digital.hmpps.indexer.helpers.indexStatus
-import uk.gov.justice.digital.hmpps.indexer.integration.IntegrationTest
+import uk.gov.justice.digital.hmpps.indexer.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.indexer.model.IndexState
 import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
@@ -22,7 +22,7 @@ import uk.gov.justice.digital.hmpps.indexer.service.CancelBuildIndexError
 import uk.gov.justice.digital.hmpps.indexer.service.MarkBuildCompleteError
 import uk.gov.justice.digital.hmpps.indexer.service.UpdateOffenderError
 
-class IndexResourceApiTest : IntegrationTest() {
+class IndexResourceApiTest : IntegrationTestBase() {
 
   @BeforeEach
   fun `reset mocks`() {

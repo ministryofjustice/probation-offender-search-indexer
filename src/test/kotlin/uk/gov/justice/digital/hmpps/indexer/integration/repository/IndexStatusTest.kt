@@ -1,14 +1,14 @@
-package uk.gov.justice.digital.hmpps.indexer.repository
+package uk.gov.justice.digital.hmpps.indexer.integration.repository
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.fail
-import uk.gov.justice.digital.hmpps.indexer.integration.IntegrationTest
+import uk.gov.justice.digital.hmpps.indexer.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.indexer.model.INDEX_STATUS_ID
 import uk.gov.justice.digital.hmpps.indexer.model.IndexState
 
-class IndexStatusIntegrationTest : IntegrationTest() {
+class IndexStatusTest : IntegrationTestBase() {
 
   @BeforeEach
   fun `initialise and clear database`() {

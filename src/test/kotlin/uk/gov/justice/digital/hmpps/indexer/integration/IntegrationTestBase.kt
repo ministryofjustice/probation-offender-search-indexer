@@ -7,11 +7,9 @@ import com.amazonaws.services.sqs.AmazonSQS
 import com.google.gson.Gson
 import org.elasticsearch.action.get.GetRequest
 import org.elasticsearch.action.search.SearchRequest
-import org.elasticsearch.action.search.SearchResponse
 import org.elasticsearch.client.RequestOptions
 import org.elasticsearch.client.RestHighLevelClient
 import org.elasticsearch.client.core.CountRequest
-import org.elasticsearch.index.query.MatchQueryBuilder
 import org.elasticsearch.index.query.QueryBuilder
 import org.elasticsearch.index.query.QueryBuilders
 import org.elasticsearch.search.SearchHits
@@ -32,8 +30,8 @@ import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.OAuthExtension
 import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.GREEN
-import uk.gov.justice.digital.hmpps.indexer.repository.IndexStatusRepository
-import uk.gov.justice.digital.hmpps.indexer.repository.OffenderRepository
+import uk.gov.justice.digital.hmpps.indexer.integration.repository.IndexStatusRepository
+import uk.gov.justice.digital.hmpps.indexer.integration.repository.OffenderRepository
 import uk.gov.justice.digital.hmpps.indexer.service.IndexService
 import uk.gov.justice.digital.hmpps.indexer.service.IndexStatusService
 import java.time.Duration
@@ -41,7 +39,7 @@ import java.time.Duration
 @ExtendWith(OAuthExtension::class, CommunityApiExtension::class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles(profiles = ["test"])
-abstract class IntegrationTest {
+abstract class IntegrationTestBase {
 
   @Suppress("SpringJavaInjectionPointsAutowiringInspection")
   @Autowired
@@ -90,6 +88,11 @@ abstract class IntegrationTest {
   @LocalServerPort
   protected var port: Int = 0
 
+  internal fun setAuthorisation(
+      user: String = "probation-offender-search-indexer-client",
+      roles: List<String> = listOf()
+  ): (HttpHeaders) -> Unit = jwtAuthHelper.setAuthorisation(user, roles)
+
   fun createOffenderIndexes() {
     SyncIndex.values().map { offenderRespository.createIndex(it) }
   }
@@ -106,14 +109,6 @@ abstract class IntegrationTest {
   fun buildInitialIndex() {
     indexService.prepareIndexForRebuild()
     indexService.markIndexingComplete()
-  }
-
-  internal fun setAuthorisation(user: String = "probation-offender-search-indexer-client", roles: List<String> = listOf()): (HttpHeaders) -> Unit {
-    val token = jwtAuthHelper.createJwt(subject = user,
-        scope = listOf("read"),
-        expiryTime = Duration.ofHours(1L),
-        roles = roles)
-    return { it.set(HttpHeaders.AUTHORIZATION, "Bearer $token") }
   }
 
   fun getIndexCount(index: SyncIndex): Long {
@@ -146,7 +141,7 @@ abstract class IntegrationTest {
     return listAppender
   }
 
-  infix fun MutableList<ILoggingEvent>?.hasLogMessageContaining(partialMessage: String) =
+  infix fun List<ILoggingEvent>?.hasLogMessageContaining(partialMessage: String) =
       this?.find { logEvent -> logEvent.message.contains(partialMessage) } != null
 
 }

@@ -18,7 +18,7 @@ import uk.gov.justice.digital.hmpps.indexer.model.INDEX_STATUS_ID
 import uk.gov.justice.digital.hmpps.indexer.model.IndexState
 import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
-import uk.gov.justice.digital.hmpps.indexer.repository.IndexStatusRepository
+import uk.gov.justice.digital.hmpps.indexer.integration.repository.IndexStatusRepository
 import java.util.*
 
 class IndexStatusServiceTest {

@@ -5,7 +5,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
-import uk.gov.justice.digital.hmpps.indexer.repository.OffenderRepository
+import uk.gov.justice.digital.hmpps.indexer.integration.repository.OffenderRepository
 
 @Service
 class OffenderSynchroniserService(val communityService: CommunityService, val offenderRepository: OffenderRepository, @Value("\${index.page.size:1000}") private val pageSize: Long) {

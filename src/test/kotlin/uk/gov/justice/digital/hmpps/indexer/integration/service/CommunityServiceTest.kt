@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.indexer.service
+package uk.gov.justice.digital.hmpps.indexer.integration.service
 
 import com.github.tomakehurst.wiremock.client.WireMock
 import org.assertj.core.api.Assertions.assertThat
@@ -7,11 +7,12 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import uk.gov.justice.digital.hmpps.indexer.integration.IntegrationTest
+import uk.gov.justice.digital.hmpps.indexer.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.CommunityApiExtension
+import uk.gov.justice.digital.hmpps.indexer.service.CommunityService
 import java.net.HttpURLConnection
 
-internal class CommunityServiceTest : IntegrationTest() {
+internal class CommunityServiceTest : IntegrationTestBase() {
   @Autowired
   private lateinit var service: CommunityService
 

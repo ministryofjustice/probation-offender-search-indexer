@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.indexer.health
+package uk.gov.justice.digital.hmpps.indexer.integration.health
 
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Nested
@@ -8,13 +8,16 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.test.util.ReflectionTestUtils
-import uk.gov.justice.digital.hmpps.indexer.integration.IntegrationTest
+import uk.gov.justice.digital.hmpps.indexer.health.DlqStatus
+import uk.gov.justice.digital.hmpps.indexer.health.QueueAttributes
+import uk.gov.justice.digital.hmpps.indexer.health.QueueHealth
+import uk.gov.justice.digital.hmpps.indexer.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.CommunityApiExtension
 import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.OAuthExtension
 
 
 @ExtendWith(SpringExtension::class)
-class HealthCheckIntegrationTest : IntegrationTest() {
+class HealthCheckTest : IntegrationTestBase() {
   @Autowired
   private lateinit var eventQueueHealth: QueueHealth
 
