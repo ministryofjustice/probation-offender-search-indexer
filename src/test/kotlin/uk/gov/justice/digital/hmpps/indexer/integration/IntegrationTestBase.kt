@@ -86,11 +86,11 @@ abstract class IntegrationTestBase {
   ): (HttpHeaders) -> Unit = jwtAuthHelper.setAuthorisation(user, roles)
 
   fun createOffenderIndexes() {
-    SyncIndex.values().map { offenderRespository.createIndex(it) }
+    SyncIndex.values().forEach { offenderRespository.createIndex(it) }
   }
 
   fun deleteOffenderIndexes() {
-    SyncIndex.values().map { offenderRespository.deleteIndex(it) }
+    SyncIndex.values().forEach { offenderRespository.deleteIndex(it) }
   }
 
   fun initialiseIndexStatus() {
