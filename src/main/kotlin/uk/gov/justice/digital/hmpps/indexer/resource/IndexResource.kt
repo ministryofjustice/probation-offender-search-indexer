@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.indexer.integration.resource
+package uk.gov.justice.digital.hmpps.indexer.resource
 
 import arrow.core.getOrHandle
 import io.swagger.annotations.Api

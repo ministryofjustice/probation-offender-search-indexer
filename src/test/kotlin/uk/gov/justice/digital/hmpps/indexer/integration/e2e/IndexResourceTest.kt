@@ -10,14 +10,14 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.http.MediaType
-import uk.gov.justice.digital.hmpps.indexer.integration.QueueIntegrationTestBase
+import uk.gov.justice.digital.hmpps.indexer.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.CommunityApiExtension
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.BLUE
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.GREEN
 import uk.gov.justice.digital.hmpps.indexer.service.OffenderDetail
 
-class IndexResourceTest : QueueIntegrationTestBase() {
+class IndexResourceTest : IntegrationTestBase() {
 
   @BeforeEach
   internal fun setUp() {

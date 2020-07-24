@@ -17,7 +17,7 @@ import uk.gov.justice.digital.hmpps.indexer.model.INDEX_STATUS_ID
 import uk.gov.justice.digital.hmpps.indexer.model.IndexState
 import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
-import uk.gov.justice.digital.hmpps.indexer.integration.repository.IndexStatusRepository
+import uk.gov.justice.digital.hmpps.indexer.repository.IndexStatusRepository
 import java.util.*
 
 class IndexStatusServiceTest {
@@ -25,7 +25,7 @@ class IndexStatusServiceTest {
   private val indexStatusRepository = mock<IndexStatusRepository>()
   private val elasticSearchClient = mock<RestHighLevelClient>()
   private val indexClient = mock<IndicesClient>()
-  private val indexStatusService = IndexStatusService(indexStatusRepository, elasticSearchClient)
+  private val indexStatusService = IndexStatusService(indexStatusRepository)
 
   @Nested
   inner class InitialiseIndexWhenRequired {

@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Qualifier
 import uk.gov.justice.digital.hmpps.indexer.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.BLUE
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.GREEN
+import uk.gov.justice.digital.hmpps.indexer.repository.OffenderRepository
 import uk.gov.justice.digital.hmpps.indexer.service.IDs
 import uk.gov.justice.digital.hmpps.indexer.service.Offender
 import uk.gov.justice.digital.hmpps.indexer.service.OffenderDetail
