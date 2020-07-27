@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.indexer.integration.health
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.test.context.junit.jupiter.SpringExtension
@@ -35,6 +36,8 @@ class InfoTest : IntegrationTestBase() {
         .jsonPath("index-status.otherIndexEndBuildTime").value<String> { assertThat(it).isNull() }
         .jsonPath("index-size.GREEN").isEqualTo(0)
         .jsonPath("index-size.BLUE").isEqualTo(0)
+        .jsonPath("offender-alias").isEqualTo("probation-search-green")
+        .jsonPath("index-queue-backlog").isEqualTo("0")
   }
 
 }
