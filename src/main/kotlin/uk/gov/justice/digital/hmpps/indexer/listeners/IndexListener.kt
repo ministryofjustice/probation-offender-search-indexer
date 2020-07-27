@@ -27,12 +27,12 @@ class IndexListener(
     log.debug(requestJson)
     val indexRequest = gson.fromJson(requestJson, IndexMessageRequest::class.java)
     log.info("Received message request {}", indexRequest)
-    val result = when(indexRequest.type) {
+    when(indexRequest.type) {
       POPULATE_INDEX -> indexService.populateIndex(indexRequest.index!!)
       POPULATE_OFFENDER_PAGE -> indexService.populateIndexWithOffenderPage(indexRequest.offenderPage!!)
       POPULATE_OFFENDER -> indexService.populateIndexWithOffender(indexRequest.crn!!)
     }
-    result.mapLeft { log.error("Message {} failed with error {}", indexRequest, it) }
+    .mapLeft { log.error("Message {} failed with error {}", indexRequest, it) }
   }
 }
 
