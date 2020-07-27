@@ -63,7 +63,7 @@ Depending on the speed of your machine when running all services you may need to
 #### Test containers
 
 `./gradlew test` will run all tests and will by default use test containers to start any required docker containers, e.g localstack
-Note that TestContainers will start Elastic Search in its ow n container rather than using the one built into localstack.
+Note that TestContainers will start Elastic Search in its own container rather than using the one built into localstack.
 
 #### External localstack
 
@@ -109,9 +109,9 @@ Check the health endpoint to show the Index DLQ is not building up with errors e
       }
     }
 ```
-would be a valid state
+would be a valid state since the `MessagesOnDLQ` would be zero
 
-The build can either left to run cancelled using 
+The build can either be left to run or cancelled using the following endpoint 
 
 
  ``` 
