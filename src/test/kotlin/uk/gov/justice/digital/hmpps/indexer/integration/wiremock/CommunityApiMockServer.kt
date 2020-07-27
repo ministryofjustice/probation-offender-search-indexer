@@ -7,6 +7,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
+import com.github.tomakehurst.wiremock.stubbing.StubMapping
 import com.google.gson.Gson
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
@@ -49,10 +50,24 @@ class CommunityApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   }
 
-  fun stubGetOffender(crn: String = "X123456", nomsNumber: String = "A1234BC", pncNumber: String? = null, croNumber: String? = null, offenderManagers: List<OffenderManager> = listOf(OffenderManager(true, ProbationArea("N02")))) =
+  fun stubGetOffender(
+      crn: String = "X123456",
+      nomsNumber: String = "A1234BC",
+      pncNumber: String? = null,
+      croNumber: String? = null,
+      offenderManagers: List<OffenderManager> = listOf(OffenderManager(true, ProbationArea("N02"))),
+      offenderAliases: List<OffenderAlias> = listOf()
+  ): StubMapping =
       stubFor(get("/secure/offenders/crn/$crn/all").willReturn(aResponse()
           .withHeader("Content-Type", "application/json")
-          .withBody(anOffenderDetail(crn = crn, nomsNumber = nomsNumber, pncNumber = pncNumber, croNumber = croNumber, offenderManagers = offenderManagers))
+          .withBody(anOffenderDetail(
+              crn = crn,
+              nomsNumber = nomsNumber,
+              pncNumber = pncNumber,
+              croNumber = croNumber,
+              offenderManagers = offenderManagers,
+              offenderAliases = offenderAliases
+          ))
           .withStatus(200)))
 
   fun verifyGetOffender(crn: String = "X123456") =
@@ -82,7 +97,8 @@ class CommunityApiMockServer : WireMockServer(WIREMOCK_PORT) {
       nomsNumber: String = "A1234BC",
       pncNumber: String? = null,
       croNumber: String? = null,
-      offenderManagers: List<OffenderManager> = listOf(OffenderManager(true, ProbationArea("N02")))
+      offenderManagers: List<OffenderManager> = listOf(OffenderManager(true, ProbationArea("N02"))),
+      offenderAliases: List<OffenderAlias> = listOf()
   ): String = """
 {
   "gender": "Male",
@@ -149,14 +165,7 @@ class CommunityApiMockServer : WireMockServer(WIREMOCK_PORT) {
     "croNumber": "$croNumber",
     "crn": "$crn"
   },
-  "offenderAliases": [
-    {
-      "firstName": "Jonny",
-      "gender": "Male",
-      "surname": "Smith",
-      "dateOfBirth": "1965-07-22"
-    }
-  ],
+  "offenderAliases": ${Gson().toJson(offenderAliases)},
   "offenderId": $offenderId,
   "currentDisposal": "0",
   "currentExclusion": false,
@@ -210,7 +219,7 @@ class CommunityApiMockServer : WireMockServer(WIREMOCK_PORT) {
       .replace("\"croNumber\": \"null\",", "")
 
 
-  fun stubAllOffenders(count: Long) {
+  private fun stubAllOffenders(count: Long) {
     CommunityApiExtension.communityApi.stubFor(
         get(urlPathEqualTo("/secure/offenders/primaryIdentifiers"))
             .withQueryParam("size", WireMock.equalTo("1"))
@@ -255,7 +264,7 @@ class CommunityApiMockServer : WireMockServer(WIREMOCK_PORT) {
                 .withStatus(HttpURLConnection.HTTP_OK)))
   }
 
-  fun stubPageOfOffenders(pageSize: Long = 1000, vararg crns: String) {
+  private fun stubPageOfOffenders(pageSize: Long = 1000, vararg crns: String) {
     // group CRNs for each page
     val pagesOfCrns = listOf(*crns).withIndex().groupBy { it.index / pageSize }
         .map { it.value.map { crn -> crn.value } }
@@ -306,5 +315,7 @@ class CommunityApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
 }
+
 data class ProbationArea(val code: String)
 data class OffenderManager(val active: Boolean, val probationArea: ProbationArea)
+data class OffenderAlias(val firstName: String, val surname: String, val dateOfBirth: String, val gender: String)

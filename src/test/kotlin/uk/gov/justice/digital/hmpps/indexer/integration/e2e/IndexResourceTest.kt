@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.http.MediaType
 import uk.gov.justice.digital.hmpps.indexer.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.CommunityApiExtension
+import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.OffenderAlias
 import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.OffenderManager
 import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.ProbationArea
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
@@ -446,6 +447,46 @@ class IndexResourceTest : IntegrationTestBase() {
           query.must(TermQueryBuilder("offenderManagers.active", true))
 
           val results = search(QueryBuilders.nestedQuery("offenderManagers", query, ScoreMode.Max))
+          assertThat(results.hits.asList()).extracting<String> { it.id }.containsExactly("X12345")
+        }
+      }
+
+      @Nested
+      inner class AliasMapping {
+        @BeforeEach
+        fun setup() {
+          deleteOffenderIndexes()
+          initialiseIndexStatus()
+          CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345", "X12346")
+          CommunityApiExtension.communityApi.stubGetOffender(crn = "X12345", offenderAliases = listOf(
+              OffenderAlias(surname = "Smith", firstName = "Jane", gender = "FEMALE", dateOfBirth = "1965-07-19"),
+              OffenderAlias(surname = "Kunis", firstName = "Ella", gender = "FEMALE", dateOfBirth = "1965-07-19")
+          ))
+          CommunityApiExtension.communityApi.stubGetOffender(crn = "X12346", offenderAliases = listOf(
+              OffenderAlias(surname = "Smith", firstName = "Ella", gender = "FEMALE", dateOfBirth = "1965-07-19"),
+              OffenderAlias(surname = "Kunis", firstName = "Jane", gender = "FEMALE", dateOfBirth = "1965-07-19")
+          ))
+          buildAndSwitchIndex(GREEN, 2)
+        }
+
+        @Test
+        internal fun `legacy applications can still use a non-nested search though not recommended`() {
+          val query = QueryBuilders.boolQuery()
+          query.must(QueryBuilders.matchQuery("offenderAliases.surname", "Smith"))
+          query.must(QueryBuilders.matchQuery("offenderAliases.firstName", "Jane"))
+          val results = search(query)
+
+          assertThat(results.hits.asList()).extracting<String> { it.id }.containsExactly("X12345", "X12346")
+        }
+
+        @Test
+        internal fun `offender aliases are nested so can search using attributes of a alias`() {
+          val query = QueryBuilders.boolQuery()
+          query.must(QueryBuilders.matchQuery("offenderAliases.surname", "Smith"))
+          query.must(QueryBuilders.matchQuery("offenderAliases.firstName", "Jane"))
+
+          val results = search(QueryBuilders.nestedQuery("offenderAliases", query, ScoreMode.Max))
+
           assertThat(results.hits.asList()).extracting<String> { it.id }.containsExactly("X12345")
         }
       }
