@@ -24,7 +24,7 @@ class CommunityService(@Qualifier("communityApiWebClient") private val webClient
         .bodyToMono(String::class.java)
         .doOnError(WebClientResponseException.NotFound::class.java) {
           log.error("Failed to retrieve offender with crn {}", crn, it)
-          OffenderNotFound(crn).left()
+          OffenderNotFoundError(crn).left()
         }
         .block()!!
     ).right()

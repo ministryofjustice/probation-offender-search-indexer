@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.indexer.service
 
-import arrow.core.getOrHandle
 import arrow.core.right
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.eq
@@ -50,7 +49,7 @@ class IndexServiceTest {
       val result = indexService.prepareIndexForRebuild()
 
       verify(indexStatusService).getIndexStatus()
-      result shouldBeLeft BuildAlreadyInProgress(expectedIndexStatus)
+      result shouldBeLeft BuildAlreadyInProgressError(expectedIndexStatus)
     }
 
     @Test
@@ -113,7 +112,7 @@ class IndexServiceTest {
       val result = indexService.markIndexingComplete()
 
       verify(indexStatusService).getIndexStatus()
-      result shouldBeLeft BuildNotInProgress(expectedIndexStatus)
+      result shouldBeLeft BuildNotInProgressError(expectedIndexStatus)
     }
 
     @Test
@@ -172,7 +171,7 @@ class IndexServiceTest {
       val result = indexService.cancelIndexing()
 
       verify(indexStatusService).getIndexStatus()
-      result shouldBeLeft BuildNotInProgress(expectedIndexStatus)
+      result shouldBeLeft BuildNotInProgressError(expectedIndexStatus)
     }
 
     @Test
@@ -238,7 +237,7 @@ class IndexServiceTest {
 
       val result = indexService.populateIndex(GREEN)
 
-      result shouldBeLeft BuildNotInProgress(indexStatus)
+      result shouldBeLeft BuildNotInProgressError(indexStatus)
     }
 
     @Test
@@ -249,7 +248,7 @@ class IndexServiceTest {
 
       val result = indexService.populateIndex(GREEN)
 
-      result shouldBeLeft WrongIndexRequested(indexStatus)
+      result shouldBeLeft WrongIndexRequestedError(indexStatus)
     }
 
     @Test
@@ -326,7 +325,7 @@ class IndexServiceTest {
 
       val result = indexService.populateIndexWithOffender("X12345")
 
-      result shouldBeLeft BuildNotInProgress(indexStatus)
+      result shouldBeLeft BuildNotInProgressError(indexStatus)
     }
 
     @Test
@@ -389,7 +388,7 @@ class IndexServiceTest {
 
       val result = indexService.updateOffender("SOME_CRN")
 
-      result shouldBeLeft NoActiveIndexes(indexStatus)
+      result shouldBeLeft NoActiveIndexesError(indexStatus)
     }
 
     @Test
