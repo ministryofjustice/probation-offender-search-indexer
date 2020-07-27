@@ -13,6 +13,7 @@ import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.GREEN
 import uk.gov.justice.digital.hmpps.indexer.repository.OffenderRepository
 import uk.gov.justice.digital.hmpps.indexer.service.IndexService
 import uk.gov.justice.digital.hmpps.indexer.service.IndexStatusService
+import java.util.NoSuchElementException
 
 
 @Component
@@ -25,8 +26,11 @@ class IndexInfo(
 ) : InfoContributor {
 
   override fun contribute(builder: Info.Builder) {
-    val indexStatus = indexStatusService.getIndexStatus()
-    builder.withDetail("index-status", indexStatus)
+    try {
+      builder.withDetail("index-status", indexStatusService.getIndexStatus())
+    } catch (e: NoSuchElementException) {
+      builder.withDetail("index-status", "No status exists yet")
+    }
     builder.withDetail("index-size", mapOf(
         GREEN to indexService.getIndexCount(GREEN),
         BLUE to indexService.getIndexCount(BLUE)

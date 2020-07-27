@@ -71,6 +71,106 @@ green open probation-search-blue  hsuf4mFcQ2eVhnqhNnKjsw 5 1 683351 366 311.1mb 
 green open offender-index-status  yEhaJorgRemmWMONJjfHoQ 1 1      1   0  11.4kb   5.7kb
 green open .kibana_1              jddPd_-XRBiqxOXGudoj7Q 1 1      0   0    566b    283b
 ```
+
+### Rebuilding an index
+
+To rebuild an index the credentials used must have the ROLE `PROBATION_INDEX` therefore it is recommend to use client credentials with the `ROLE_PROBATION_INDEX` added and pass in your username when getting a token.
+
+The rebuilding of the index can be sped up by increasing the number of pods handling the reindex e.g.
+
+```
+kubectl -n probation-offender-search-dev scale --replicas=8 deployment/probation-offender-search-indexer
+``` 
+After obtaining a token for the environment invoke the reindex with a cUrl command or Postman e.g.
+
+```
+curl --location --request PUT 'https://probation-search-indexer-dev.hmpps.service.justice.gov.uk/probation-index/build-index' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer <some token>>'
+``` 
+
+For production environments where access is blocked by inclusion lists this will need to be done from withing a Cloud Platform pod
+
+Next monitor the progress of the rebuilding via the info endpoint e.g. https://probation-search-indexer-dev.hmpps.service.justice.gov.uk/info
+This will return details like the following:
+
+```
+   "index-status": {
+     "currentIndex": "NONE",
+     "currentIndexStartBuildTime": null,
+     "currentIndexEndBuildTime": null,
+     "currentIndexState": "ABSENT",
+     "otherIndexStartBuildTime": "2020-07-27T14:53:35",
+     "otherIndexEndBuildTime": null,
+     "otherIndexState": "BUILDING",
+     "otherIndex": "GREEN"
+   },
+   "index-size": {
+     "GREEN": 8,
+     "BLUE": -1
+   },
+   "offender-alias": "",
+   "index-queue-backlog": "260133"
+```
+ 
+ when `"index-queue-backlog": "0"` has reached zero then all indexing messages have been processed. Check that the dead letter queue is empty via the health check e.g https://probation-search-indexer-dev.hmpps.service.justice.gov.uk/health
+ This should show the queues DLQ count at zero, e.g.
+ ``` 
+    "indexQueueHealth": {
+      "status": "UP",
+      "details": {
+        "MessagesOnQueue": 0,
+        "MessagesInFlight": 0,
+        "dlqStatus": "UP",
+        "MessagesOnDLQ": 0
+      }
+    },
+ ```
+  
+ The indexing is ready to marked as complete using another call to the service e.g
+ 
+ ``` 
+curl --location --request PUT 'https://probation-search-indexer-dev.hmpps.service.justice.gov.uk/probation-index/mark-complete' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer <some token>>'
+
+ ```  
+
+One last check of the info endpoint should confirm the new state, e.g.
+
+```
+   "index-status": {
+     "currentIndex": "GREEN",
+     "currentIndexStartBuildTime": "2020-07-27T14:53:35",
+     "currentIndexEndBuildTime": "2020-07-27T16:53:35",
+     "currentIndexState": "COMPLETE",
+     "otherIndexStartBuildTime": null,
+     "otherIndexEndBuildTime": null,
+     "otherIndexState": "ABSENT",
+     "otherIndex": "BLUE"
+   },
+   "index-size": {
+     "GREEN": 2010111,
+     "BLUE": -1
+   },
+   "offender-alias": "probation-search-green",
+   "index-queue-backlog": "0"
+```
+
+Pay careful attention to `"offender-alias": "probation-search-green"` - this shows the actual index being used by clients.
+
+### Deleting indexes in test
+
+In rare circumstances where you need to test rebuilding indexes from scratch with an outage it is possible to delete the indexes as follows:
+
+```
+curl -X DELETE aws-es-proxy-service:9200/probation-search-green/_alias/offender?pretty
+curl -X DELETE aws-es-proxy-service:9200/probation-search-green?pretty
+curl -X DELETE aws-es-proxy-service:9200/probation-search-blue?pretty
+curl -X DELETE aws-es-proxy-service:9200/offender-index-status?pretty
+```
+
+
 ### Alias switch failure
 
 It is possible for the green/blue index switching to become out of sync with the index the `offender` alias is pointing at. 
