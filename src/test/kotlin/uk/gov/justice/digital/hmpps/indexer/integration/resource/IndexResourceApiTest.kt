@@ -4,6 +4,7 @@ import arrow.core.left
 import arrow.core.right
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.never
+import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import org.assertj.core.api.Assertions.assertThat
@@ -19,6 +20,7 @@ import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
 import uk.gov.justice.digital.hmpps.indexer.service.BuildAlreadyInProgressError
 import uk.gov.justice.digital.hmpps.indexer.service.BuildNotInProgressError
 import uk.gov.justice.digital.hmpps.indexer.service.NoActiveIndexesError
+import uk.gov.justice.digital.hmpps.indexer.service.OffenderNotFoundError
 
 class IndexResourceApiTest : IntegrationTestBase() {
 
@@ -261,6 +263,20 @@ class IndexResourceApiTest : IntegrationTestBase() {
           .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
           .exchange()
           .expectStatus().isEqualTo(409)
+
+      verify(indexService).updateOffender("SOME_CRN")
+    }
+
+    @Test
+    fun `Request to index unknown offender returns not found`() {
+      doReturn(OffenderNotFoundError("SOME_CRN").left()).whenever(indexService).updateOffender("SOME_CRN")
+
+      webTestClient.put()
+          .uri("/probation-index/index/offender/SOME_CRN")
+          .accept(MediaType.APPLICATION_JSON)
+          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+          .exchange()
+          .expectStatus().isEqualTo(404)
 
       verify(indexService).updateOffender("SOME_CRN")
     }
