@@ -62,7 +62,3 @@ data class OffenderDetail(val offenderId: Long, val otherIds: IDs)
 data class IDs(val crn: String, val pncNumber: String? = null, val croNumber: String? = null, val nomsNumber: String? = null)
 data class OffendersPage(val totalElements: Long, val numberOfElements: Long, val content: List<OffenderIdentifier>)
 data class OffenderIdentifier(val crn: String)
-
-sealed class GetOffenderError(val message: String) {
-  data class OffenderNotFound(val crn: String) : GetOffenderError("The offender $crn could not be found")
-}
