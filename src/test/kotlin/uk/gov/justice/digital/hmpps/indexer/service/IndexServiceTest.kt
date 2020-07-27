@@ -26,8 +26,6 @@ import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.BLUE
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.GREEN
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.NONE
-import uk.gov.justice.digital.hmpps.indexer.service.PopulateIndexError.BuildNotInProgress
-import uk.gov.justice.digital.hmpps.indexer.service.PopulateIndexError.WrongIndexRequested
 
 class IndexServiceTest {
 
@@ -52,7 +50,7 @@ class IndexServiceTest {
       val result = indexService.prepareIndexForRebuild()
 
       verify(indexStatusService).getIndexStatus()
-      assertThat(result.getOrHandle { it }).isEqualTo(BuildIndexError.BuildAlreadyInProgress(expectedIndexStatus))
+      result shouldBeLeft BuildAlreadyInProgress(expectedIndexStatus)
     }
 
     @Test
@@ -95,7 +93,7 @@ class IndexServiceTest {
       val result = indexService.prepareIndexForRebuild()
 
       verify(indexStatusService, times(2)).getIndexStatus()
-      assertThat(result.getOrHandle { it }).isEqualTo(expectedIndexStatus)
+      result shouldBeRight expectedIndexStatus
     }
 
   }
@@ -115,7 +113,7 @@ class IndexServiceTest {
       val result = indexService.markIndexingComplete()
 
       verify(indexStatusService).getIndexStatus()
-      assertThat(result.getOrHandle { it }).isEqualTo(MarkBuildCompleteError.BuildNotInProgress(expectedIndexStatus))
+      result shouldBeLeft BuildNotInProgress(expectedIndexStatus)
     }
 
     @Test
@@ -159,7 +157,7 @@ class IndexServiceTest {
       val result = indexService.markIndexingComplete()
 
       verify(indexStatusService, times(2)).getIndexStatus()
-      assertThat(result.getOrHandle { it }).isEqualTo(expectedIndexStatus)
+      result shouldBeRight expectedIndexStatus
     }
   }
 
@@ -174,7 +172,7 @@ class IndexServiceTest {
       val result = indexService.cancelIndexing()
 
       verify(indexStatusService).getIndexStatus()
-      assertThat(result.getOrHandle { it }).isEqualTo(CancelBuildIndexError.BuildNotInProgress(expectedIndexStatus))
+      result shouldBeLeft BuildNotInProgress(expectedIndexStatus)
     }
 
     @Test
@@ -207,7 +205,7 @@ class IndexServiceTest {
       val result = indexService.cancelIndexing()
 
       verify(indexStatusService, times(2)).getIndexStatus()
-      assertThat(result.getOrHandle { it }).isEqualTo(expectedIndexStatus)
+      result shouldBeRight expectedIndexStatus
     }
 
   }
@@ -391,7 +389,7 @@ class IndexServiceTest {
 
       val result = indexService.updateOffender("SOME_CRN")
 
-      result shouldBeLeft UpdateOffenderError.NoActiveIndexes(indexStatus)
+      result shouldBeLeft NoActiveIndexes(indexStatus)
     }
 
     @Test

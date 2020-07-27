@@ -15,11 +15,11 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.server.ResponseStatusException
 import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
-import uk.gov.justice.digital.hmpps.indexer.service.BuildIndexError
-import uk.gov.justice.digital.hmpps.indexer.service.CancelBuildIndexError
+import uk.gov.justice.digital.hmpps.indexer.service.BuildAlreadyInProgress
+import uk.gov.justice.digital.hmpps.indexer.service.BuildNotInProgress
 import uk.gov.justice.digital.hmpps.indexer.service.IndexService
-import uk.gov.justice.digital.hmpps.indexer.service.MarkBuildCompleteError
-import uk.gov.justice.digital.hmpps.indexer.service.UpdateOffenderError
+import uk.gov.justice.digital.hmpps.indexer.service.NoActiveIndexes
+import uk.gov.justice.digital.hmpps.indexer.service.OffenderNotFound
 
 @Api(tags = ["probation-index"])
 @RestController
@@ -44,7 +44,8 @@ class IndexResource(private val indexService: IndexService) {
       indexService.prepareIndexForRebuild()
           .getOrHandle { error ->
             when (error) {
-              is BuildIndexError.BuildAlreadyInProgress -> throw ResponseStatusException(HttpStatus.CONFLICT, error.message)
+              is BuildAlreadyInProgress -> throw ResponseStatusException(HttpStatus.CONFLICT, error.message())
+              else -> throw ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, error.message())
             }
           }
 
@@ -63,7 +64,8 @@ class IndexResource(private val indexService: IndexService) {
       indexService.markIndexingComplete()
           .getOrHandle { error ->
             when (error) {
-              is MarkBuildCompleteError.BuildNotInProgress -> throw ResponseStatusException(HttpStatus.CONFLICT, error.message)
+              is BuildNotInProgress -> throw ResponseStatusException(HttpStatus.CONFLICT, error.message())
+              else -> throw ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, error.message())
             }
           }
 
@@ -82,7 +84,8 @@ class IndexResource(private val indexService: IndexService) {
       indexService.cancelIndexing()
           .getOrHandle { error ->
             when (error) {
-              is CancelBuildIndexError.BuildNotInProgress -> throw ResponseStatusException(HttpStatus.CONFLICT, error.message)
+              is BuildNotInProgress -> throw ResponseStatusException(HttpStatus.CONFLICT, error.message())
+              else -> throw ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, error.message())
             }
           }
 
@@ -101,8 +104,9 @@ class IndexResource(private val indexService: IndexService) {
   fun indexOffender(@PathVariable("crn") crn: String) = indexService.updateOffender(crn)
       .getOrHandle { error ->
         when (error) {
-          is UpdateOffenderError.NoActiveIndexes -> throw ResponseStatusException(HttpStatus.CONFLICT, error.message)
-          is UpdateOffenderError.OffenderNotFound -> throw ResponseStatusException(HttpStatus.NOT_FOUND, error.message)
+          is NoActiveIndexes -> throw ResponseStatusException(HttpStatus.CONFLICT, error.message())
+          is OffenderNotFound -> throw ResponseStatusException(HttpStatus.CONFLICT, error.message())
+          else -> throw ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, error.message())
         }
       }
 

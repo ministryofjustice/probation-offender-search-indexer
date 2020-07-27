@@ -16,10 +16,9 @@ import uk.gov.justice.digital.hmpps.indexer.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.indexer.model.IndexState
 import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
-import uk.gov.justice.digital.hmpps.indexer.service.BuildIndexError
-import uk.gov.justice.digital.hmpps.indexer.service.CancelBuildIndexError
-import uk.gov.justice.digital.hmpps.indexer.service.MarkBuildCompleteError
-import uk.gov.justice.digital.hmpps.indexer.service.UpdateOffenderError
+import uk.gov.justice.digital.hmpps.indexer.service.BuildAlreadyInProgress
+import uk.gov.justice.digital.hmpps.indexer.service.BuildNotInProgress
+import uk.gov.justice.digital.hmpps.indexer.service.NoActiveIndexes
 
 class IndexResourceApiTest : IntegrationTestBase() {
 
@@ -63,7 +62,7 @@ class IndexResourceApiTest : IntegrationTestBase() {
     @Test
     fun `Request build index already building returns conflict`() {
       val expectedIndexStatus = IndexStatus(currentIndex = SyncIndex.GREEN, otherIndexState = IndexState.BUILDING)
-      doReturn(BuildIndexError.BuildAlreadyInProgress(expectedIndexStatus).left()).whenever(indexService).prepareIndexForRebuild()
+      doReturn(BuildAlreadyInProgress(expectedIndexStatus).left()).whenever(indexService).prepareIndexForRebuild()
 
       webTestClient.put()
           .uri("/probation-index/build-index")
@@ -133,7 +132,7 @@ class IndexResourceApiTest : IntegrationTestBase() {
     @Test
     fun `Request to mark index complete when index not building returns error`() {
       val expectedIndexStatus = IndexStatus(currentIndex = SyncIndex.GREEN, otherIndexState = IndexState.COMPLETED)
-      doReturn(MarkBuildCompleteError.BuildNotInProgress(expectedIndexStatus).left()).whenever(indexService).markIndexingComplete()
+      doReturn(BuildNotInProgress(expectedIndexStatus).left()).whenever(indexService).markIndexingComplete()
 
       webTestClient.put()
           .uri("/probation-index/mark-complete")
@@ -194,7 +193,7 @@ class IndexResourceApiTest : IntegrationTestBase() {
     @Test
     fun `Request to mark index cancelled when index not building returns error`() {
       val expectedIndexStatus = IndexStatus(currentIndex = SyncIndex.GREEN, otherIndexState = IndexState.CANCELLED)
-      doReturn(CancelBuildIndexError.BuildNotInProgress(expectedIndexStatus).left()).whenever(indexService).cancelIndexing()
+      doReturn(BuildNotInProgress(expectedIndexStatus).left()).whenever(indexService).cancelIndexing()
 
       webTestClient.put()
           .uri("/probation-index/cancel-index")
@@ -254,7 +253,7 @@ class IndexResourceApiTest : IntegrationTestBase() {
     @Test
     fun `Request to index offender without active indexes returns conflict`() {
       val expectedIndexStatus = IndexStatus.newIndex()
-      doReturn(UpdateOffenderError.NoActiveIndexes(expectedIndexStatus).left()).whenever(indexService).updateOffender("SOME_CRN")
+      doReturn(NoActiveIndexes(expectedIndexStatus).left()).whenever(indexService).updateOffender("SOME_CRN")
 
       webTestClient.put()
           .uri("/probation-index/index/offender/SOME_CRN")

@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.reactive.function.client.WebClientResponseException
 
 
 @Service
@@ -15,14 +16,15 @@ class CommunityService(@Qualifier("communityApiWebClient") private val webClient
   companion object {
     private val log = LoggerFactory.getLogger(this::class.java)
   }
-  fun getOffender(crn: String): Either<GetOffenderError, Offender> =
+
+  fun getOffender(crn: String): Either<OffenderError, Offender> =
     Offender(webClient.get()
         .uri("/secure/offenders/crn/${crn}/all")
         .retrieve()
         .bodyToMono(String::class.java)
-        .doOnError {
+        .doOnError(WebClientResponseException.NotFound::class.java) {
           log.error("Failed to retrieve offender with crn {}", crn, it)
-          GetOffenderError.OffenderNotFound(crn).left()
+          OffenderNotFound(crn).left()
         }
         .block()!!
     ).right()
