@@ -86,7 +86,6 @@ class IndexService(
     }
     log.info("Updating offender {} on indexes {}", crn, activeIndexes)
     return offenderSynchroniserService.synchroniseOffender(crn, *activeIndexes.toTypedArray())
-        .flatMap { it.right() }
   }
 
   fun populateIndex(index: SyncIndex): Either<Error, Int> {
@@ -132,7 +131,7 @@ enum class UpdateOffenderError(val errorClass: KClass<out Error>) {
 
   companion object {
     fun fromErrorClass(error: Error): UpdateOffenderError {
-      return values().find { it.errorClass == error::class } ?: throw IllegalStateException("Error $error is not an UpdateOffenderError")
+      return values().first { it.errorClass == error::class }
     }
   }
 }
@@ -142,7 +141,7 @@ enum class PrepareRebuildError(val errorClass: KClass<out Error>) {
 
   companion object {
     fun fromErrorClass(error: Error): PrepareRebuildError {
-      return values().find { it.errorClass == error::class } ?: throw IllegalStateException("Error $error is not a PrepareRebuildError")
+      return values().first { it.errorClass == error::class }
     }
   }
 }
@@ -152,7 +151,7 @@ enum class MarkCompleteError(val errorClass: KClass<out Error>) {
 
   companion object {
     fun fromErrorClass(error: Error): MarkCompleteError {
-      return values().find { it.errorClass == error::class } ?: throw IllegalStateException("Error $error is not a MarkCompleteError")
+      return values().first { it.errorClass == error::class }
     }
   }
 }
@@ -162,7 +161,7 @@ enum class CancelBuildError(val errorClass: KClass<out Error>) {
 
   companion object {
     fun fromErrorClass(error: Error): CancelBuildError {
-      return values().find { it.errorClass == error::class } ?: throw IllegalStateException("Error $error is not a CancelBuildError")
+      return values().first { it.errorClass == error::class }
     }
   }
 }
