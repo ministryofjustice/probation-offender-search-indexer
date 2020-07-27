@@ -1,7 +1,6 @@
 package uk.gov.justice.digital.hmpps.indexer.service
 
 import arrow.core.Either
-import arrow.core.flatMap
 import arrow.core.getOrHandle
 import arrow.core.left
 import arrow.core.right
@@ -14,7 +13,6 @@ import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.indexer.model.IndexState
 import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
-import java.lang.IllegalStateException
 import kotlin.reflect.KClass
 
 @Service

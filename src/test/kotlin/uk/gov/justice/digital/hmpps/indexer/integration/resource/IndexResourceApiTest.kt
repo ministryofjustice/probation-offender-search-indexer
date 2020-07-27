@@ -4,7 +4,6 @@ import arrow.core.left
 import arrow.core.right
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.never
-import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import org.assertj.core.api.Assertions.assertThat
