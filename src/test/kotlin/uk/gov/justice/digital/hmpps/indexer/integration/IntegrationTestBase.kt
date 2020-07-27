@@ -98,6 +98,10 @@ abstract class IntegrationTestBase {
     indexStatusRepository.save(IndexStatus.newIndex())
   }
 
+  fun deinitialiseIndexStatus() {
+    indexStatusRepository.deleteAll()
+  }
+
   fun buildInitialIndex() {
     indexService.prepareIndexForRebuild()
     indexService.markIndexingComplete()
