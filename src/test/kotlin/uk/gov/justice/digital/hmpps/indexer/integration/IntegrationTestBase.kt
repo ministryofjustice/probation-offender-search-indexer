@@ -129,17 +129,6 @@ abstract class IntegrationTestBase {
     return elasticSearchClient.get(GetRequest(index).id(crn), RequestOptions.DEFAULT).sourceAsString
   }
 
-  fun findLogAppender(javaClass: Class<IndexService>): ListAppender<ILoggingEvent> {
-    val indexServiceLogger = LoggerFactory.getLogger(javaClass) as Logger
-    val listAppender = ListAppender<ILoggingEvent>()
-    listAppender.start()
-    indexServiceLogger.addAppender(listAppender)
-    return listAppender
-  }
-
-  infix fun List<ILoggingEvent>?.hasLogMessageContaining(partialMessage: String) =
-      this?.find { logEvent -> logEvent.message.contains(partialMessage) } != null
-
   fun getNumberOfMessagesCurrentlyOnEventQueue(): Int? {
     val queueAttributes = eventAwsSqsClient.getQueueAttributes(eventQueueUrl, listOf("ApproximateNumberOfMessages"))
     return queueAttributes.attributes["ApproximateNumberOfMessages"]?.toInt()
@@ -151,3 +140,14 @@ abstract class IntegrationTestBase {
   }
 }
 fun String.readResourceAsText(): String = IntegrationTestBase::class.java.getResource(this).readText()
+
+fun <T> findLogAppender(javaClass: Class<in T>): ListAppender<ILoggingEvent> {
+  val logger = LoggerFactory.getLogger(javaClass) as Logger
+  val listAppender = ListAppender<ILoggingEvent>()
+  listAppender.start()
+  logger.addAppender(listAppender)
+  return listAppender
+}
+
+infix fun List<ILoggingEvent>?.hasLogMessageContaining(partialMessage: String) =
+    this?.find { logEvent -> logEvent.message.contains(partialMessage) } != null
