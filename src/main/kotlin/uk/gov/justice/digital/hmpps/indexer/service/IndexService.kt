@@ -104,10 +104,9 @@ class IndexService(
     return chunks.size.right()
   }
 
-  fun populateIndexWithOffenderPage(offenderPage: OffenderPage) {
+  fun populateIndexWithOffenderPage(offenderPage: OffenderPage): Either<Error, Unit> =
     offenderSynchroniserService.getAllOffenderIdentifiersInPage(offenderPage)
-        .forEach { indexQueueService.sendPopulateOffenderMessage(it.crn) }
-  }
+        .forEach { indexQueueService.sendPopulateOffenderMessage(it.crn) }.right()
 
   fun populateIndexWithOffender(crn: String) : Either<Error, String> {
     val indexStatus = indexStatusService.getIndexStatus()
