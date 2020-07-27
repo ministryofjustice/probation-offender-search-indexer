@@ -66,6 +66,11 @@ class OffenderRepository(@Qualifier("elasticSearchClient") private val client: R
           .deleteAlias(DeleteAliasRequest(index.otherIndex().indexName, it.alias), RequestOptions.DEFAULT)
     }
   }
+
+  fun offenderAliasIsPointingAt() : Set<String> {
+    val alias = client.indices().getAlias(GetAliasesRequest().aliases("offender"), RequestOptions.DEFAULT)
+    return alias.aliases.keys
+  }
 }
 
 private fun String.resourceAsString() = OffenderRepository::class.java.getResource(this).readText()

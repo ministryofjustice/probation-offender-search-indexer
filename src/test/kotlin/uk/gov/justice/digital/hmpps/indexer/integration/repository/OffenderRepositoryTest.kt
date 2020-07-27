@@ -313,6 +313,13 @@ internal class OffenderRepositoryTest : IntegrationTestBase() {
         assertThat(highLevelClient.indices().getAlias(GetAliasesRequest().aliases("offender"), RequestOptions.DEFAULT).aliases).containsKey(GREEN.indexName)
         assertThat(highLevelClient.indices().getAlias(GetAliasesRequest().aliases("offender"), RequestOptions.DEFAULT).aliases).doesNotContainKey(BLUE.indexName)
       }
+
+      @Test
+      fun `alias is pointing at no index`() {
+        val indexes = offenderRepository.offenderAliasIsPointingAt()
+
+        assertThat(indexes).isEmpty()
+      }
     }
 
     @Nested
@@ -329,6 +336,15 @@ internal class OffenderRepositoryTest : IntegrationTestBase() {
         assertThat(highLevelClient.indices().getAlias(GetAliasesRequest().aliases("offender"), RequestOptions.DEFAULT).aliases).containsKey(BLUE.indexName)
         assertThat(highLevelClient.indices().getAlias(GetAliasesRequest().aliases("offender"), RequestOptions.DEFAULT).aliases).doesNotContainKey(GREEN.indexName)
       }
+
+      @Test
+      fun `alias is pointing at active index`() {
+        offenderRepository.switchAliasIndex(BLUE)
+        val indexes = offenderRepository.offenderAliasIsPointingAt()
+
+        assertThat(indexes).containsExactly(BLUE.indexName)
+      }
+
     }
 
     @Nested
