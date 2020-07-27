@@ -49,10 +49,10 @@ class CommunityApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   }
 
-  fun stubGetOffender(crn: String = "X123456", nomsNumber: String = "A1234BC", pncNumber: String? = null) =
+  fun stubGetOffender(crn: String = "X123456", nomsNumber: String = "A1234BC", pncNumber: String? = null, croNumber: String? = null, offenderManagers: List<OffenderManager> = listOf(OffenderManager(true, ProbationArea("N02")))) =
       stubFor(get("/secure/offenders/crn/$crn/all").willReturn(aResponse()
           .withHeader("Content-Type", "application/json")
-          .withBody(anOffenderDetail(crn = crn, nomsNumber = nomsNumber, pncNumber = pncNumber))
+          .withBody(anOffenderDetail(crn = crn, nomsNumber = nomsNumber, pncNumber = pncNumber, croNumber = croNumber, offenderManagers = offenderManagers))
           .withStatus(200)))
 
   fun verifyGetOffender(crn: String = "X123456") =
@@ -80,7 +80,9 @@ class CommunityApiMockServer : WireMockServer(WIREMOCK_PORT) {
       offenderId: Long = 490001467,
       crn: String = "X123456",
       nomsNumber: String = "A1234BC",
-      pncNumber: String? = null
+      pncNumber: String? = null,
+      croNumber: String? = null,
+      offenderManagers: List<OffenderManager> = listOf(OffenderManager(true, ProbationArea("N02")))
   ): String = """
 {
   "gender": "Male",
@@ -138,46 +140,13 @@ class CommunityApiMockServer : WireMockServer(WIREMOCK_PORT) {
   },
   "firstName": "John",
   "currentRestriction": false,
-  "offenderManagers": [
-    {
-      "fromDate": "2017-06-30",
-      "allocationReason": {
-        "code": "IA",
-        "description": "Inactive Offender"
-      },
-      "partitionArea": "National Data",
-      "trustOfficer": {
-        "surname": "Staff",
-        "forenames": "Inactive Staff(N02)"
-      },
-      "active": true,
-      "staff": {
-        "surname": "Staff",
-        "forenames": "Inactive Staff(N02)"
-      },
-      "team": {
-        "district": {
-          "code": "N01IAV",
-          "description": "Inactive Level 3(N02)"
-        },
-        "description": "Inactive Team(N02)",
-        "borough": {
-          "code": "N02IAV",
-          "description": "Inactive Level 2(N02)"
-        }
-      },
-      "softDeleted": false,
-      "probationArea": {
-        "code": "N02",
-        "description": "NPS North East"
-      }
-    }
-  ],
+  "offenderManagers": ${Gson().toJson(offenderManagers)},
   "surname": "Smith",
   "partitionArea": "Yorkshire",
   "otherIds": {
     "nomsNumber": "$nomsNumber",
     "pncNumber": "$pncNumber",
+    "croNumber": "$croNumber",
     "crn": "$crn"
   },
   "offenderAliases": [
@@ -236,7 +205,9 @@ class CommunityApiMockServer : WireMockServer(WIREMOCK_PORT) {
     "religion": "Christian"
   }
 } 
-    """.trimIndent().replace("\"pncNumber\": \"null\",", "")
+    """.trimIndent()
+      .replace("\"pncNumber\": \"null\",", "")
+      .replace("\"croNumber\": \"null\",", "")
 
 
   fun stubAllOffenders(count: Long) {
@@ -335,3 +306,5 @@ class CommunityApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
 }
+data class ProbationArea(val code: String)
+data class OffenderManager(val active: Boolean, val probationArea: ProbationArea)

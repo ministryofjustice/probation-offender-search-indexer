@@ -1,17 +1,21 @@
 package uk.gov.justice.digital.hmpps.indexer.integration.e2e
 
 import com.amazonaws.services.sqs.model.PurgeQueueRequest
+import org.apache.lucene.search.join.ScoreMode
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.matches
 import org.awaitility.kotlin.untilCallTo
 import org.elasticsearch.index.query.QueryBuilders
+import org.elasticsearch.index.query.TermQueryBuilder
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.http.MediaType
 import uk.gov.justice.digital.hmpps.indexer.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.CommunityApiExtension
+import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.OffenderManager
+import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.ProbationArea
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.BLUE
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.GREEN
@@ -356,17 +360,20 @@ class IndexResourceTest : IntegrationTestBase() {
           val results = search(QueryBuilders.matchQuery("otherIds.pncNumberShortYear", "99/460155d"))
           assertThat(results.hits.asList()).extracting<String> { it.id }.containsExactly("X12345")
         }
+
         @Test
         internal fun `must search pnc number using using canonical form`() {
           val results = search(QueryBuilders.matchQuery("otherIds.pncNumberShortYear", "99/0460155d"))
           assertThat(results.hits).hasSize(0)
         }
+
         @Test
         internal fun `must search by pnc number as lowercase`() {
           val results = search(QueryBuilders.matchQuery("otherIds.pncNumberShortYear", "99/460155D"))
           assertThat(results.hits).hasSize(0)
         }
       }
+
       @Nested
       inner class PNCMappingLongForm {
         @Test
@@ -374,15 +381,72 @@ class IndexResourceTest : IntegrationTestBase() {
           val results = search(QueryBuilders.matchQuery("otherIds.pncNumberLongYear", "1999/460155d"))
           assertThat(results.hits.asList()).extracting<String> { it.id }.containsExactly("X12345")
         }
+
         @Test
         internal fun `must search pnc number using using canonical form`() {
           val results = search(QueryBuilders.matchQuery("otherIds.pncNumberLongYear", "1999/0460155d"))
           assertThat(results.hits).hasSize(0)
         }
+
         @Test
         internal fun `must search by pnc number as lowercase`() {
           val results = search(QueryBuilders.matchQuery("otherIds.pncNumberLongYear", "1999/460155D"))
           assertThat(results.hits).hasSize(0)
+        }
+      }
+
+      @Nested
+      inner class CROMapping {
+        @BeforeEach
+        fun setup() {
+          deleteOffenderIndexes()
+          initialiseIndexStatus()
+          CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345", "X12346", "X12347")
+          CommunityApiExtension.communityApi.stubGetOffender(crn = "X12345", croNumber = "46189/08G")
+          CommunityApiExtension.communityApi.stubGetOffender(crn = "X12346", croNumber = "46189/99G")
+          CommunityApiExtension.communityApi.stubGetOffender(crn = "X12347", croNumber = "99999/08G")
+          buildAndSwitchIndex(GREEN, 3)
+        }
+
+        @Test
+        internal fun `can search by cro number when in lowercase form`() {
+          val results = search(QueryBuilders.matchQuery("otherIds.croNumberLowercase", "46189/08g"))
+          assertThat(results.hits.asList()).extracting<String> { it.id }.containsExactly("X12345")
+        }
+
+        @Test
+        internal fun `must search by cro number as lowercase`() {
+          val results = search(QueryBuilders.matchQuery("otherIds.croNumberLowercase", "46189/08G"))
+          assertThat(results.hits).hasSize(0)
+        }
+      }
+
+      @Nested
+      inner class ProbationAreaMapping {
+        @BeforeEach
+        fun setup() {
+          deleteOffenderIndexes()
+          initialiseIndexStatus()
+          CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345", "X12346")
+          CommunityApiExtension.communityApi.stubGetOffender(crn = "X12345", offenderManagers = listOf(
+              OffenderManager(probationArea = ProbationArea(code = "N01"), active = true),
+              OffenderManager(probationArea = ProbationArea(code = "N02"), active = false)
+          ))
+          CommunityApiExtension.communityApi.stubGetOffender(crn = "X12346", offenderManagers = listOf(
+              OffenderManager(probationArea = ProbationArea(code = "N01"), active = false),
+              OffenderManager(probationArea = ProbationArea(code = "N02"), active = true)
+          ))
+          buildAndSwitchIndex(GREEN, 2)
+        }
+
+        @Test
+        internal fun `offender managers are nested so can search using attributes of a specific manager`() {
+          val query = QueryBuilders.boolQuery()
+          query.must(QueryBuilders.matchQuery("offenderManagers.probationArea.code", "N01"))
+          query.must(TermQueryBuilder("offenderManagers.active", true))
+
+          val results = search(QueryBuilders.nestedQuery("offenderManagers", query, ScoreMode.Max))
+          assertThat(results.hits.asList()).extracting<String> { it.id }.containsExactly("X12345")
         }
       }
     }
