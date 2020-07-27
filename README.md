@@ -1,5 +1,8 @@
 # probation-offender-search-indexer
 
+[![CircleCI](https://circleci.com/gh/ministryofjustice/probation-offender-search-indexer/tree/main.svg?style=svg)](https://circleci.com/gh/ministryofjustice/probation-offender-search-indexer)
+[![Docker](https://quay.io/repository/hmpps/probation-offender-search-indexer/status)](https://quay.io/repository/hmpps/probation-offender-search-indexer/status)
+
 The purpose of this service is two fold:
 * Keep the Elastic Search  (ES) probation index up to date with changes from Delius
 * Rebuild the index when required without an outage
@@ -53,6 +56,72 @@ Running all services except this application (hence allowing you to run this in 
 docker-compose up --scale probation-offender-search-indexer=0 
 ```
 
+Depending on the speed of your machine when running all services you may need to scale `probation-offender-search-indexer=0` until localstack starts. This is a workaround for an issue whereby Spring Boot gives up trying to connect to SQS when the services first starts up.
+
+### Running tests
+
+#### Test containers
+
+`./gradlew test` will run all tests and will by default use test containers to start any required docker containers, e.g localstack
+Note that TestContainers will start Elastic Search in its ow n container rather than using the one built into localstack.
+
+#### External localstack
+
+`AWS_PROVIDER=localstack ./gradlew test` will override the default behaviour and will expect localstack to already be started externally. In this mode the following services must be started `sqs,sns,es`
+
+`docker-compose up localstack` will start the required AWS services.  
+
+## Regression test
+
+Recommended regression tests is as follows:
+
+* A partial build of index - see the `Rebuilding an index` instructions below. The rebuild does not need to be completed but expect the info to show something like this:
+```
+   "index-status": {
+     "currentIndex": "GREEN",
+     "currentIndexStartBuildTime": "2020-07-27T14:53:35",
+     "currentIndexEndBuildTime": "2020-07-27T16:53:35",
+     "currentIndexState": "COMPLETE",
+     "otherIndexStartBuildTime": 2020-07-28T14:53:35,
+     "otherIndexEndBuildTime": null,
+     "otherIndexState": "BUILDING",
+     "otherIndex": "BLUE"
+   },
+   "index-size": {
+     "GREEN": 2010111,
+     "BLUE": 256
+   },
+   "offender-alias": "probation-search-green",
+   "index-queue-backlog": "3012765"
+```
+So long as the index is being populated and the ` "index-queue-backlog"` figure is decreasing after some time (e.g. 10 minutes) it demonstrates the application is working.
+
+Check the health endpoint to show the Index DLQ is not building up with errors e.g: `https://probation-search-indexer-dev.hmpps.service.justice.gov.uk/health`
+
+``` 
+    "indexQueueHealth": {
+      "status": "UP",
+      "details": {
+        "MessagesOnQueue": 41834,
+        "MessagesInFlight": 4,
+        "dlqStatus": "UP",
+        "MessagesOnDLQ": 0
+      }
+    }
+```
+would be a valid state
+
+The build can either left to run cancelled using 
+
+
+ ``` 
+curl --location --request PUT 'https://probation-search-indexer-dev.hmpps.service.justice.gov.uk/probation-index/cancel-index' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer <some token>>'
+
+ ```  
+
+
 ## Support
 
 ### Raw Elastic Search access
@@ -75,6 +144,7 @@ green open .kibana_1              jddPd_-XRBiqxOXGudoj7Q 1 1      0   0    566b 
 ### Rebuilding an index
 
 To rebuild an index the credentials used must have the ROLE `PROBATION_INDEX` therefore it is recommend to use client credentials with the `ROLE_PROBATION_INDEX` added and pass in your username when getting a token.
+In the test and local dev environments the `prisoner-offender-search-client` has conveniently been given the `ROLE_PROBATION_INDEX`.
 
 The rebuilding of the index can be sped up by increasing the number of pods handling the reindex e.g.
 
@@ -89,7 +159,7 @@ curl --location --request PUT 'https://probation-search-indexer-dev.hmpps.servic
 --header 'Authorization: Bearer <some token>>'
 ``` 
 
-For production environments where access is blocked by inclusion lists this will need to be done from withing a Cloud Platform pod
+For production environments where access is blocked by inclusion lists this will need to be done from within a Cloud Platform pod
 
 Next monitor the progress of the rebuilding via the info endpoint e.g. https://probation-search-indexer-dev.hmpps.service.justice.gov.uk/info
 This will return details like the following:
