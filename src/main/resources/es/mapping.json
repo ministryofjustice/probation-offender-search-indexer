@@ -12,6 +12,10 @@
       "properties": {
         "probationArea.code": {"type": "keyword"}
       }
+    },
+    "offenderAliases": {
+      "type": "nested",
+      "include_in_root": true
     }
   }
 }
