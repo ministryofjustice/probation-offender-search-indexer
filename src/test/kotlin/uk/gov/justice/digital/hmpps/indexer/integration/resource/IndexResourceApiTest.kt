@@ -32,7 +32,8 @@ class IndexResourceApiTest : IntegrationTestBase() {
   inner class BuildIndex {
     @Test
     fun `Request build index is successful and calls service`() {
-      doReturn(IndexStatus(currentIndex = SyncIndex.GREEN, otherIndexState = IndexState.BUILDING).right()).whenever(indexService).prepareIndexForRebuild()
+      doReturn(IndexStatus(currentIndex = SyncIndex.GREEN, otherIndexState = IndexState.BUILDING).right()).whenever(indexService)
+          .prepareIndexForRebuild()
 
 
       webTestClient.put()
@@ -280,6 +281,63 @@ class IndexResourceApiTest : IntegrationTestBase() {
       verify(indexService).updateOffender("SOME_CRN")
     }
   }
+
+  @Nested
+  inner class ClearDeadLetterQueue {
+    @Nested
+    inner class IndexDLQ {
+
+      @Test
+      internal fun `requires a valid authentication token`() {
+        webTestClient.put()
+            .uri("/probation-index/purge-index-dlq")
+            .accept(MediaType.APPLICATION_JSON)
+            .exchange()
+            .expectStatus().isUnauthorized
+      }
+
+      @Test
+      internal fun `requires a the correct role`() {
+        webTestClient.put()
+            .uri("/probation-index/purge-index-dlq")
+            .headers(setAuthorisation(roles = listOf()))
+            .accept(MediaType.APPLICATION_JSON)
+            .exchange()
+            .expectStatus().isForbidden
+
+      }
+    }
+
+    @Nested
+    inner class EventDLQ {
+      @BeforeEach
+      internal fun setUp() {
+      }
+
+      @Test
+      internal fun `requires a valid authentication token`() {
+        webTestClient.put()
+            .uri("/probation-index/purge-event-dlq")
+            .accept(MediaType.APPLICATION_JSON)
+            .exchange()
+            .expectStatus().isUnauthorized
+
+      }
+
+      @Test
+      internal fun `requires a the correct role`() {
+        webTestClient.put()
+            .uri("/probation-index/purge-event-dlq")
+            .headers(setAuthorisation(roles = listOf()))
+            .accept(MediaType.APPLICATION_JSON)
+            .exchange()
+            .expectStatus().isForbidden
+
+      }
+    }
+
+  }
+
 }
 
 

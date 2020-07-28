@@ -23,7 +23,9 @@ internal class IndexQueueServiceTest {
   @BeforeEach
   internal fun setUp() {
     whenever(client.getQueueUrl("index-queue")).thenReturn(GetQueueUrlResult().withQueueUrl("arn:eu-west-1:index-queue"))
-    indexQueueService = IndexQueueService(client, "index-queue", Gson())
+    whenever(client.getQueueUrl("index-dlq")).thenReturn(GetQueueUrlResult().withQueueUrl("arn:eu-west-1:index-dlq"))
+    whenever(client.getQueueUrl("event-dlq")).thenReturn(GetQueueUrlResult().withQueueUrl("arn:eu-west-1:event-dlq"))
+    indexQueueService = IndexQueueService(client = client, indexQueueName = "index-queue", indexDlqName = "index-dlq", eventDlqName = "event-dlq", gson = Gson())
   }
 
 
@@ -115,9 +117,36 @@ internal class IndexQueueServiceTest {
   inner class ClearAllMessages {
     @Test
     internal fun `will purge index queue of messages`() {
+      whenever(client.getQueueUrl("index-queue")).thenReturn(GetQueueUrlResult().withQueueUrl("arn:eu-west-1:index-queue"))
+
       indexQueueService.clearAllMessages()
       verify(client).purgeQueue(check {
         assertThat(it.queueUrl).isEqualTo("arn:eu-west-1:index-queue")
+      })
+    }
+  }
+
+  @Nested
+  inner class ClearAllDlqMessagesForIndex {
+    @Test
+    internal fun `will purge index dlq of messages`() {
+      whenever(client.getQueueUrl("index-dlq")).thenReturn(GetQueueUrlResult().withQueueUrl("arn:eu-west-1:index-dlq"))
+
+      indexQueueService.clearAllDlqMessagesForIndex()
+      verify(client).purgeQueue(check {
+        assertThat(it.queueUrl).isEqualTo("arn:eu-west-1:index-dlq")
+      })
+    }
+  }
+  @Nested
+  inner class ClearAllDlqMessagesForEvent {
+    @Test
+    internal fun `will purge event dlq of messages`() {
+      whenever(client.getQueueUrl("event-dlq")).thenReturn(GetQueueUrlResult().withQueueUrl("arn:eu-west-1:event-dlq"))
+
+      indexQueueService.clearAllDlqMessagesForEvent()
+      verify(client).purgeQueue(check {
+        assertThat(it.queueUrl).isEqualTo("arn:eu-west-1:event-dlq")
       })
     }
   }

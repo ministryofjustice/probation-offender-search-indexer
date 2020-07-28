@@ -83,6 +83,11 @@ abstract class IntegrationTestBase {
   lateinit var eventQueueUrl: String
   @Autowired
   lateinit var indexQueueUrl: String
+  @Autowired
+  lateinit var indexDlqUrl: String
+  @Autowired
+  lateinit var eventDlqUrl: String
+
 
   internal fun setAuthorisation(
       user: String = "probation-offender-search-indexer-client",
@@ -143,6 +148,16 @@ abstract class IntegrationTestBase {
     return queueAttributes.attributes["ApproximateNumberOfMessages"]?.toInt()
   }
 
+  fun getNumberOfMessagesCurrentlyOnIndexDLQ(): Int? {
+    val queueAttributes = indexAwsSqsClient.getQueueAttributes(indexDlqUrl, listOf("ApproximateNumberOfMessages"))
+    return queueAttributes.attributes["ApproximateNumberOfMessages"]?.toInt()
+  }
+
+  fun getNumberOfMessagesCurrentlyOnEventDLQ(): Int? {
+    val queueAttributes = eventAwsSqsClient.getQueueAttributes(eventDlqUrl, listOf("ApproximateNumberOfMessages"))
+    return queueAttributes.attributes["ApproximateNumberOfMessages"]?.toInt()
+  }
+
   fun buildAndSwitchIndex(index: SyncIndex, expectedCount: Long) {
     webTestClient.put()
         .uri("/probation-index/build-index")
@@ -164,6 +179,7 @@ abstract class IntegrationTestBase {
   }
 
 }
+
 fun String.readResourceAsText(): String = IntegrationTestBase::class.java.getResource(this).readText()
 
 fun <T> findLogAppender(javaClass: Class<in T>): ListAppender<ILoggingEvent> {

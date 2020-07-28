@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.server.ResponseStatusException
 import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
 import uk.gov.justice.digital.hmpps.indexer.service.CancelBuildError
+import uk.gov.justice.digital.hmpps.indexer.service.IndexQueueService
 import uk.gov.justice.digital.hmpps.indexer.service.IndexService
 import uk.gov.justice.digital.hmpps.indexer.service.MarkCompleteError
 import uk.gov.justice.digital.hmpps.indexer.service.PrepareRebuildError
@@ -27,7 +28,7 @@ import uk.gov.justice.digital.hmpps.indexer.service.UpdateOffenderError.OFFENDER
 @Api(tags = ["probation-index"])
 @RestController
 @RequestMapping("/probation-index", produces = [MediaType.APPLICATION_JSON_VALUE])
-class IndexResource(private val indexService: IndexService) {
+class IndexResource(private val indexService: IndexService, private val indexQueueService: IndexQueueService) {
   companion object {
     val log = LoggerFactory.getLogger(this::class.java)
   }
@@ -108,5 +109,27 @@ class IndexResource(private val indexService: IndexService) {
           OFFENDER_NOT_FOUND -> throw ResponseStatusException(HttpStatus.NOT_FOUND, error.message())
         }
       }
+
+  @PutMapping("/purge-index-dlq")
+  @PreAuthorize("hasRole('PROBATION_INDEX')")
+  @ApiOperation(
+      value = "Purges the index dead letter queue",
+      notes = "Requires PROBATION_INDEX role")
+  @ApiResponses(value = [
+    ApiResponse(code = 401, message = "Unauthorised, requires a valid Oauth2 token"),
+    ApiResponse(code = 403, message = "Forbidden, requires an authorisation with role PROBATION_INDEX")
+  ])
+  fun purgeIndexDlq(): Unit = indexQueueService.clearAllDlqMessagesForIndex()
+
+  @PutMapping("/purge-event-dlq")
+  @PreAuthorize("hasRole('PROBATION_INDEX')")
+  @ApiOperation(
+      value = "Purges the event dead letter queue",
+      notes = "Requires PROBATION_INDEX role")
+  @ApiResponses(value = [
+    ApiResponse(code = 401, message = "Unauthorised, requires a valid Oauth2 token"),
+    ApiResponse(code = 403, message = "Forbidden, requires an authorisation with role PROBATION_INDEX")
+  ])
+  fun purgeEventDlq(): Unit = indexQueueService.clearAllDlqMessagesForEvent()
 
 }
