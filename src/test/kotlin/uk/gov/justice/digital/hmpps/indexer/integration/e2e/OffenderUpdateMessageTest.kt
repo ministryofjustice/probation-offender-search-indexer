@@ -22,7 +22,7 @@ class OffenderUpdateMessageTest : IntegrationTestBase() {
   @Nested
   inner class OffenderIndexesOk {
     @BeforeEach
-    fun initialise() {
+    fun bothIndexesOK() {
       deleteOffenderIndexes()
       createOffenderIndexes()
       initialiseIndexStatus()
@@ -46,12 +46,35 @@ class OffenderUpdateMessageTest : IntegrationTestBase() {
       CommunityApiExtension.communityApi.verifyGetOffender()
       assertThat(response.hits.asList()).extracting<String> { it.id }.containsExactly("X123456")
     }
+
+    @Test
+    fun `Offender is saved to both complete and building index`() {
+      CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345")
+      indexService.prepareIndexForRebuild()
+      CommunityApiExtension.communityApi.stubGetOffender()
+
+      await untilCallTo { getNumberOfMessagesCurrentlyOnEventQueue() } matches { it == 0 }
+
+      eventAwsSqsClient.sendMessage(eventQueueUrl, "/messages/offenderChanged.json".readResourceAsText())
+
+      await untilCallTo { getNumberOfMessagesCurrentlyOnEventQueue() } matches { it == 0 }
+      await untilCallTo { CommunityApiExtension.communityApi.getCountFor("/secure/offenders/crn/X123456/all") } matches { it == 1 }
+      await untilCallTo { indexService.getIndexCount(SyncIndex.GREEN) } matches { it == 1L }
+      await untilCallTo { indexService.getIndexCount(SyncIndex.BLUE) } matches { it == 2L }
+
+      val responseGreen = searchByCrn("X123456", SyncIndex.GREEN)
+      val responseBlue = searchByCrn("X123456", SyncIndex.BLUE)
+
+      CommunityApiExtension.communityApi.verifyGetOffender()
+      assertThat(responseGreen.hits.asList()).extracting<String> { it.id }.containsExactly("X123456")
+      assertThat(responseBlue.hits.asList()).extracting<String> { it.id }.containsExactly("X123456")
+    }
   }
 
   @Nested
   inner class NoOffenderIndexes {
     @BeforeEach
-    fun initialise() {
+    fun noIndexesExist() {
       deleteOffenderIndexes()
       initialiseIndexStatus()
     }
@@ -72,6 +95,58 @@ class OffenderUpdateMessageTest : IntegrationTestBase() {
           .isInstanceOf(ElasticsearchStatusException::class.java)
           .hasMessageContaining("no such index")
       CommunityApiExtension.communityApi.verifyNotGetOffender("X123456")
+    }
+  }
+
+  @Nested
+  inner class OffenderNotFound {
+    @BeforeEach
+    fun noIndexesExist() {
+      deleteOffenderIndexes()
+      createOffenderIndexes()
+    }
+
+    @Test
+    fun `Single index then offender is not added to either index`() {
+      initialiseIndexStatus()
+      buildInitialIndex()
+      CommunityApiExtension.communityApi.stubOffenderNotFound("X123456")
+
+      await untilCallTo { getNumberOfMessagesCurrentlyOnEventQueue() } matches { it == 0 }
+
+      eventAwsSqsClient.sendMessage(eventQueueUrl, "/messages/offenderChanged.json".readResourceAsText())
+
+      await untilCallTo { getNumberOfMessagesCurrentlyOnEventQueue() } matches { it == 0 }
+      await untilCallTo { CommunityApiExtension.communityApi.getCountFor("/secure/offenders/crn/X123456/all") } matches { it == 1 }
+
+      val responseGreen = searchByCrn("X123456", SyncIndex.GREEN)
+      val responseBlue = searchByCrn("X123456", SyncIndex.BLUE)
+
+      assertThat(responseGreen.hits.asList()).isEmpty()
+      assertThat(responseBlue.hits.asList()).isEmpty()
+    }
+
+    @Test
+    fun `Both indexes OK then offender is not added to either index`() {
+      initialiseIndexStatus()
+      buildInitialIndex()
+      CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345")
+      indexService.prepareIndexForRebuild()
+      indexService.markIndexingComplete()
+      CommunityApiExtension.communityApi.stubOffenderNotFound("X123456")
+
+      await untilCallTo { getNumberOfMessagesCurrentlyOnEventQueue() } matches { it == 0 }
+
+      eventAwsSqsClient.sendMessage(eventQueueUrl, "/messages/offenderChanged.json".readResourceAsText())
+
+      await untilCallTo { getNumberOfMessagesCurrentlyOnEventQueue() } matches { it == 0 }
+      await untilCallTo { CommunityApiExtension.communityApi.getCountFor("/secure/offenders/crn/X123456/all") } matches { it == 1 }
+
+      val responseGreen = searchByCrn("X123456", SyncIndex.GREEN)
+      val responseBlue = searchByCrn("X123456", SyncIndex.BLUE)
+
+      assertThat(responseGreen.hits.asList()).isEmpty()
+      assertThat(responseBlue.hits.asList()).isEmpty()
     }
   }
 
