@@ -18,6 +18,8 @@ import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
 @Service
 class IndexQueueService(@Qualifier("indexAwsSqsClient") private val client: AmazonSQS,
                         @Value("\${index.sqs.queue.name}") private val indexQueueName: String,
+                        @Value("\${index.sqs.dlq.name}") private val indexDlqName: String,
+                        @Value("\${event.sqs.dlq.name}") private val eventDlqName: String,
                         private val gson: Gson
 ) {
 
@@ -25,7 +27,9 @@ class IndexQueueService(@Qualifier("indexAwsSqsClient") private val client: Amaz
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  val queueUrl = client.getQueueUrl(indexQueueName).queueUrl
+  val queueUrl: String = client.getQueueUrl(indexQueueName).queueUrl
+  val indexDlqUrl: String = client.getQueueUrl(indexDlqName).queueUrl
+  val eventDlqUrl: String = client.getQueueUrl(eventDlqName).queueUrl
 
   fun sendPopulateIndexMessage(index: SyncIndex) {
     val result = client.sendMessage(SendMessageRequest(queueUrl, gson.toJson(IndexMessageRequest(type = POPULATE_INDEX, index = index))))
@@ -45,5 +49,15 @@ class IndexQueueService(@Qualifier("indexAwsSqsClient") private val client: Amaz
   fun sendPopulateOffenderMessage(crn: String) {
     val result = client.sendMessage(SendMessageRequest(queueUrl, gson.toJson(IndexMessageRequest(type = POPULATE_OFFENDER, crn = crn))))
     log.info("Sent populate offender message request {}", result.messageId)
+  }
+
+  fun clearAllDlqMessagesForIndex() {
+    client.purgeQueue(PurgeQueueRequest(indexDlqUrl))
+    log.info("Clear all messages on index dead letter queue")
+  }
+
+  fun clearAllDlqMessagesForEvent() {
+    client.purgeQueue(PurgeQueueRequest(eventDlqUrl))
+    log.info("Clear all messages on event dead letter queue")
   }
 }

@@ -473,6 +473,56 @@ class IndexResourceTest : IntegrationTestBase() {
     }
   }
 
+  @Nested
+  inner class ClearDeadLetterQueue {
+    @Nested
+    inner class IndexDLQ {
+      @BeforeEach
+      internal fun setUp() {
+        repeat(10) {
+          indexAwsSqsClient.sendMessage(indexDlqUrl, "{}")
+        }
+        await untilCallTo { getNumberOfMessagesCurrentlyOnIndexDLQ() } matches { it == 10 }
+      }
+
+      @Test
+      internal fun `will remove all message on index DLQ`() {
+        webTestClient.put()
+            .uri("/probation-index/purge-index-dlq")
+            .accept(MediaType.APPLICATION_JSON)
+            .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+            .exchange()
+            .expectStatus().isOk
+
+        await untilCallTo { getNumberOfMessagesCurrentlyOnIndexDLQ() } matches { it == 0 }
+      }
+    }
+
+    @Nested
+    inner class EventDLQ {
+      @BeforeEach
+      internal fun setUp() {
+        repeat(10) {
+          eventAwsSqsClient.sendMessage(eventDlqUrl, "{}")
+        }
+        await untilCallTo { getNumberOfMessagesCurrentlyOnEventDLQ() } matches { it == 10 }
+      }
+
+      @Test
+      internal fun `will remove all message on event DLQ`() {
+        webTestClient.put()
+            .uri("/probation-index/purge-event-dlq")
+            .accept(MediaType.APPLICATION_JSON)
+            .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+            .exchange()
+            .expectStatus().isOk
+
+        await untilCallTo { getNumberOfMessagesCurrentlyOnEventDLQ() } matches { it == 0 }
+      }
+    }
+
+  }
+
 
   fun nomsNumberOf(crn: String): String? {
     val offender = getById(index = "offender", crn = crn)

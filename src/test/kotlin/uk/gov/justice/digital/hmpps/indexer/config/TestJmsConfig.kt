@@ -26,6 +26,14 @@ class TestJmsConfig {
     return queueUrl(indexAwsSqsClient, indexQueueName, indexDlqQueueName)
   }
 
+  @Bean("indexDlqUrl")
+  fun indexDlqUrl(@Qualifier("indexAwsSqsClient") indexAwsSqsClient: AmazonSQS,
+                  @Value("\${index.sqs.dlq.name}") indexDlqQueueName: String) : String = indexAwsSqsClient.getQueueUrl(indexDlqQueueName).queueUrl
+
+  @Bean("eventDlqUrl")
+  fun eventDlqUrl(@Qualifier("eventAwsSqsClient") eventAwsSqsClient: AmazonSQS,
+                  @Value("\${event.sqs.dlq.name}") eventDlqQueueName: String) : String = eventAwsSqsClient.getQueueUrl(eventDlqQueueName).queueUrl
+
   private fun queueUrl(awsSqsClient: AmazonSQS, queueName: String, dlqName: String): String {
     val queueUrl = awsSqsClient.getQueueUrl(queueName).queueUrl
     val dlqUrl = awsSqsClient.getQueueUrl(dlqName).queueUrl
