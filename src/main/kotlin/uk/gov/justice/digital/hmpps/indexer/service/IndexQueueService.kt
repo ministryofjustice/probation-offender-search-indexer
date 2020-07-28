@@ -16,7 +16,8 @@ import uk.gov.justice.digital.hmpps.indexer.listeners.IndexRequestType.POPULATE_
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
 
 @Service
-class IndexQueueService(@Qualifier("indexAwsSqsClient") private val client: AmazonSQS,
+class IndexQueueService(@Qualifier("indexAwsSqsClient") private val indexClient: AmazonSQS,
+                        @Qualifier("eventAwsSqsClient") private val eventClient: AmazonSQS,
                         @Value("\${index.sqs.queue.name}") private val indexQueueName: String,
                         @Value("\${index.sqs.dlq.name}") private val indexDlqName: String,
                         @Value("\${event.sqs.dlq.name}") private val eventDlqName: String,
@@ -27,37 +28,37 @@ class IndexQueueService(@Qualifier("indexAwsSqsClient") private val client: Amaz
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  val queueUrl: String = client.getQueueUrl(indexQueueName).queueUrl
-  val indexDlqUrl: String = client.getQueueUrl(indexDlqName).queueUrl
-  val eventDlqUrl: String = client.getQueueUrl(eventDlqName).queueUrl
+  val queueUrl: String = indexClient.getQueueUrl(indexQueueName).queueUrl
+  val indexDlqUrl: String = indexClient.getQueueUrl(indexDlqName).queueUrl
+  val eventDlqUrl: String = eventClient.getQueueUrl(eventDlqName).queueUrl
 
   fun sendPopulateIndexMessage(index: SyncIndex) {
-    val result = client.sendMessage(SendMessageRequest(queueUrl, gson.toJson(IndexMessageRequest(type = POPULATE_INDEX, index = index))))
+    val result = indexClient.sendMessage(SendMessageRequest(queueUrl, gson.toJson(IndexMessageRequest(type = POPULATE_INDEX, index = index))))
     log.info("Sent populate index message request {}", result.messageId)
   }
 
   fun clearAllMessages()  {
-    client.purgeQueue(PurgeQueueRequest(queueUrl))
+    indexClient.purgeQueue(PurgeQueueRequest(queueUrl))
     log.info("Clear all messages on index queue")
   }
 
   fun sendPopulateOffenderPageMessage(offenderPage: OffenderPage) {
-    val result = client.sendMessage(SendMessageRequest(queueUrl, gson.toJson(IndexMessageRequest(type = POPULATE_OFFENDER_PAGE, offenderPage = offenderPage))))
+    val result = indexClient.sendMessage(SendMessageRequest(queueUrl, gson.toJson(IndexMessageRequest(type = POPULATE_OFFENDER_PAGE, offenderPage = offenderPage))))
     log.info("Sent populate offender page message request {}", result.messageId)
   }
 
   fun sendPopulateOffenderMessage(crn: String) {
-    val result = client.sendMessage(SendMessageRequest(queueUrl, gson.toJson(IndexMessageRequest(type = POPULATE_OFFENDER, crn = crn))))
+    val result = indexClient.sendMessage(SendMessageRequest(queueUrl, gson.toJson(IndexMessageRequest(type = POPULATE_OFFENDER, crn = crn))))
     log.info("Sent populate offender message request {}", result.messageId)
   }
 
   fun clearAllDlqMessagesForIndex() {
-    client.purgeQueue(PurgeQueueRequest(indexDlqUrl))
+    indexClient.purgeQueue(PurgeQueueRequest(indexDlqUrl))
     log.info("Clear all messages on index dead letter queue")
   }
 
   fun clearAllDlqMessagesForEvent() {
-    client.purgeQueue(PurgeQueueRequest(eventDlqUrl))
+    eventClient.purgeQueue(PurgeQueueRequest(eventDlqUrl))
     log.info("Clear all messages on event dead letter queue")
   }
 }
