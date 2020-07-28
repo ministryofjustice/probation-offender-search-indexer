@@ -70,6 +70,11 @@ class CommunityApiMockServer : WireMockServer(WIREMOCK_PORT) {
           ))
           .withStatus(200)))
 
+  fun stubOffenderNotFound(crn: String): StubMapping =
+      stubFor(get("/secure/offenders/crn/$crn/all").willReturn(aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(404)))
+
   fun verifyGetOffender(crn: String = "X123456") =
       verify(getRequestedFor(urlEqualTo("/secure/offenders/crn/$crn/all"))
           .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")))

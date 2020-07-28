@@ -5,6 +5,9 @@ import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.read.ListAppender
 import com.amazonaws.services.sqs.AmazonSQS
 import com.google.gson.Gson
+import org.awaitility.kotlin.await
+import org.awaitility.kotlin.matches
+import org.awaitility.kotlin.untilCallTo
 import org.elasticsearch.action.get.GetRequest
 import org.elasticsearch.action.search.SearchRequest
 import org.elasticsearch.client.RequestOptions
@@ -22,6 +25,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.SpyBean
 import org.springframework.boot.web.server.LocalServerPort
 import org.springframework.http.HttpHeaders
+import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.reactive.server.WebTestClient
 import uk.gov.justice.digital.hmpps.indexer.integration.helpers.JwtAuthHelper
@@ -138,6 +142,27 @@ abstract class IntegrationTestBase {
     val queueAttributes = indexAwsSqsClient.getQueueAttributes(indexQueueUrl, listOf("ApproximateNumberOfMessages"))
     return queueAttributes.attributes["ApproximateNumberOfMessages"]?.toInt()
   }
+
+  fun buildAndSwitchIndex(index: SyncIndex, expectedCount: Long) {
+    webTestClient.put()
+        .uri("/probation-index/build-index")
+        .accept(MediaType.APPLICATION_JSON)
+        .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+        .exchange()
+        .expectStatus().isOk
+
+    await untilCallTo { getIndexCount(index) } matches { it == expectedCount }
+
+    webTestClient.put()
+        .uri("/probation-index/mark-complete")
+        .accept(MediaType.APPLICATION_JSON)
+        .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+        .exchange()
+        .expectStatus().isOk
+
+    await untilCallTo { getIndexCount("offender") } matches { it == expectedCount }
+  }
+
 }
 fun String.readResourceAsText(): String = IntegrationTestBase::class.java.getResource(this).readText()
 
@@ -151,3 +176,4 @@ fun <T> findLogAppender(javaClass: Class<in T>): ListAppender<ILoggingEvent> {
 
 infix fun List<ILoggingEvent>?.hasLogMessageContaining(partialMessage: String) =
     this?.find { logEvent -> logEvent.message.contains(partialMessage) } != null
+

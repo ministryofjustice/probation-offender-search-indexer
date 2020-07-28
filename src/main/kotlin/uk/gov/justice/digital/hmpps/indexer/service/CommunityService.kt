@@ -6,10 +6,10 @@ import arrow.core.right
 import com.google.gson.Gson
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
-import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
+import reactor.core.publisher.Mono
 
 
 @Service
@@ -19,21 +19,19 @@ class CommunityService(@Qualifier("communityApiWebClient") private val webClient
   }
 
   fun getOffender(crn: String): Either<OffenderError, Offender> =
-    try {
       webClient.get()
           .uri("/secure/offenders/crn/${crn}/all")
           .retrieve()
           .bodyToMono(String::class.java)
-          .block()!!
-          .let { Offender(it).right() }
-    } catch (e: WebClientResponseException) {
-      if (e.statusCode == HttpStatus.NOT_FOUND) {
-        log.error("Failed to retrieve offender with crn {}", crn)
-        OffenderNotFoundError(crn).left()
-      } else {
-        throw e
-      }
-    }
+          .onErrorResume(::emptyIfNotFound)
+          .block()
+          ?.let { Offender(it).right() }
+          ?: OffenderNotFoundError(crn).left()
+              .also { log.error("Offender with crn {} not found", crn) }
+
+  private fun emptyIfNotFound(exception: Throwable): Mono<out String> {
+    return if (exception is WebClientResponseException.NotFound) Mono.empty() else Mono.error(exception)
+  }
 
   fun getCountAllOffenders(): OffendersPage {
     return webClient.get()
