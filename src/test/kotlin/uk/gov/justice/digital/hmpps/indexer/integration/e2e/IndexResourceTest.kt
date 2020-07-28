@@ -523,11 +523,82 @@ class IndexResourceTest : IntegrationTestBase() {
 
   }
 
+  @Nested
+  inner class TransferDeadLetterQueue {
+    @Nested
+    inner class EventDLQ {
+
+      private val crns = listOf("X12346", "X12347", "X12348")
+
+      @BeforeEach
+      internal fun setUp() {
+        deleteOffenderIndexes()
+        initialiseIndexStatus()
+        CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345")
+        buildAndSwitchIndex(GREEN, 1)
+
+        crns.forEach {
+          eventAwsSqsClient.sendMessage(eventDlqUrl, offenderChangedMessage(it))
+          CommunityApiExtension.communityApi.stubGetOffender(it)
+        }
+        await untilCallTo { getNumberOfMessagesCurrentlyOnEventDLQ() } matches { it == crns.size }
+      }
+
+      @Test
+      internal fun `will move all message on event DLQ to event Queue`() {
+
+        webTestClient.put()
+            .uri("/probation-index/transfer-event-dlq")
+            .accept(MediaType.APPLICATION_JSON)
+            .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+            .exchange()
+            .expectStatus().isOk
+
+        await untilCallTo { getNumberOfMessagesCurrentlyOnEventDLQ() } matches { it == 0 }
+        await untilCallTo { getNumberOfMessagesCurrentlyOnEventQueue() } matches { it == 0 }
+        await untilCallTo { getIndexCount(GREEN) } matches { it == (crns.size + 1).toLong() }
+      }
+    }
+  }
+
 
   fun nomsNumberOf(crn: String): String? {
     val offender = getById(index = "offender", crn = crn)
     val offenderDetail = gson.fromJson<OffenderDetail>(offender, OffenderDetail::class.java)
     return offenderDetail.otherIds.nomsNumber
   }
+
+  fun offenderChangedMessage(crn: String) = """
+    {
+      "Type": "Notification",
+      "MessageId": "20e13002-d1be-56e7-be8c-66cdd7e23341",
+      "TopicArn": "arn:aws:sns:eu-west-2:754256621582:cloud-platform-Digital-Prison-Services-f221e27fcfcf78f6ab4f4c3cc165eee7",
+      "Message": "{\"offenderId\":490001467,\"crn\":\"$crn\",\"nomsNumber\":\"A1234BC\"}",
+      "Timestamp": "2020-02-25T11:25:16.169Z",
+      "SignatureVersion": "1",
+      "Signature": "h5p3FnnbsSHxj53RFePh8HR40cbVvgEZa6XUVTlYs/yuqfDsi17MPA+bX4ijKmmTT2l6xG2xYhcmRAbJWQ4wrwncTBm2azgiwSO5keRNWYVdiC0rI484KLZboP1SDsE+Y7hOU/R0dz49q7+0yd+QIocPteKB/8xG7/6kjGStAZKf3cEdlxOwLhN+7RU1Yk2ENuwAJjVRtvlAa76yKB3xvL2hId7P7ZLmHGlzZDNZNYxbg9C8HGxteOzZ9ZeeQsWDf9jmZ+5+7dKXQoW9LeqwHxEAq2vuwSZ8uwM5JljXbtS5w1P0psXPYNoin2gU1F5MDK8RPzjUtIvjINx08rmEOA==",
+      "SigningCertURL": "https://sns.eu-west-2.amazonaws.com/SimpleNotificationService-a86cb10b4e1f29c941702d737128f7b6.pem",
+      "UnsubscribeURL": "https://sns.eu-west-2.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:eu-west-2:754256621582:cloud-platform-Digital-Prison-Services-f221e27fcfcf78f6ab4f4c3cc165eee7:92545cfe-de5d-43e1-8339-c366bf0172aa",
+      "MessageAttributes": {
+        "eventType": {
+          "Type": "String",
+          "Value": "OFFENDER_CHANGED"
+        },
+        "id": {
+          "Type": "String",
+          "Value": "cb4645f2-d0c1-4677-806a-8036ed54bf69"
+        },
+        "contentType": {
+          "Type": "String",
+          "Value": "text/plain;charset=UTF-8"
+        },
+        "timestamp": {
+          "Type": "Number.java.lang.Long",
+          "Value": "1582629916147"
+        }
+      }
+    }
+
+  """.trimIndent()
 }
 
