@@ -24,7 +24,7 @@ class IndexStatusServiceTest {
 
   private val indexStatusRepository = mock<IndexStatusRepository>()
   private val elasticSearchClient = mock<RestHighLevelClient>()
-  private val indexClient = mock<IndicesClient>()
+  private val indexAwsSqsClient = mock<IndicesClient>()
   private val indexStatusService = IndexStatusService(indexStatusRepository)
 
   @Nested
@@ -34,8 +34,8 @@ class IndexStatusServiceTest {
       @BeforeEach
       internal fun setUp() {
 
-        whenever(elasticSearchClient.indices()).thenReturn(indexClient)
-        whenever(indexClient.exists(any<GetIndexRequest>(), any())).thenReturn(true)
+        whenever(elasticSearchClient.indices()).thenReturn(indexAwsSqsClient)
+        whenever(indexAwsSqsClient.exists(any<GetIndexRequest>(), any())).thenReturn(true)
       }
 
       @Test
@@ -101,7 +101,7 @@ class IndexStatusServiceTest {
     @BeforeEach
     internal fun setUp() {
       whenever(indexStatusRepository.save(any<IndexStatus>())).thenAnswer { it.getArgument(0) }
-      whenever(elasticSearchClient.indices()).thenReturn(indexClient)
+      whenever(elasticSearchClient.indices()).thenReturn(indexAwsSqsClient)
     }
 
     @Test

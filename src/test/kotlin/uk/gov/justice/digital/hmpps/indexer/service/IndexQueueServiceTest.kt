@@ -18,15 +18,24 @@ import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.GREEN
 
 internal class IndexQueueServiceTest {
 
-  private val indexClient = mock<AmazonSQS>()
-  private val eventClient = mock<AmazonSQS>()
-  private lateinit var indexQueueService : IndexQueueService
+  private val indexAwsSqsClient = mock<AmazonSQS>()
+  private val indexAwsSqsDlqClient = mock<AmazonSQS>()
+  private val eventAwsSqsDlqClient = mock<AmazonSQS>()
+  private lateinit var indexQueueService: IndexQueueService
   @BeforeEach
   internal fun setUp() {
-    whenever(indexClient.getQueueUrl("index-queue")).thenReturn(GetQueueUrlResult().withQueueUrl("arn:eu-west-1:index-queue"))
-    whenever(indexClient.getQueueUrl("index-dlq")).thenReturn(GetQueueUrlResult().withQueueUrl("arn:eu-west-1:index-dlq"))
-    whenever(eventClient.getQueueUrl("event-dlq")).thenReturn(GetQueueUrlResult().withQueueUrl("arn:eu-west-1:event-dlq"))
-    indexQueueService = IndexQueueService(indexClient = indexClient, eventClient= eventClient, indexQueueName = "index-queue", indexDlqName = "index-dlq", eventDlqName = "event-dlq", gson = Gson())
+    whenever(indexAwsSqsClient.getQueueUrl("index-queue")).thenReturn(GetQueueUrlResult().withQueueUrl("arn:eu-west-1:index-queue"))
+    whenever(indexAwsSqsDlqClient.getQueueUrl("index-dlq")).thenReturn(GetQueueUrlResult().withQueueUrl("arn:eu-west-1:index-dlq"))
+    whenever(eventAwsSqsDlqClient.getQueueUrl("event-dlq")).thenReturn(GetQueueUrlResult().withQueueUrl("arn:eu-west-1:event-dlq"))
+    indexQueueService = IndexQueueService(
+        indexAwsSqsClient = indexAwsSqsClient,
+        eventAwsSqsDlqClient = eventAwsSqsDlqClient,
+        indexAwsSqsDlqClient = indexAwsSqsDlqClient,
+        indexQueueName = "index-queue",
+        indexDlqName = "index-dlq",
+        eventDlqName = "event-dlq",
+        gson = Gson()
+    )
   }
 
 
@@ -34,13 +43,13 @@ internal class IndexQueueServiceTest {
   inner class SendIndexRequestMessage {
     @BeforeEach
     internal fun setUp() {
-      whenever(indexClient.sendMessage(any())).thenReturn(SendMessageResult().withMessageId("abc"))
+      whenever(indexAwsSqsClient.sendMessage(any())).thenReturn(SendMessageResult().withMessageId("abc"))
       indexQueueService.sendPopulateIndexMessage(GREEN)
     }
 
     @Test
     fun `will send message with index name`() {
-      verify(indexClient).sendMessage(check {
+      verify(indexAwsSqsClient).sendMessage(check {
         assertThatJson(it.messageBody).isEqualTo("""{
           "type": "POPULATE_INDEX",
           "index": "GREEN"
@@ -51,22 +60,23 @@ internal class IndexQueueServiceTest {
 
     @Test
     fun `will send message to index queue`() {
-      verify(indexClient).sendMessage(check {
+      verify(indexAwsSqsClient).sendMessage(check {
         assertThat(it.queueUrl).isEqualTo("arn:eu-west-1:index-queue")
       })
     }
   }
+
   @Nested
   inner class SendPopulateOffenderPageMessage {
     @BeforeEach
     internal fun setUp() {
-      whenever(indexClient.sendMessage(any())).thenReturn(SendMessageResult().withMessageId("abc"))
+      whenever(indexAwsSqsClient.sendMessage(any())).thenReturn(SendMessageResult().withMessageId("abc"))
       indexQueueService.sendPopulateOffenderPageMessage(OffenderPage(1, 1000))
     }
 
     @Test
     fun `will send message with index name`() {
-      verify(indexClient).sendMessage(check {
+      verify(indexAwsSqsClient).sendMessage(check {
         assertThatJson(it.messageBody).isEqualTo("""{
           "type": "POPULATE_OFFENDER_PAGE",
           "offenderPage": {
@@ -80,7 +90,7 @@ internal class IndexQueueServiceTest {
 
     @Test
     fun `will send message to index queue`() {
-      verify(indexClient).sendMessage(check {
+      verify(indexAwsSqsClient).sendMessage(check {
         assertThat(it.queueUrl).isEqualTo("arn:eu-west-1:index-queue")
       })
     }
@@ -90,13 +100,13 @@ internal class IndexQueueServiceTest {
   inner class SendPopulateOffenderMessage {
     @BeforeEach
     internal fun setUp() {
-      whenever(indexClient.sendMessage(any())).thenReturn(SendMessageResult().withMessageId("abc"))
+      whenever(indexAwsSqsClient.sendMessage(any())).thenReturn(SendMessageResult().withMessageId("abc"))
       indexQueueService.sendPopulateOffenderMessage("X12345")
     }
 
     @Test
     fun `will send message with crn`() {
-      verify(indexClient).sendMessage(check {
+      verify(indexAwsSqsClient).sendMessage(check {
         assertThatJson(it.messageBody).isEqualTo("""
         {
           "type":"POPULATE_OFFENDER",
@@ -108,7 +118,7 @@ internal class IndexQueueServiceTest {
 
     @Test
     fun `will send message to index queue`() {
-      verify(indexClient).sendMessage(check {
+      verify(indexAwsSqsClient).sendMessage(check {
         assertThat(it.queueUrl).isEqualTo("arn:eu-west-1:index-queue")
       })
     }
@@ -118,10 +128,10 @@ internal class IndexQueueServiceTest {
   inner class ClearAllMessages {
     @Test
     internal fun `will purge index queue of messages`() {
-      whenever(indexClient.getQueueUrl("index-queue")).thenReturn(GetQueueUrlResult().withQueueUrl("arn:eu-west-1:index-queue"))
+      whenever(indexAwsSqsClient.getQueueUrl("index-queue")).thenReturn(GetQueueUrlResult().withQueueUrl("arn:eu-west-1:index-queue"))
 
       indexQueueService.clearAllMessages()
-      verify(indexClient).purgeQueue(check {
+      verify(indexAwsSqsClient).purgeQueue(check {
         assertThat(it.queueUrl).isEqualTo("arn:eu-west-1:index-queue")
       })
     }
@@ -131,22 +141,23 @@ internal class IndexQueueServiceTest {
   inner class ClearAllDlqMessagesForIndex {
     @Test
     internal fun `will purge index dlq of messages`() {
-      whenever(indexClient.getQueueUrl("index-dlq")).thenReturn(GetQueueUrlResult().withQueueUrl("arn:eu-west-1:index-dlq"))
+      whenever(indexAwsSqsDlqClient.getQueueUrl("index-dlq")).thenReturn(GetQueueUrlResult().withQueueUrl("arn:eu-west-1:index-dlq"))
 
       indexQueueService.clearAllDlqMessagesForIndex()
-      verify(indexClient).purgeQueue(check {
+      verify(indexAwsSqsDlqClient).purgeQueue(check {
         assertThat(it.queueUrl).isEqualTo("arn:eu-west-1:index-dlq")
       })
     }
   }
+
   @Nested
   inner class ClearAllDlqMessagesForEvent {
     @Test
     internal fun `will purge event dlq of messages`() {
-      whenever(eventClient.getQueueUrl("event-dlq")).thenReturn(GetQueueUrlResult().withQueueUrl("arn:eu-west-1:event-dlq"))
+      whenever(eventAwsSqsDlqClient.getQueueUrl("event-dlq")).thenReturn(GetQueueUrlResult().withQueueUrl("arn:eu-west-1:event-dlq"))
 
       indexQueueService.clearAllDlqMessagesForEvent()
-      verify(eventClient).purgeQueue(check {
+      verify(eventAwsSqsDlqClient).purgeQueue(check {
         assertThat(it.queueUrl).isEqualTo("arn:eu-west-1:event-dlq")
       })
     }
