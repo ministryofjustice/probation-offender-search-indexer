@@ -26,7 +26,7 @@ class OffenderUpdateMessageTest : IntegrationTestBase() {
       deleteOffenderIndexes()
       createOffenderIndexes()
       initialiseIndexStatus()
-      buildInitialIndex()
+      buildAndSwitchIndex(SyncIndex.GREEN, 0)
     }
 
     @Test
@@ -50,7 +50,7 @@ class OffenderUpdateMessageTest : IntegrationTestBase() {
     @Test
     fun `Offender is saved to both complete and building index`() {
       CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345")
-      indexService.prepareIndexForRebuild()
+      buildAndSwitchIndex(SyncIndex.BLUE, 1)
       CommunityApiExtension.communityApi.stubGetOffender()
 
       await untilCallTo { getNumberOfMessagesCurrentlyOnEventQueue() } matches { it == 0 }
@@ -101,15 +101,15 @@ class OffenderUpdateMessageTest : IntegrationTestBase() {
   @Nested
   inner class OffenderNotFound {
     @BeforeEach
-    fun noIndexesExist() {
+    fun singleIndexExists() {
       deleteOffenderIndexes()
       createOffenderIndexes()
+      initialiseIndexStatus()
+      buildAndSwitchIndex(SyncIndex.GREEN, 0)
     }
 
     @Test
     fun `Single index then offender is not added to either index`() {
-      initialiseIndexStatus()
-      buildInitialIndex()
       CommunityApiExtension.communityApi.stubOffenderNotFound("X123456")
 
       await untilCallTo { getNumberOfMessagesCurrentlyOnEventQueue() } matches { it == 0 }
@@ -128,11 +128,8 @@ class OffenderUpdateMessageTest : IntegrationTestBase() {
 
     @Test
     fun `Both indexes OK then offender is not added to either index`() {
-      initialiseIndexStatus()
-      buildInitialIndex()
       CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345")
-      indexService.prepareIndexForRebuild()
-      indexService.markIndexingComplete()
+      buildAndSwitchIndex(SyncIndex.BLUE, 1)
       CommunityApiExtension.communityApi.stubOffenderNotFound("X123456")
 
       await untilCallTo { getNumberOfMessagesCurrentlyOnEventQueue() } matches { it == 0 }

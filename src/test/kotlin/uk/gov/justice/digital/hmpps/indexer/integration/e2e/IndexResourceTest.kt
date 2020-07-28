@@ -203,26 +203,6 @@ class IndexResourceTest : IntegrationTestBase() {
   }
 
 
-  fun buildAndSwitchIndex(index: SyncIndex, expectedCount: Long) {
-    webTestClient.put()
-        .uri("/probation-index/build-index")
-        .accept(MediaType.APPLICATION_JSON)
-        .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
-        .exchange()
-        .expectStatus().isOk
-
-    await untilCallTo { getIndexCount(index) } matches { it == expectedCount }
-
-    webTestClient.put()
-        .uri("/probation-index/mark-complete")
-        .accept(MediaType.APPLICATION_JSON)
-        .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
-        .exchange()
-        .expectStatus().isOk
-
-    await untilCallTo { getIndexCount("offender") } matches { it == expectedCount }
-  }
-
   @Nested
   inner class BuildIndexAndCancel {
     @BeforeEach
