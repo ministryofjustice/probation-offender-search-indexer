@@ -16,10 +16,10 @@ import uk.gov.justice.digital.hmpps.indexer.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.indexer.model.IndexState
 import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
-import uk.gov.justice.digital.hmpps.indexer.service.BuildIndexError
-import uk.gov.justice.digital.hmpps.indexer.service.CancelBuildIndexError
-import uk.gov.justice.digital.hmpps.indexer.service.MarkBuildCompleteError
-import uk.gov.justice.digital.hmpps.indexer.service.UpdateOffenderError
+import uk.gov.justice.digital.hmpps.indexer.service.BuildAlreadyInProgressError
+import uk.gov.justice.digital.hmpps.indexer.service.BuildNotInProgressError
+import uk.gov.justice.digital.hmpps.indexer.service.NoActiveIndexesError
+import uk.gov.justice.digital.hmpps.indexer.service.OffenderNotFoundError
 
 class IndexResourceApiTest : IntegrationTestBase() {
 
@@ -63,7 +63,7 @@ class IndexResourceApiTest : IntegrationTestBase() {
     @Test
     fun `Request build index already building returns conflict`() {
       val expectedIndexStatus = IndexStatus(currentIndex = SyncIndex.GREEN, otherIndexState = IndexState.BUILDING)
-      doReturn(BuildIndexError.BuildAlreadyInProgress(expectedIndexStatus).left()).whenever(indexService).prepareIndexForRebuild()
+      doReturn(BuildAlreadyInProgressError(expectedIndexStatus).left()).whenever(indexService).prepareIndexForRebuild()
 
       webTestClient.put()
           .uri("/probation-index/build-index")
@@ -133,7 +133,7 @@ class IndexResourceApiTest : IntegrationTestBase() {
     @Test
     fun `Request to mark index complete when index not building returns error`() {
       val expectedIndexStatus = IndexStatus(currentIndex = SyncIndex.GREEN, otherIndexState = IndexState.COMPLETED)
-      doReturn(MarkBuildCompleteError.BuildNotInProgress(expectedIndexStatus).left()).whenever(indexService).markIndexingComplete()
+      doReturn(BuildNotInProgressError(expectedIndexStatus).left()).whenever(indexService).markIndexingComplete()
 
       webTestClient.put()
           .uri("/probation-index/mark-complete")
@@ -194,7 +194,7 @@ class IndexResourceApiTest : IntegrationTestBase() {
     @Test
     fun `Request to mark index cancelled when index not building returns error`() {
       val expectedIndexStatus = IndexStatus(currentIndex = SyncIndex.GREEN, otherIndexState = IndexState.CANCELLED)
-      doReturn(CancelBuildIndexError.BuildNotInProgress(expectedIndexStatus).left()).whenever(indexService).cancelIndexing()
+      doReturn(BuildNotInProgressError(expectedIndexStatus).left()).whenever(indexService).cancelIndexing()
 
       webTestClient.put()
           .uri("/probation-index/cancel-index")
@@ -254,7 +254,7 @@ class IndexResourceApiTest : IntegrationTestBase() {
     @Test
     fun `Request to index offender without active indexes returns conflict`() {
       val expectedIndexStatus = IndexStatus.newIndex()
-      doReturn(UpdateOffenderError.NoActiveIndexes(expectedIndexStatus).left()).whenever(indexService).updateOffender("SOME_CRN")
+      doReturn(NoActiveIndexesError(expectedIndexStatus).left()).whenever(indexService).updateOffender("SOME_CRN")
 
       webTestClient.put()
           .uri("/probation-index/index/offender/SOME_CRN")
@@ -262,6 +262,20 @@ class IndexResourceApiTest : IntegrationTestBase() {
           .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
           .exchange()
           .expectStatus().isEqualTo(409)
+
+      verify(indexService).updateOffender("SOME_CRN")
+    }
+
+    @Test
+    fun `Request to index unknown offender returns not found`() {
+      doReturn(OffenderNotFoundError("SOME_CRN").left()).whenever(indexService).updateOffender("SOME_CRN")
+
+      webTestClient.put()
+          .uri("/probation-index/index/offender/SOME_CRN")
+          .accept(MediaType.APPLICATION_JSON)
+          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+          .exchange()
+          .expectStatus().isEqualTo(404)
 
       verify(indexService).updateOffender("SOME_CRN")
     }

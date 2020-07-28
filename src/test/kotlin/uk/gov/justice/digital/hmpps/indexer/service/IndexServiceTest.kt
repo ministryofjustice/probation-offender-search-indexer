@@ -1,6 +1,6 @@
 package uk.gov.justice.digital.hmpps.indexer.service
 
-import arrow.core.getOrHandle
+import arrow.core.right
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
@@ -25,8 +25,6 @@ import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.BLUE
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.GREEN
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.NONE
-import uk.gov.justice.digital.hmpps.indexer.service.PopulateIndexError.BuildNotInProgress
-import uk.gov.justice.digital.hmpps.indexer.service.PopulateIndexError.WrongIndexRequested
 
 class IndexServiceTest {
 
@@ -51,7 +49,7 @@ class IndexServiceTest {
       val result = indexService.prepareIndexForRebuild()
 
       verify(indexStatusService).getIndexStatus()
-      assertThat(result.getOrHandle { it }).isEqualTo(BuildIndexError.BuildAlreadyInProgress(expectedIndexStatus))
+      result shouldBeLeft BuildAlreadyInProgressError(expectedIndexStatus)
     }
 
     @Test
@@ -94,7 +92,7 @@ class IndexServiceTest {
       val result = indexService.prepareIndexForRebuild()
 
       verify(indexStatusService, times(2)).getIndexStatus()
-      assertThat(result.getOrHandle { it }).isEqualTo(expectedIndexStatus)
+      result shouldBeRight expectedIndexStatus
     }
 
   }
@@ -114,7 +112,7 @@ class IndexServiceTest {
       val result = indexService.markIndexingComplete()
 
       verify(indexStatusService).getIndexStatus()
-      assertThat(result.getOrHandle { it }).isEqualTo(MarkBuildCompleteError.BuildNotInProgress(expectedIndexStatus))
+      result shouldBeLeft BuildNotInProgressError(expectedIndexStatus)
     }
 
     @Test
@@ -158,7 +156,7 @@ class IndexServiceTest {
       val result = indexService.markIndexingComplete()
 
       verify(indexStatusService, times(2)).getIndexStatus()
-      assertThat(result.getOrHandle { it }).isEqualTo(expectedIndexStatus)
+      result shouldBeRight expectedIndexStatus
     }
   }
 
@@ -173,7 +171,7 @@ class IndexServiceTest {
       val result = indexService.cancelIndexing()
 
       verify(indexStatusService).getIndexStatus()
-      assertThat(result.getOrHandle { it }).isEqualTo(CancelBuildIndexError.BuildNotInProgress(expectedIndexStatus))
+      result shouldBeLeft BuildNotInProgressError(expectedIndexStatus)
     }
 
     @Test
@@ -206,7 +204,7 @@ class IndexServiceTest {
       val result = indexService.cancelIndexing()
 
       verify(indexStatusService, times(2)).getIndexStatus()
-      assertThat(result.getOrHandle { it }).isEqualTo(expectedIndexStatus)
+      result shouldBeRight expectedIndexStatus
     }
 
   }
@@ -215,7 +213,7 @@ class IndexServiceTest {
   inner class IndexOffender {
     @BeforeEach
     internal fun setUp() {
-      whenever(offenderSynchroniserService.synchroniseOffender(any(), any())).thenReturn("""{"offenderId": 99}""")
+      whenever(offenderSynchroniserService.synchroniseOffender(any(), any())).thenReturn("""{"offenderId": 99}""".right())
     }
 
     @Test
@@ -239,7 +237,7 @@ class IndexServiceTest {
 
       val result = indexService.populateIndex(GREEN)
 
-      result shouldBeLeft BuildNotInProgress(indexStatus)
+      result shouldBeLeft BuildNotInProgressError(indexStatus)
     }
 
     @Test
@@ -250,7 +248,7 @@ class IndexServiceTest {
 
       val result = indexService.populateIndex(GREEN)
 
-      result shouldBeLeft WrongIndexRequested(indexStatus)
+      result shouldBeLeft WrongIndexRequestedError(indexStatus)
     }
 
     @Test
@@ -317,7 +315,7 @@ class IndexServiceTest {
       whenever(offenderSynchroniserService.synchroniseOffender(any(), any()))
           .thenReturn("""{
             | "offenderId": 99
-            |}""".trimMargin())
+            |}""".trimMargin().right())
     }
 
     @Test
@@ -327,7 +325,7 @@ class IndexServiceTest {
 
       val result = indexService.populateIndexWithOffender("X12345")
 
-      result shouldBeLeft BuildNotInProgress(indexStatus)
+      result shouldBeLeft BuildNotInProgressError(indexStatus)
     }
 
     @Test
@@ -390,14 +388,14 @@ class IndexServiceTest {
 
       val result = indexService.updateOffender("SOME_CRN")
 
-      result shouldBeLeft UpdateOffenderError.NoActiveIndexes(indexStatus)
+      result shouldBeLeft NoActiveIndexesError(indexStatus)
     }
 
     @Test
     fun `Current index active, offender is updated`() {
       val indexStatus = IndexStatus(currentIndex = GREEN, currentIndexState = COMPLETED)
-
       whenever(indexStatusService.getIndexStatus()).thenReturn(indexStatus)
+      whenever(offenderSynchroniserService.synchroniseOffender(any(), any())).thenReturn("".right())
 
       indexService.updateOffender("SOME_CRN")
 
@@ -408,6 +406,7 @@ class IndexServiceTest {
     fun `Other index active, offender is updated`() {
       val indexStatus = IndexStatus(currentIndex = NONE, otherIndexState = BUILDING, currentIndexState = ABSENT)
       whenever(indexStatusService.getIndexStatus()).thenReturn(indexStatus)
+      whenever(offenderSynchroniserService.synchroniseOffender(any(), any())).thenReturn("".right())
 
       indexService.updateOffender("SOME_CRN")
 
@@ -417,8 +416,8 @@ class IndexServiceTest {
     @Test
     fun `Both indexes active, offender is updated on both indexes`() {
       val indexStatus = IndexStatus(currentIndex = GREEN, otherIndexState = BUILDING, currentIndexState = COMPLETED)
-
       whenever(indexStatusService.getIndexStatus()).thenReturn(indexStatus)
+      whenever(offenderSynchroniserService.synchroniseOffender(any(), any())).thenReturn("".right())
 
       indexService.updateOffender("SOME_CRN")
 

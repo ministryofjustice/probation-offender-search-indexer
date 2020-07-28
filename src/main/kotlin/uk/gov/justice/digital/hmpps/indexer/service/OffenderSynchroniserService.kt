@@ -1,5 +1,8 @@
 package uk.gov.justice.digital.hmpps.indexer.service
 
+import arrow.core.Either
+import arrow.core.flatMap
+import arrow.core.right
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -13,11 +16,12 @@ class OffenderSynchroniserService(val communityService: CommunityService, val of
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  fun synchroniseOffender(crn: String, vararg indexes: SyncIndex): String {
-    val offender = communityService.getOffender(crn)
-    indexes.map { offenderRepository.save(offender, it) }
-    return offender.json
-  }
+  internal fun synchroniseOffender(crn: String, vararg indexes: SyncIndex): Either<OffenderError, String> =
+    communityService.getOffender(crn)
+        .flatMap {
+          indexes.map { index -> offenderRepository.save(it, index) }
+          it.json.right()
+        }
 
   fun checkExistsAndReset(index: SyncIndex) {
     if (offenderRepository.doesIndexExist(index)) {

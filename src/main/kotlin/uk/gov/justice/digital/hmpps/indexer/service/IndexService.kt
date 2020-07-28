@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.indexer.service
 
 import arrow.core.Either
+import arrow.core.getOrHandle
 import arrow.core.left
 import arrow.core.right
 import org.elasticsearch.client.RequestOptions
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.indexer.model.IndexState
 import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
+import kotlin.reflect.KClass
 
 @Service
 class IndexService(
@@ -25,10 +27,10 @@ class IndexService(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  fun prepareIndexForRebuild(): Either<BuildIndexError, IndexStatus> {
+  fun prepareIndexForRebuild(): Either<IndexError, IndexStatus> {
     val indexStatus = indexStatusService.initialiseIndexWhenRequired().getIndexStatus()
     if (indexStatus.otherIndexState == IndexState.BUILDING) {
-      return BuildIndexError.BuildAlreadyInProgress(indexStatus).left()
+      return BuildAlreadyInProgressError(indexStatus).left()
     }
     logIndexStatuses(indexStatus)
     indexStatusService.markBuildInProgress()
@@ -45,10 +47,10 @@ class IndexService(
     )
   }
 
-  fun markIndexingComplete(): Either<MarkBuildCompleteError, IndexStatus> {
+  fun markIndexingComplete(): Either<IndexError, IndexStatus> {
     val indexStatus = indexStatusService.getIndexStatus()
     if (indexStatus.otherIndexState != IndexState.BUILDING) {
-      return MarkBuildCompleteError.BuildNotInProgress(indexStatus).left()
+      return BuildNotInProgressError(indexStatus).left()
     }
 
     val newIndexStatus = indexStatusService.markBuildCompleteAndSwitchIndex()
@@ -60,10 +62,10 @@ class IndexService(
     return indexStatusService.getIndexStatus().right()
   }
 
-  fun cancelIndexing(): Either<CancelBuildIndexError, IndexStatus> {
+  fun cancelIndexing(): Either<IndexError, IndexStatus> {
     val indexStatus = indexStatusService.getIndexStatus()
     if (indexStatus.otherIndexState != IndexState.BUILDING) {
-      return CancelBuildIndexError.BuildNotInProgress(indexStatus).left()
+      return BuildNotInProgressError(indexStatus).left()
     }
 
     indexStatusService.markBuildCancelled()
@@ -73,25 +75,25 @@ class IndexService(
     return indexStatusService.getIndexStatus().right()
   }
 
-  fun updateOffender(crn: String) : Either<UpdateOffenderError, String> {
+  fun updateOffender(crn: String) : Either<Error, String> {
     val indexStatus = indexStatusService.getIndexStatus()
     val activeIndexes = indexStatus.activeIndexes()
     if (activeIndexes.isEmpty()) {
       log.info("Ignoring update of offender {} as no indexes were active", crn)
-      return UpdateOffenderError.NoActiveIndexes(indexStatus).left()
+      return NoActiveIndexesError(indexStatus).left()
     }
     log.info("Updating offender {} on indexes {}", crn, activeIndexes)
-    return offenderSynchroniserService.synchroniseOffender(crn, *activeIndexes.toTypedArray()).right()
+    return offenderSynchroniserService.synchroniseOffender(crn, *activeIndexes.toTypedArray())
   }
 
-  fun populateIndex(index: SyncIndex): Either<PopulateIndexError, Int> {
+  fun populateIndex(index: SyncIndex): Either<Error, Int> {
     val indexStatus = indexStatusService.getIndexStatus()
     if (indexStatus.otherIndexState != IndexState.BUILDING) {
-      return PopulateIndexError.BuildNotInProgress(indexStatus).left()
+      return BuildNotInProgressError(indexStatus).left()
     }
 
     if (indexStatus.currentIndex.otherIndex() != index) {
-      return PopulateIndexError.WrongIndexRequested(indexStatus).left()
+      return WrongIndexRequestedError(indexStatus).left()
     }
 
     val chunks = offenderSynchroniserService.splitAllOffendersIntoChunks()
@@ -99,18 +101,19 @@ class IndexService(
     return chunks.size.right()
   }
 
-  fun populateIndexWithOffenderPage(offenderPage: OffenderPage) {
+  fun populateIndexWithOffenderPage(offenderPage: OffenderPage): Either<Error, Unit> =
     offenderSynchroniserService.getAllOffenderIdentifiersInPage(offenderPage)
-        .forEach { indexQueueService.sendPopulateOffenderMessage(it.crn) }
-  }
+        .forEach { indexQueueService.sendPopulateOffenderMessage(it.crn) }.right()
 
-  fun populateIndexWithOffender(crn: String) : Either<PopulateIndexError, String> {
+  fun populateIndexWithOffender(crn: String) : Either<Error, String> {
     val indexStatus = indexStatusService.getIndexStatus()
     if (indexStatus.otherIndexState != IndexState.BUILDING) {
-      return PopulateIndexError.BuildNotInProgress(indexStatus).left()
+      return BuildNotInProgressError(indexStatus).left()
     }
 
-    return offenderSynchroniserService.synchroniseOffender(crn, indexStatus.currentIndex.otherIndex()).right()
+    return offenderSynchroniserService.synchroniseOffender(crn, indexStatus.currentIndex.otherIndex())
+        .map { it.right() }
+        .getOrHandle { OffenderNotFoundError(crn).left() }
   }
 
   fun getIndexCount(index: SyncIndex): Long {
@@ -120,24 +123,43 @@ class IndexService(
 
 }
 
+enum class UpdateOffenderError(val errorClass: KClass<out Error>) {
+  NO_ACTIVE_INDEXES(NoActiveIndexesError::class),
+  OFFENDER_NOT_FOUND(OffenderNotFoundError::class);
 
-sealed class BuildIndexError(val message: String) {
-  data class BuildAlreadyInProgress(val indexStatus: IndexStatus) : BuildIndexError("The build for ${indexStatus.otherIndex} is already ${indexStatus.otherIndexState} (started at ${indexStatus.otherIndexStartBuildTime})")
+  companion object {
+    fun fromErrorClass(error: Error): UpdateOffenderError {
+      return values().first { it.errorClass == error::class }
+    }
+  }
 }
 
-sealed class MarkBuildCompleteError(val message: String) {
-  data class BuildNotInProgress(val indexStatus: IndexStatus) : MarkBuildCompleteError("The index ${indexStatus.otherIndex} is in state ${indexStatus.otherIndexState} (ended at ${indexStatus.otherIndexEndBuildTime})")
+enum class PrepareRebuildError(val errorClass: KClass<out Error>) {
+  BUILD_IN_PROGRESS(BuildAlreadyInProgressError::class);
+
+  companion object {
+    fun fromErrorClass(error: Error): PrepareRebuildError {
+      return values().first { it.errorClass == error::class }
+    }
+  }
 }
 
-sealed class CancelBuildIndexError(val message: String) {
-  data class BuildNotInProgress(val indexStatus: IndexStatus) : CancelBuildIndexError("The index ${indexStatus.otherIndex} is in state ${indexStatus.otherIndexState} (ended at ${indexStatus.otherIndexEndBuildTime})")
+enum class MarkCompleteError(val errorClass: KClass<out Error>) {
+  BUILD_NOT_IN_PROGRESS(BuildNotInProgressError::class);
+
+  companion object {
+    fun fromErrorClass(error: Error): MarkCompleteError {
+      return values().first { it.errorClass == error::class }
+    }
+  }
 }
 
-sealed class PopulateIndexError(val message: String) {
-  data class BuildNotInProgress(val indexStatus: IndexStatus) : PopulateIndexError("The index ${indexStatus.otherIndex} is in state ${indexStatus.otherIndexState} (ended at ${indexStatus.otherIndexEndBuildTime})")
-  data class WrongIndexRequested(val indexStatus: IndexStatus) : PopulateIndexError("The index ${indexStatus.otherIndex} is in state ${indexStatus.otherIndexState} (ended at ${indexStatus.otherIndexEndBuildTime})")
-}
+enum class CancelBuildError(val errorClass: KClass<out Error>) {
+  BUILD_NOT_IN_PROGRESS(BuildNotInProgressError::class);
 
-sealed class UpdateOffenderError(val message: String) {
-  data class NoActiveIndexes(val indexStatus: IndexStatus) : UpdateOffenderError("Cannot update offender as current index ${indexStatus.currentIndex} is in state ${indexStatus.currentIndexState} and other index ${indexStatus.otherIndex} is in state ${indexStatus.otherIndexState}")
+  companion object {
+    fun fromErrorClass(error: Error): CancelBuildError {
+      return values().first { it.errorClass == error::class }
+    }
+  }
 }

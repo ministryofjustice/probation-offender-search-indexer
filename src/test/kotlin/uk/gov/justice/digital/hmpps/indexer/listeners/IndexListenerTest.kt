@@ -1,11 +1,19 @@
 package uk.gov.justice.digital.hmpps.indexer.listeners
 
+import arrow.core.left
+import ch.qos.logback.classic.spi.ILoggingEvent
 import com.google.gson.Gson
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.whenever
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import uk.gov.justice.digital.hmpps.indexer.integration.findLogAppender
+import uk.gov.justice.digital.hmpps.indexer.integration.hasLogMessageContaining
+import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.GREEN
+import uk.gov.justice.digital.hmpps.indexer.service.BuildNotInProgressError
 import uk.gov.justice.digital.hmpps.indexer.service.IndexService
 import uk.gov.justice.digital.hmpps.indexer.service.OffenderPage
 
@@ -25,6 +33,21 @@ internal class IndexListenerTest {
       """.trimIndent())
 
       verify(indexService).populateIndex(GREEN)
+    }
+
+    @Test
+    internal fun `failed request`() {
+      val logAppender = findLogAppender(IndexListener::class.java)
+      whenever(indexService.populateIndex(GREEN)).thenReturn(BuildNotInProgressError(IndexStatus.newIndex()).left())
+
+      listener.processIndexRequest("""
+      {
+        "type": "POPULATE_INDEX",
+        "index": "GREEN"
+      }
+      """.trimIndent())
+
+      assertThat(logAppender.list).anyMatch { it.message.contains("failed with error") }
     }
   }
 

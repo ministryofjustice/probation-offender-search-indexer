@@ -15,11 +15,14 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.server.ResponseStatusException
 import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
-import uk.gov.justice.digital.hmpps.indexer.service.BuildIndexError
-import uk.gov.justice.digital.hmpps.indexer.service.CancelBuildIndexError
+import uk.gov.justice.digital.hmpps.indexer.service.CancelBuildError
 import uk.gov.justice.digital.hmpps.indexer.service.IndexService
-import uk.gov.justice.digital.hmpps.indexer.service.MarkBuildCompleteError
+import uk.gov.justice.digital.hmpps.indexer.service.MarkCompleteError
+import uk.gov.justice.digital.hmpps.indexer.service.PrepareRebuildError
+import uk.gov.justice.digital.hmpps.indexer.service.PrepareRebuildError.BUILD_IN_PROGRESS
 import uk.gov.justice.digital.hmpps.indexer.service.UpdateOffenderError
+import uk.gov.justice.digital.hmpps.indexer.service.UpdateOffenderError.NO_ACTIVE_INDEXES
+import uk.gov.justice.digital.hmpps.indexer.service.UpdateOffenderError.OFFENDER_NOT_FOUND
 
 @Api(tags = ["probation-index"])
 @RestController
@@ -43,8 +46,8 @@ class IndexResource(private val indexService: IndexService) {
   fun buildIndex(): IndexStatus =
       indexService.prepareIndexForRebuild()
           .getOrHandle { error ->
-            when (error) {
-              is BuildIndexError.BuildAlreadyInProgress -> throw ResponseStatusException(HttpStatus.CONFLICT, error.message)
+            when (PrepareRebuildError.fromErrorClass(error)) {
+              BUILD_IN_PROGRESS -> throw ResponseStatusException(HttpStatus.CONFLICT, error.message())
             }
           }
 
@@ -62,8 +65,8 @@ class IndexResource(private val indexService: IndexService) {
   fun markComplete() =
       indexService.markIndexingComplete()
           .getOrHandle { error ->
-            when (error) {
-              is MarkBuildCompleteError.BuildNotInProgress -> throw ResponseStatusException(HttpStatus.CONFLICT, error.message)
+            when (MarkCompleteError.fromErrorClass(error)) {
+              MarkCompleteError.BUILD_NOT_IN_PROGRESS -> throw ResponseStatusException(HttpStatus.CONFLICT, error.message())
             }
           }
 
@@ -81,8 +84,8 @@ class IndexResource(private val indexService: IndexService) {
   fun cancelIndex() =
       indexService.cancelIndexing()
           .getOrHandle { error ->
-            when (error) {
-              is CancelBuildIndexError.BuildNotInProgress -> throw ResponseStatusException(HttpStatus.CONFLICT, error.message)
+            when (CancelBuildError.fromErrorClass(error)) {
+              CancelBuildError.BUILD_NOT_IN_PROGRESS -> throw ResponseStatusException(HttpStatus.CONFLICT, error.message())
             }
           }
 
@@ -95,12 +98,14 @@ class IndexResource(private val indexService: IndexService) {
     ApiResponse(code = 200, message = "OK", response = String::class),
     ApiResponse(code = 401, message = "Unauthorised, requires a valid Oauth2 token"),
     ApiResponse(code = 403, message = "Forbidden, requires an authorisation with role PROBATION_INDEX"),
+    ApiResponse(code = 404, message = "Not Found, the offender could not be found"),
     ApiResponse(code = 409, message = "Conflict, no indexes could be updated")
   ])
   fun indexOffender(@PathVariable("crn") crn: String) = indexService.updateOffender(crn)
       .getOrHandle { error ->
-        when (error) {
-          is UpdateOffenderError.NoActiveIndexes -> throw ResponseStatusException(HttpStatus.CONFLICT, error.message)
+        when (UpdateOffenderError.fromErrorClass(error)) {
+          NO_ACTIVE_INDEXES -> throw ResponseStatusException(HttpStatus.CONFLICT, error.message())
+          OFFENDER_NOT_FOUND -> throw ResponseStatusException(HttpStatus.NOT_FOUND, error.message())
         }
       }
 

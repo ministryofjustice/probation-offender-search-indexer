@@ -1,8 +1,10 @@
 package uk.gov.justice.digital.hmpps.indexer.integration.service
 
+import arrow.core.right
 import com.github.tomakehurst.wiremock.client.WireMock
+import io.kotest.assertions.arrow.either.shouldBeLeft
+import io.kotest.assertions.arrow.either.shouldBeRight
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -10,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.indexer.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.CommunityApiExtension
 import uk.gov.justice.digital.hmpps.indexer.service.CommunityService
+import uk.gov.justice.digital.hmpps.indexer.service.OffenderNotFoundError
 import java.net.HttpURLConnection
 
 internal class CommunityServiceTest : IntegrationTestBase() {
@@ -54,10 +57,11 @@ internal class CommunityServiceTest : IntegrationTestBase() {
           }""")
           .withStatus(HttpURLConnection.HTTP_OK)))
 
-      val offender = service.getOffender("X12345")
+      val offender = service.getOffender("X12345").right()
 
-
-      assertThat(offender.json).contains(""""crn": "X12345"""")
+      offender shouldBeRight {
+        it.map { offender -> assertThat(offender.json).contains(""""crn": "X12345"""") }
+      }
     }
 
     @Test
@@ -74,20 +78,21 @@ internal class CommunityServiceTest : IntegrationTestBase() {
 
       val offender = service.getOffender("X12345")
 
-
-      assertThat(offender.crn).isEqualTo("X12345")
+      offender shouldBeRight {
+        assertThat(it.crn).isEqualTo("X12345")
+      }
     }
 
     @Test
-    fun `a 404 not found is treated as an unexpected error`() {
+    fun `a 404 not found is an expected error`() {
       CommunityApiExtension.communityApi.stubFor(WireMock.get(WireMock.anyUrl()).willReturn(WireMock.aResponse()
           .withHeader("Content-Type", "application/json")
           .withBody("{\"error\": \"not found\"}")
           .withStatus(HttpURLConnection.HTTP_NOT_FOUND)))
 
-      assertThatThrownBy {
-        service.getOffender("X12345")
-      }.hasMessageContaining("404 Not Found")
+      val result = service.getOffender("X12345")
+
+      result shouldBeLeft OffenderNotFoundError("X12345")
     }
   }
 

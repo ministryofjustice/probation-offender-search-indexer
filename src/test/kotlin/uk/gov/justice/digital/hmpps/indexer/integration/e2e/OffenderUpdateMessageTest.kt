@@ -10,6 +10,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import uk.gov.justice.digital.hmpps.indexer.integration.IntegrationTestBase
+import uk.gov.justice.digital.hmpps.indexer.integration.findLogAppender
+import uk.gov.justice.digital.hmpps.indexer.integration.hasLogMessageContaining
 import uk.gov.justice.digital.hmpps.indexer.integration.readResourceAsText
 import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.CommunityApiExtension
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
