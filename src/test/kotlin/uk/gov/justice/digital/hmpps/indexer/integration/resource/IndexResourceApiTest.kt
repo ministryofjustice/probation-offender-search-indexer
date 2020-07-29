@@ -28,7 +28,8 @@ class IndexResourceApiTest : IntegrationTestBase() {
     @JvmStatic
     private fun secureEndpoints() =
         listOf("/probation-index/build-index", "/probation-index/mark-complete", "/probation-index/cancel-index",
-            "/probation-index/index/offender/SOME_CRN", "/probation-index/purge-index-dlq", "/probation-index/transfer-event-dlq")
+            "/probation-index/index/offender/SOME_CRN", "/probation-index/purge-index-dlq", "/probation-index/transfer-event-dlq",
+            "/probation-index/transfer-index-dlq")
   }
 
   @BeforeEach

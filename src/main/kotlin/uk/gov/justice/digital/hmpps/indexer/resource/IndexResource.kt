@@ -132,6 +132,17 @@ class IndexResource(private val indexService: IndexService, private val indexQue
   ])
   fun purgeEventDlq(): Unit = indexQueueService.clearAllDlqMessagesForEvent()
 
+  @PutMapping("/transfer-index-dlq")
+  @PreAuthorize("hasRole('PROBATION_INDEX')")
+  @ApiOperation(
+      value = "Transfers all DLQ messages to the main queue",
+      notes = "Requires PROBATION_INDEX role")
+  @ApiResponses(value = [
+    ApiResponse(code = 401, message = "Unauthorised, requires a valid Oauth2 token"),
+    ApiResponse(code = 403, message = "Forbidden, requires an authorisation with role PROBATION_INDEX")
+  ])
+  fun transferIndexDlq(): Unit = indexQueueService.transferIndexMessages()
+
   @PutMapping("/transfer-event-dlq")
   @PreAuthorize("hasRole('PROBATION_INDEX')")
   @ApiOperation(
@@ -141,6 +152,6 @@ class IndexResource(private val indexService: IndexService, private val indexQue
     ApiResponse(code = 401, message = "Unauthorised, requires a valid Oauth2 token"),
     ApiResponse(code = 403, message = "Forbidden, requires an authorisation with role PROBATION_INDEX")
   ])
-  fun transferEventDlq(): Unit = indexQueueService.transferMessages()
+  fun transferEventDlq(): Unit = indexQueueService.transferEventMessages()
 
 }

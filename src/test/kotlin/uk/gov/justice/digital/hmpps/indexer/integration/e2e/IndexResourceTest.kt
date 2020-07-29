@@ -17,7 +17,6 @@ import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.CommunityApiExt
 import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.OffenderAlias
 import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.OffenderManager
 import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.ProbationArea
-import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.BLUE
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.GREEN
 import uk.gov.justice.digital.hmpps.indexer.service.OffenderDetail
@@ -524,7 +523,7 @@ class IndexResourceTest : IntegrationTestBase() {
   }
 
   @Nested
-  inner class TransferDeadLetterQueue {
+  inner class TransferEventDeadLetterQueue {
     @Nested
     inner class EventDLQ {
 
@@ -538,7 +537,7 @@ class IndexResourceTest : IntegrationTestBase() {
         buildAndSwitchIndex(GREEN, 1)
 
         crns.forEach {
-          eventAwsSqsClient.sendMessage(eventDlqUrl, offenderChangedMessage(it))
+          eventAwsSqsDlqClient.sendMessage(eventDlqUrl, offenderChangedMessage(it))
           CommunityApiExtension.communityApi.stubGetOffender(it)
         }
         await untilCallTo { getNumberOfMessagesCurrentlyOnEventDLQ() } matches { it == crns.size }
@@ -559,6 +558,43 @@ class IndexResourceTest : IntegrationTestBase() {
         await untilCallTo { getIndexCount(GREEN) } matches { it == (crns.size + 1).toLong() }
       }
     }
+  }
+
+  @Nested
+  inner class TransferIndexDlq {
+
+    @BeforeEach
+    internal fun `build index but don't complete`() {
+      deleteOffenderIndexes()
+      initialiseIndexStatus()
+      CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345")
+      buildIndex(GREEN, 1)
+    }
+
+    @Test
+    internal fun `will move all message on index DLQ to index Queue and process them if building`() {
+      indexAwsSqsDlqClient.sendMessage(indexDlqUrl,
+          """
+            {
+              "type": "POPULATE_OFFENDER",
+              "crn": "X12346"
+            }
+          """.trimIndent()
+      )
+      CommunityApiExtension.communityApi.stubGetOffender("X12346")
+
+      webTestClient.put()
+          .uri("/probation-index/transfer-index-dlq")
+          .accept(MediaType.APPLICATION_JSON)
+          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+          .exchange()
+          .expectStatus().isOk
+
+      await untilCallTo { getNumberOfMessagesCurrentlyOnIndexDLQ() } matches { it == 0 }
+      await untilCallTo { getNumberOfMessagesCurrentlyOnIndexQueue() } matches { it == 0 }
+      await untilCallTo { getIndexCount(GREEN) } matches { it == 2L }
+    }
+
   }
 
 
