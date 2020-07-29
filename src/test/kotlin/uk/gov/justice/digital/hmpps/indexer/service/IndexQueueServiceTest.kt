@@ -185,7 +185,7 @@ internal class IndexQueueServiceTest {
       whenever(eventAwsSqsDlqClient.receiveMessage(any<ReceiveMessageRequest>()))
           .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(offenderChangedMessage("X1"))))
 
-      indexQueueService.transferMessages()
+      indexQueueService.transferEventMessages()
 
       verify(eventAwsSqsDlqClient).receiveMessage(check<ReceiveMessageRequest> {
         assertThat(it.queueUrl).isEqualTo(eventDlqUrl)
@@ -200,7 +200,7 @@ internal class IndexQueueServiceTest {
           .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(offenderChangedMessage("X2"))))
           .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(offenderChangedMessage("X3"))))
 
-      indexQueueService.transferMessages()
+      indexQueueService.transferEventMessages()
 
       verify(eventAwsSqsDlqClient, times(3)).receiveMessage(check<ReceiveMessageRequest> {
         assertThat(it.queueUrl).isEqualTo(eventDlqUrl)
@@ -213,7 +213,7 @@ internal class IndexQueueServiceTest {
       whenever(eventAwsSqsDlqClient.receiveMessage(any<ReceiveMessageRequest>()))
           .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(offenderChangedMessage("X1"))))
 
-      indexQueueService.transferMessages()
+      indexQueueService.transferEventMessages()
 
       verify(eventAwsSqsClient).sendMessage(eventQueueUrl, offenderChangedMessage("X1"))
     }
@@ -226,7 +226,7 @@ internal class IndexQueueServiceTest {
           .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(offenderChangedMessage("X2"))))
           .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(offenderChangedMessage("X3"))))
 
-      indexQueueService.transferMessages()
+      indexQueueService.transferEventMessages()
 
       verify(eventAwsSqsClient).sendMessage(eventQueueUrl, offenderChangedMessage("X1"))
       verify(eventAwsSqsClient).sendMessage(eventQueueUrl, offenderChangedMessage("X2"))

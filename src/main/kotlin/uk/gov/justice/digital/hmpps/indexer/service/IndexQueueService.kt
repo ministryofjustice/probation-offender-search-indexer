@@ -66,15 +66,26 @@ class IndexQueueService(private val indexAwsSqsClient: AmazonSQS,
     log.info("Clear all messages on event dead letter queue")
   }
 
-  fun transferMessages() =
-      repeat(getMessageCount()) {
+  fun transferEventMessages() =
+      repeat(getEventDlqMessageCount()) {
         eventAwsSqsDlqClient.receiveMessage(ReceiveMessageRequest(eventDlqUrl).withMaxNumberOfMessages(1)).messages
             .forEach { eventAwsSqsClient.sendMessage(eventQueueUrl, it.body) }
       }
 
-  private fun getMessageCount(): Int {
-    val qa = eventAwsSqsDlqClient.getQueueAttributes(eventDlqUrl, listOf("ApproximateNumberOfMessages"))
-    val msgs = qa.attributes["ApproximateNumberOfMessages"]
-    return msgs?.toInt()?:0
-  }
+  private fun getEventDlqMessageCount() =
+      eventAwsSqsDlqClient.getQueueAttributes(eventDlqUrl, listOf("ApproximateNumberOfMessages"))
+          .attributes["ApproximateNumberOfMessages"]
+          ?.toInt() ?: 0
+
+  fun transferIndexMessages() =
+      repeat(getIndexDlqMessageCount()) {
+        indexAwsSqsDlqClient.receiveMessage(ReceiveMessageRequest(indexDlqUrl).withMaxNumberOfMessages(1)).messages
+            .forEach { indexAwsSqsClient.sendMessage(indexQueueUrl, it.body) }
+      }
+
+  private fun getIndexDlqMessageCount() =
+      indexAwsSqsDlqClient.getQueueAttributes(indexDlqUrl, listOf("ApproximateNumberOfMessages"))
+          .attributes["ApproximateNumberOfMessages"]
+          ?.toInt() ?: 0
+
 }

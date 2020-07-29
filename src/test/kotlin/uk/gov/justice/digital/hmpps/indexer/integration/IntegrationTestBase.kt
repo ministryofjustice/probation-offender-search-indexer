@@ -62,6 +62,14 @@ abstract class IntegrationTestBase {
   @Qualifier("indexAwsSqsClient")
   internal lateinit var indexAwsSqsClient: AmazonSQS
 
+  @SpyBean
+  @Qualifier("eventAwsSqsDlqClient")
+  internal lateinit var eventAwsSqsDlqClient: AmazonSQS
+
+  @SpyBean
+  @Qualifier("indexAwsSqsDlqClient")
+  internal lateinit var indexAwsSqsDlqClient: AmazonSQS
+
   @Autowired
   internal lateinit var gson: Gson
 
@@ -159,14 +167,7 @@ abstract class IntegrationTestBase {
   }
 
   fun buildAndSwitchIndex(index: SyncIndex, expectedCount: Long) {
-    webTestClient.put()
-        .uri("/probation-index/build-index")
-        .accept(MediaType.APPLICATION_JSON)
-        .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
-        .exchange()
-        .expectStatus().isOk
-
-    await untilCallTo { getIndexCount(index) } matches { it == expectedCount }
+    buildIndex(index, expectedCount)
 
     webTestClient.put()
         .uri("/probation-index/mark-complete")
@@ -176,6 +177,17 @@ abstract class IntegrationTestBase {
         .expectStatus().isOk
 
     await untilCallTo { getIndexCount("offender") } matches { it == expectedCount }
+  }
+
+  fun buildIndex(index: SyncIndex, expectedCount: Long) {
+    webTestClient.put()
+        .uri("/probation-index/build-index")
+        .accept(MediaType.APPLICATION_JSON)
+        .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+        .exchange()
+        .expectStatus().isOk
+
+    await untilCallTo { getIndexCount(index) } matches { it == expectedCount }
   }
 
 }
