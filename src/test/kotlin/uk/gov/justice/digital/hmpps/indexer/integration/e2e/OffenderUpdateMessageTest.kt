@@ -26,6 +26,7 @@ class OffenderUpdateMessageTest : IntegrationTestBase() {
       deleteOffenderIndexes()
       createOffenderIndexes()
       initialiseIndexStatus()
+      CommunityApiExtension.communityApi.stubAllOffenderGets(10, numberOfOffenders = 0)
       buildAndSwitchIndex(SyncIndex.GREEN, 0)
     }
 
@@ -105,6 +106,7 @@ class OffenderUpdateMessageTest : IntegrationTestBase() {
       deleteOffenderIndexes()
       createOffenderIndexes()
       initialiseIndexStatus()
+      CommunityApiExtension.communityApi.stubAllOffenderGets(10, numberOfOffenders = 0)
       buildAndSwitchIndex(SyncIndex.GREEN, 0)
     }
 

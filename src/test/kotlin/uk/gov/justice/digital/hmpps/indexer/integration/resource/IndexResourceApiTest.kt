@@ -315,7 +315,7 @@ class IndexResourceApiTest : IntegrationTestBase() {
       }
 
       @Test
-      internal fun `requires a valid authentication token`() {
+      internal fun `purge requires a valid authentication token`() {
         webTestClient.put()
             .uri("/probation-index/purge-event-dlq")
             .accept(MediaType.APPLICATION_JSON)
@@ -325,9 +325,30 @@ class IndexResourceApiTest : IntegrationTestBase() {
       }
 
       @Test
-      internal fun `requires a the correct role`() {
+      internal fun `purge requires a the correct role`() {
         webTestClient.put()
             .uri("/probation-index/purge-event-dlq")
+            .headers(setAuthorisation(roles = listOf()))
+            .accept(MediaType.APPLICATION_JSON)
+            .exchange()
+            .expectStatus().isForbidden
+
+      }
+
+      @Test
+      internal fun `transfer requires a valid authentication token`() {
+        webTestClient.put()
+            .uri("/probation-index/transfer-event-dlq")
+            .accept(MediaType.APPLICATION_JSON)
+            .exchange()
+            .expectStatus().isUnauthorized
+
+      }
+
+      @Test
+      internal fun `transfer requires a the correct role`() {
+        webTestClient.put()
+            .uri("/probation-index/transfer-event-dlq")
             .headers(setAuthorisation(roles = listOf()))
             .accept(MediaType.APPLICATION_JSON)
             .exchange()
