@@ -20,6 +20,7 @@ class IndexService(
     private val indexStatusService: IndexStatusService,
     private val offenderSynchroniserService: OffenderSynchroniserService,
     private val indexQueueService: IndexQueueService,
+    private val queueAdminService: QueueAdminService,
     private val elasticSearchClient: RestHighLevelClient
 ) {
 
@@ -56,7 +57,7 @@ class IndexService(
     val newIndexStatus = indexStatusService.markBuildCompleteAndSwitchIndex()
     offenderSynchroniserService.switchAliasIndex(newIndexStatus.currentIndex)
 
-    indexQueueService.clearAllMessages()
+    queueAdminService.clearAllIndexQueueMessages()
     log.info("Index ${newIndexStatus.otherIndex} marked as ${newIndexStatus.otherIndexState}, ${newIndexStatus.currentIndex} is now current")
 
     return indexStatusService.getIndexStatus().right()
@@ -69,7 +70,7 @@ class IndexService(
     }
 
     indexStatusService.markBuildCancelled()
-    indexQueueService.clearAllMessages()
+    queueAdminService.clearAllIndexQueueMessages()
     log.info("Index ${indexStatus.currentIndex.otherIndex()} marked as ${indexStatus.otherIndexState}, ${indexStatus.currentIndex} is still current")
 
     return indexStatusService.getIndexStatus().right()

@@ -31,8 +31,9 @@ class IndexServiceTest {
   private val indexStatusService = mock<IndexStatusService>()
   private val offenderSynchroniserService = mock<OffenderSynchroniserService>()
   private val indexQueueService = mock<IndexQueueService>()
+  private val queueAdminService = mock<QueueAdminService>()
   private val elasticSearchClient = mock<RestHighLevelClient>()
-  private val indexService = IndexService(indexStatusService, offenderSynchroniserService, indexQueueService, elasticSearchClient)
+  private val indexService = IndexService(indexStatusService, offenderSynchroniserService, indexQueueService, queueAdminService, elasticSearchClient)
 
   @Nested
   inner class BuildIndex {
@@ -143,7 +144,7 @@ class IndexServiceTest {
 
       indexService.markIndexingComplete()
 
-      verify(indexQueueService).clearAllMessages()
+      verify(queueAdminService).clearAllIndexQueueMessages()
     }
 
     @Test
@@ -191,7 +192,7 @@ class IndexServiceTest {
 
       indexService.cancelIndexing()
 
-      verify(indexQueueService).clearAllMessages()
+      verify(queueAdminService).clearAllIndexQueueMessages()
     }
 
     @Test
