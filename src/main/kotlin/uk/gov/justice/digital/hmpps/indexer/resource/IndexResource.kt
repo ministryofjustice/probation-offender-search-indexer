@@ -21,6 +21,7 @@ import uk.gov.justice.digital.hmpps.indexer.service.IndexService
 import uk.gov.justice.digital.hmpps.indexer.service.MarkCompleteError
 import uk.gov.justice.digital.hmpps.indexer.service.PrepareRebuildError
 import uk.gov.justice.digital.hmpps.indexer.service.PrepareRebuildError.BUILD_IN_PROGRESS
+import uk.gov.justice.digital.hmpps.indexer.service.QueueAdminService
 import uk.gov.justice.digital.hmpps.indexer.service.UpdateOffenderError
 import uk.gov.justice.digital.hmpps.indexer.service.UpdateOffenderError.NO_ACTIVE_INDEXES
 import uk.gov.justice.digital.hmpps.indexer.service.UpdateOffenderError.OFFENDER_NOT_FOUND
@@ -28,7 +29,11 @@ import uk.gov.justice.digital.hmpps.indexer.service.UpdateOffenderError.OFFENDER
 @Api(tags = ["probation-index"])
 @RestController
 @RequestMapping("/probation-index", produces = [MediaType.APPLICATION_JSON_VALUE])
-class IndexResource(private val indexService: IndexService, private val indexQueueService: IndexQueueService) {
+class IndexResource(
+    private val indexService: IndexService,
+    private val queueAdminService: QueueAdminService
+) {
+
   companion object {
     val log = LoggerFactory.getLogger(this::class.java)
   }
@@ -119,7 +124,7 @@ class IndexResource(private val indexService: IndexService, private val indexQue
     ApiResponse(code = 401, message = "Unauthorised, requires a valid Oauth2 token"),
     ApiResponse(code = 403, message = "Forbidden, requires an authorisation with role PROBATION_INDEX")
   ])
-  fun purgeIndexDlq(): Unit = indexQueueService.clearAllDlqMessagesForIndex()
+  fun purgeIndexDlq(): Unit = queueAdminService.clearAllDlqMessagesForIndex()
 
   @PutMapping("/purge-event-dlq")
   @PreAuthorize("hasRole('PROBATION_INDEX')")
@@ -130,7 +135,7 @@ class IndexResource(private val indexService: IndexService, private val indexQue
     ApiResponse(code = 401, message = "Unauthorised, requires a valid Oauth2 token"),
     ApiResponse(code = 403, message = "Forbidden, requires an authorisation with role PROBATION_INDEX")
   ])
-  fun purgeEventDlq(): Unit = indexQueueService.clearAllDlqMessagesForEvent()
+  fun purgeEventDlq(): Unit = queueAdminService.clearAllDlqMessagesForEvent()
 
   @PutMapping("/transfer-index-dlq")
   @PreAuthorize("hasRole('PROBATION_INDEX')")
@@ -141,7 +146,7 @@ class IndexResource(private val indexService: IndexService, private val indexQue
     ApiResponse(code = 401, message = "Unauthorised, requires a valid Oauth2 token"),
     ApiResponse(code = 403, message = "Forbidden, requires an authorisation with role PROBATION_INDEX")
   ])
-  fun transferIndexDlq(): Unit = indexQueueService.transferIndexMessages()
+  fun transferIndexDlq(): Unit = queueAdminService.transferIndexMessages()
 
   @PutMapping("/transfer-event-dlq")
   @PreAuthorize("hasRole('PROBATION_INDEX')")
@@ -152,6 +157,6 @@ class IndexResource(private val indexService: IndexService, private val indexQue
     ApiResponse(code = 401, message = "Unauthorised, requires a valid Oauth2 token"),
     ApiResponse(code = 403, message = "Forbidden, requires an authorisation with role PROBATION_INDEX")
   ])
-  fun transferEventDlq(): Unit = indexQueueService.transferEventMessages()
+  fun transferEventDlq(): Unit = queueAdminService.transferEventMessages()
 
 }
