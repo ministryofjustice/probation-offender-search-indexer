@@ -101,6 +101,12 @@ data class IndexStatus(
         .filter { it.first.active }
         .map { it.second }
 
+  fun activeIndexesEmpty(): Boolean = activeIndexes().isEmpty()
+
+  fun isBuilding() = otherIndexState == IndexState.BUILDING
+
+  fun isNotBuilding() = isBuilding().not()
+
   companion object {
     fun newIndex() = IndexStatus(currentIndex = SyncIndex.NONE)
   }

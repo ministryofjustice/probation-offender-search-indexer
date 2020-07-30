@@ -1,7 +1,7 @@
 package uk.gov.justice.digital.hmpps.indexer.service
 
 import arrow.core.Either
-import arrow.core.getOrHandle
+import arrow.core.flatMap
 import arrow.core.left
 import arrow.core.right
 import org.elasticsearch.client.RequestOptions
@@ -10,7 +10,6 @@ import org.elasticsearch.client.core.CountRequest
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import uk.gov.justice.digital.hmpps.indexer.model.IndexState
 import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
 import kotlin.reflect.KClass
@@ -28,17 +27,18 @@ class IndexService(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  fun prepareIndexForRebuild(): Either<IndexError, IndexStatus> {
-    val indexStatus = indexStatusService.initialiseIndexWhenRequired().getIndexStatus()
-    if (indexStatus.otherIndexState == IndexState.BUILDING) {
-      return BuildAlreadyInProgressError(indexStatus).left()
-    }
-    logIndexStatuses(indexStatus)
+  fun prepareIndexForRebuild(): Either<Error, IndexStatus> =
+      indexStatusService.initialiseIndexWhenRequired().getIndexStatus()
+          .also { logIndexStatuses(it) }
+          .failIf(IndexStatus::isBuilding) { return BuildAlreadyInProgressError(it).left() }
+          .map { doPrepareIndexForRebuild(it) }
+
+  private fun doPrepareIndexForRebuild(indexStatus: IndexStatus): IndexStatus {
     indexStatusService.markBuildInProgress()
     offenderSynchroniserService.checkExistsAndReset(indexStatus.otherIndex)
     indexQueueService.sendPopulateIndexMessage(indexStatus.otherIndex)
-
-    return indexStatusService.getIndexStatus().right()
+    return indexStatusService.getIndexStatus()
+        .also { logIndexStatuses(it) }
   }
 
   private fun logIndexStatuses(indexStatus: IndexStatus) {
@@ -48,79 +48,98 @@ class IndexService(
     )
   }
 
-  fun markIndexingComplete(): Either<IndexError, IndexStatus> {
-    val indexStatus = indexStatusService.getIndexStatus()
-    if (indexStatus.otherIndexState != IndexState.BUILDING) {
-      return BuildNotInProgressError(indexStatus).left()
-    }
+  fun markIndexingComplete(): Either<Error, IndexStatus> =
+      indexStatusService.getIndexStatus()
+          .also { logIndexStatuses(it) }
+          .failIf(IndexStatus::isNotBuilding) { return BuildNotInProgressError(it).left() }
+          .map { doMarkIndexingComplete() }
 
-    val newIndexStatus = indexStatusService.markBuildCompleteAndSwitchIndex()
-    offenderSynchroniserService.switchAliasIndex(newIndexStatus.currentIndex)
+  private fun doMarkIndexingComplete(): IndexStatus =
+    indexStatusService.markBuildCompleteAndSwitchIndex()
+        .let { newStatus ->
+          offenderSynchroniserService.switchAliasIndex(newStatus.currentIndex)
+          queueAdminService.clearAllIndexQueueMessages()
+          return indexStatusService.getIndexStatus()
+              .also { latestStatus -> logIndexStatuses(latestStatus) }
+        }
 
-    queueAdminService.clearAllIndexQueueMessages()
-    log.info("Index ${newIndexStatus.otherIndex} marked as ${newIndexStatus.otherIndexState}, ${newIndexStatus.currentIndex} is now current")
+  fun cancelIndexing(): Either<Error, IndexStatus> =
+      indexStatusService.getIndexStatus()
+          .also { logIndexStatuses(it) }
+          .failIf(IndexStatus::isNotBuilding) { return BuildNotInProgressError(it).left() }
+          .map { doCancelIndexing() }
 
-    return indexStatusService.getIndexStatus().right()
-  }
-
-  fun cancelIndexing(): Either<IndexError, IndexStatus> {
-    val indexStatus = indexStatusService.getIndexStatus()
-    if (indexStatus.otherIndexState != IndexState.BUILDING) {
-      return BuildNotInProgressError(indexStatus).left()
-    }
-
+  private fun doCancelIndexing(): IndexStatus {
     indexStatusService.markBuildCancelled()
     queueAdminService.clearAllIndexQueueMessages()
-    log.info("Index ${indexStatus.currentIndex.otherIndex()} marked as ${indexStatus.otherIndexState}, ${indexStatus.currentIndex} is still current")
-
-    return indexStatusService.getIndexStatus().right()
+    return indexStatusService.getIndexStatus()
+        .also { logIndexStatuses(it) }
   }
 
-  fun updateOffender(crn: String) : Either<Error, String> {
-    val indexStatus = indexStatusService.getIndexStatus()
-    val activeIndexes = indexStatus.activeIndexes()
-    if (activeIndexes.isEmpty()) {
-      log.info("Ignoring update of offender {} as no indexes were active", crn)
-      return NoActiveIndexesError(indexStatus).left()
-    }
-    log.info("Updating offender {} on indexes {}", crn, activeIndexes)
-    return offenderSynchroniserService.synchroniseOffender(crn, *activeIndexes.toTypedArray())
-  }
+  fun updateOffender(crn: String): Either<Error, String> =
+      indexStatusService.getIndexStatus()
+          .failIf(IndexStatus::activeIndexesEmpty) {
+            log.info("Ignoring update of offender {} as no indexes were active", crn)
+            NoActiveIndexesError(it)
+          }
+          .flatMap { doUpdateOffender(it, crn) }
 
-  fun populateIndex(index: SyncIndex): Either<Error, Int> {
-    val indexStatus = indexStatusService.getIndexStatus()
-    if (indexStatus.otherIndexState != IndexState.BUILDING) {
-      return BuildNotInProgressError(indexStatus).left()
-    }
+  private fun doUpdateOffender(indexStatus: IndexStatus, crn: String) =
+      with(indexStatus.activeIndexes()) {
+        log.info("Updating offender {} on indexes {}", crn, this)
+        offenderSynchroniserService.synchroniseOffender(crn, *this.toTypedArray())
+      }
 
-    if (indexStatus.currentIndex.otherIndex() != index) {
-      return WrongIndexRequestedError(indexStatus).left()
-    }
+  fun populateIndex(index: SyncIndex): Either<Error, Int> =
+      indexStatusService.getIndexStatus()
+          .also { logIndexStatuses(it) }
+          .failIf(IndexStatus::isNotBuilding) { BuildNotInProgressError(it) }
+          .failIf({ it.currentIndex.otherIndex() != index }) { WrongIndexRequestedError(it) }
+          .map { doPopulateIndex() }
 
+  private fun doPopulateIndex(): Int {
     val chunks = offenderSynchroniserService.splitAllOffendersIntoChunks()
     chunks.forEach { indexQueueService.sendPopulateOffenderPageMessage(it) }
-    return chunks.size.right()
+    return chunks.size
   }
 
   fun populateIndexWithOffenderPage(offenderPage: OffenderPage): Either<Error, Unit> =
-    offenderSynchroniserService.getAllOffenderIdentifiersInPage(offenderPage)
-        .forEach { indexQueueService.sendPopulateOffenderMessage(it.crn) }.right()
+      offenderSynchroniserService.getAllOffenderIdentifiersInPage(offenderPage)
+          .forEach { indexQueueService.sendPopulateOffenderMessage(it.crn) }.right()
 
-  fun populateIndexWithOffender(crn: String) : Either<Error, String> {
-    val indexStatus = indexStatusService.getIndexStatus()
-    if (indexStatus.otherIndexState != IndexState.BUILDING) {
-      return BuildNotInProgressError(indexStatus).left()
-    }
-
-    return offenderSynchroniserService.synchroniseOffender(crn, indexStatus.currentIndex.otherIndex())
-        .map { it.right() }
-        .getOrHandle { OffenderNotFoundError(crn).left() }
-  }
+  fun populateIndexWithOffender(crn: String): Either<Error, String> =
+      indexStatusService.getIndexStatus()
+          .failIf(IndexStatus::isNotBuilding) { BuildNotInProgressError(it) }
+          .flatMap { offenderSynchroniserService.synchroniseOffender(crn, it.currentIndex.otherIndex()) }
 
   fun getIndexCount(index: SyncIndex): Long {
     val request = CountRequest(index.indexName)
-    return try { elasticSearchClient.count(request, RequestOptions.DEFAULT).count } catch (e: Exception) { -1L }
+    return try {
+      elasticSearchClient.count(request, RequestOptions.DEFAULT).count
+    } catch (e: Exception) {
+      -1L
+    }
   }
+
+  private inline fun IndexStatus.failIf(
+      check: (IndexStatus) -> Boolean,
+      onFail: (IndexStatus) -> Error
+  ): Either<Error, IndexStatus> =
+      when (check(this)) {
+        false -> this.right()
+        true -> onFail(this).left()
+      }
+
+  private inline fun Either<Error, IndexStatus>.failIf(
+      crossinline check: (IndexStatus) -> Boolean,
+      crossinline onFail: (IndexStatus) -> Error
+  ): Either<Error, IndexStatus> =
+      when (this.isLeft()) {
+        true -> this
+        false -> this.flatMap {
+          it.failIf(check, onFail)
+        }
+      }
 
 }
 
