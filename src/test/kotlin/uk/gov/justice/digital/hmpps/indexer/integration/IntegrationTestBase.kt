@@ -28,7 +28,7 @@ import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.reactive.server.WebTestClient
-import uk.gov.justice.digital.hmpps.indexer.integration.helpers.JwtAuthHelper
+import uk.gov.justice.digital.hmpps.indexer.helpers.JwtAuthHelper
 import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.CommunityApiExtension
 import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.OAuthExtension
 import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
