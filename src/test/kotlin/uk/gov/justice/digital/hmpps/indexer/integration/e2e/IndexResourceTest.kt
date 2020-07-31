@@ -242,7 +242,7 @@ class IndexResourceTest : IntegrationTestBase() {
           .jsonPath("$.otherIndexState").isEqualTo("CANCELLED")
 
       assertThat(getIndexCount("offender")).isEqualTo(1)
-      await untilCallTo { getNumberOfMessagesCurrentlyOnIndexQueue() } matches { it == 0 }
+      await untilCallTo { indexQueueService.getNumberOfMessagesCurrentlyOnIndexQueue() } matches { it == 0 }
     }
   }
 
@@ -481,7 +481,7 @@ class IndexResourceTest : IntegrationTestBase() {
         repeat(10) {
           indexAwsSqsClient.sendMessage(indexDlqUrl, "{}")
         }
-        await untilCallTo { getNumberOfMessagesCurrentlyOnIndexDLQ() } matches { it == 10 }
+        await untilCallTo { indexQueueService.getNumberOfMessagesCurrentlyOnIndexDLQ() } matches { it == 10 }
       }
 
       @Test
@@ -493,7 +493,7 @@ class IndexResourceTest : IntegrationTestBase() {
             .exchange()
             .expectStatus().isOk
 
-        await untilCallTo { getNumberOfMessagesCurrentlyOnIndexDLQ() } matches { it == 0 }
+        await untilCallTo { indexQueueService.getNumberOfMessagesCurrentlyOnIndexDLQ() } matches { it == 0 }
       }
     }
 
@@ -590,8 +590,8 @@ class IndexResourceTest : IntegrationTestBase() {
           .exchange()
           .expectStatus().isOk
 
-      await untilCallTo { getNumberOfMessagesCurrentlyOnIndexDLQ() } matches { it == 0 }
-      await untilCallTo { getNumberOfMessagesCurrentlyOnIndexQueue() } matches { it == 0 }
+      await untilCallTo { indexQueueService.getNumberOfMessagesCurrentlyOnIndexDLQ() } matches { it == 0 }
+      await untilCallTo { indexQueueService.getNumberOfMessagesCurrentlyOnIndexQueue() } matches { it == 0 }
       await untilCallTo { getIndexCount(GREEN) } matches { it == 2L }
     }
 

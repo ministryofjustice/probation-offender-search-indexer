@@ -42,9 +42,10 @@ class IndexService(
   }
 
   private fun logIndexStatuses(indexStatus: IndexStatus) {
-    log.info("Current index is {} with state {} [{}], other index is {} with state {} [{}]",
-        indexStatus.currentIndex.indexName, indexStatus.currentIndexState, getIndexCount(indexStatus.currentIndex),
-        indexStatus.otherIndex.indexName, indexStatus.otherIndexState, getIndexCount(indexStatus.otherIndex)
+    log.info("Current index status is {}.  Index counts {}={} and {}={}.  Queue counts: Queue={} and DLQ={}",
+        indexStatus,
+        indexStatus.currentIndex, getIndexCount(indexStatus.currentIndex), indexStatus.otherIndex, getIndexCount(indexStatus.otherIndex),
+        indexQueueService.getNumberOfMessagesCurrentlyOnIndexQueue(), indexQueueService.getNumberOfMessagesCurrentlyOnIndexDLQ()
     )
   }
 

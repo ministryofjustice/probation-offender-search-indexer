@@ -36,6 +36,7 @@ import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.GREEN
 import uk.gov.justice.digital.hmpps.indexer.repository.IndexStatusRepository
 import uk.gov.justice.digital.hmpps.indexer.repository.OffenderRepository
+import uk.gov.justice.digital.hmpps.indexer.service.IndexQueueService
 import uk.gov.justice.digital.hmpps.indexer.service.IndexService
 import uk.gov.justice.digital.hmpps.indexer.service.IndexStatusService
 
@@ -53,6 +54,9 @@ abstract class IntegrationTestBase {
 
   @SpyBean
   protected lateinit var indexService: IndexService
+
+  @SpyBean
+  protected lateinit var indexQueueService: IndexQueueService
 
   @SpyBean
   @Qualifier("eventAwsSqsClient")
@@ -143,16 +147,6 @@ abstract class IntegrationTestBase {
 
   fun getNumberOfMessagesCurrentlyOnEventQueue(): Int? {
     val queueAttributes = eventAwsSqsClient.getQueueAttributes(eventQueueUrl, listOf("ApproximateNumberOfMessages"))
-    return queueAttributes.attributes["ApproximateNumberOfMessages"]?.toInt()
-  }
-
-  fun getNumberOfMessagesCurrentlyOnIndexQueue(): Int? {
-    val queueAttributes = indexAwsSqsClient.getQueueAttributes(indexQueueUrl, listOf("ApproximateNumberOfMessages"))
-    return queueAttributes.attributes["ApproximateNumberOfMessages"]?.toInt()
-  }
-
-  fun getNumberOfMessagesCurrentlyOnIndexDLQ(): Int? {
-    val queueAttributes = indexAwsSqsClient.getQueueAttributes(indexDlqUrl, listOf("ApproximateNumberOfMessages"))
     return queueAttributes.attributes["ApproximateNumberOfMessages"]?.toInt()
   }
 
