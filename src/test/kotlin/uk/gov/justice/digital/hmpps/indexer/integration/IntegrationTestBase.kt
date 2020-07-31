@@ -119,11 +119,6 @@ abstract class IntegrationTestBase {
     indexStatusRepository.deleteAll()
   }
 
-  fun buildInitialIndex() {
-    indexService.prepareIndexForRebuild()
-    indexService.markIndexingComplete()
-  }
-
   fun getIndexCount(index: SyncIndex): Long {
     return getIndexCount(index.indexName)
   }

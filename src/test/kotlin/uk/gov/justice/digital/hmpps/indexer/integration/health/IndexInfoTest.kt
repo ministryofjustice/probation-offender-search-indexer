@@ -7,6 +7,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.indexer.integration.IntegrationTestBase
+import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.CommunityApiExtension
+import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
 
 @ExtendWith(SpringExtension::class)
 class IndexInfoTest : IntegrationTestBase() {
@@ -45,7 +47,8 @@ class IndexInfoTest : IntegrationTestBase() {
       deleteOffenderIndexes()
       createOffenderIndexes()
       initialiseIndexStatus()
-      buildInitialIndex()
+      CommunityApiExtension.communityApi.stubAllOffenderGets(10 )
+      buildAndSwitchIndex(SyncIndex.GREEN, 0)
     }
 
     @Test
