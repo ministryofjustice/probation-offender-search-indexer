@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.indexer.listeners
 
 import arrow.core.left
+import ch.qos.logback.classic.Level
 import com.google.gson.Gson
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
@@ -66,6 +67,7 @@ internal class IndexListenerTest {
       verify(indexService).populateIndexWithOffenderPage(OffenderPage(1, 1000))
     }
   }
+
   @Nested
   inner class PopulateOffender {
     @Test
@@ -78,6 +80,32 @@ internal class IndexListenerTest {
       """.trimIndent())
 
       verify(indexService).populateIndexWithOffender("X12345")
+    }
+  }
+
+  @Nested
+  inner class BadMessages {
+    @Test
+    internal fun `will fail for bad json`() {
+      val logAppender = findLogAppender(IndexListener::class.java)
+
+      listener.processIndexRequest("this is bad json")
+
+      assertThat(logAppender.list).anyMatch { it.message.contains("Failed to process message") && it.level == Level.ERROR }
+    }
+
+    @Test
+    internal fun `will fail for unknown message type`() {
+      val logAppender = findLogAppender(IndexListener::class.java)
+
+      listener.processIndexRequest("""
+      {
+        "type": "THIS_IS_AN_UNEXPECTED_MESSAGE_TYPE",
+        "crn": "X12345"
+      }
+      """.trimIndent())
+
+      assertThat(logAppender.list).anyMatch { it.message.contains("Failed to process message") && it.level == Level.ERROR }
     }
   }
 }
