@@ -202,44 +202,42 @@ class IndexResourceTest : IntegrationTestBase() {
         await untilCallTo { getIndexCount("offender") } matches { it == 31L }
       }
     }
-  }
 
+    @Nested
+    inner class PopulateOffenderError {
 
-  @Nested
-  inner class PopulateOffenderError {
+      @BeforeEach
+      internal fun setUp() {
+        CommunityApiExtension.communityApi.stubAllOffenderGets(10, numberOfOffenders = 3)
+      }
 
-    @BeforeEach
-    internal fun setUp() {
-      CommunityApiExtension.communityApi.stubAllOffenderGets(10, numberOfOffenders = 3)
+      @Test
+      internal fun `will show the crn if any populate offender message fails`() {
+        val logAppender = findLogAppender(IndexListener::class.java)
+        CommunityApiExtension.communityApi.stubOffenderNotFound("X00002")
+
+        webTestClient.put()
+            .uri("/probation-index/build-index")
+            .accept(MediaType.APPLICATION_JSON)
+            .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+            .exchange()
+            .expectStatus().isOk
+
+        await untilCallTo { getIndexCount(GREEN) } matches { it == 2L }
+
+        webTestClient.put()
+            .uri("/probation-index/mark-complete")
+            .accept(MediaType.APPLICATION_JSON)
+            .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+            .exchange()
+            .expectStatus().isOk
+
+        await untilCallTo { getIndexCount("offender") } matches { it == 2L }
+        await untilCallTo { logAppender.list } matches { it hasLogMessageContaining "OffenderNotFoundError(crn=X00002)" }
+      }
+
     }
-
-    @Test
-    internal fun `will show the crn if any populate offender message fails`() {
-      val logAppender = findLogAppender(IndexListener::class.java)
-      CommunityApiExtension.communityApi.stubOffenderNotFound("X00002")
-
-      webTestClient.put()
-          .uri("/probation-index/build-index")
-          .accept(MediaType.APPLICATION_JSON)
-          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
-          .exchange()
-          .expectStatus().isOk
-
-      await untilCallTo { getIndexCount(GREEN) } matches { it == 2L }
-
-      webTestClient.put()
-          .uri("/probation-index/mark-complete")
-          .accept(MediaType.APPLICATION_JSON)
-          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
-          .exchange()
-          .expectStatus().isOk
-
-      await untilCallTo { getIndexCount("offender") } matches { it == 2L }
-      await untilCallTo { logAppender.list } matches { it hasLogMessageContaining "OffenderNotFoundError(crn=X00002)" }
-    }
-
   }
-
 
   @Nested
   inner class BuildIndexAndCancel {
