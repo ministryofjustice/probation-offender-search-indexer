@@ -52,7 +52,6 @@ class OffenderRepository(@Qualifier("elasticSearchClient") private val client: R
   }
 
   fun doesIndexExist(index: SyncIndex): Boolean {
-    log.info("deleting index {}", index.indexName)
     return client.indices().exists(GetIndexRequest(index.indexName), RequestOptions.DEFAULT)
   }
 
