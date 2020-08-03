@@ -133,7 +133,7 @@ class IndexServiceTest {
     fun `A request is made to mark the index state as complete`() {
       whenever(indexStatusService.getIndexStatus())
           .thenReturn(IndexStatus(currentIndex = GREEN, otherIndexState = BUILDING))
-          .thenReturn(IndexStatus(currentIndex = BLUE, otherIndexState = COMPLETED))
+          .thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
       whenever(indexStatusService.markBuildCompleteAndSwitchIndex()).thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
 
       indexService.markIndexingComplete()
@@ -145,7 +145,7 @@ class IndexServiceTest {
     fun `A request is made to switch alias`() {
       whenever(indexStatusService.getIndexStatus())
           .thenReturn(IndexStatus(currentIndex = GREEN, otherIndexState = BUILDING))
-          .thenReturn(IndexStatus(currentIndex = BLUE, otherIndexState = COMPLETED))
+          .thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
       whenever(indexStatusService.markBuildCompleteAndSwitchIndex()).thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
 
       indexService.markIndexingComplete()
@@ -157,7 +157,7 @@ class IndexServiceTest {
     fun `A request is made to remove queued index requests`() {
       whenever(indexStatusService.getIndexStatus())
           .thenReturn(IndexStatus(currentIndex = GREEN, otherIndexState = BUILDING))
-          .thenReturn(IndexStatus(currentIndex = BLUE, otherIndexState = COMPLETED))
+          .thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
       whenever(indexStatusService.markBuildCompleteAndSwitchIndex()).thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
 
       indexService.markIndexingComplete()
@@ -169,7 +169,7 @@ class IndexServiceTest {
     fun `A telemetry event is sent`() {
       whenever(indexStatusService.getIndexStatus())
           .thenReturn(IndexStatus(currentIndex = GREEN, otherIndexState = BUILDING))
-          .thenReturn(IndexStatus(currentIndex = BLUE, otherIndexState = COMPLETED))
+          .thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
       whenever(indexStatusService.markBuildCompleteAndSwitchIndex()).thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
 
       indexService.markIndexingComplete()
@@ -181,13 +181,13 @@ class IndexServiceTest {
     fun `Once current index marked as complete, the 'other' index is current`() {
       whenever(indexStatusService.getIndexStatus())
           .thenReturn(IndexStatus(currentIndex = GREEN, otherIndexState = BUILDING))
-          .thenReturn(IndexStatus(currentIndex = BLUE, otherIndexState = COMPLETED))
+          .thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
       whenever(indexStatusService.markBuildCompleteAndSwitchIndex()).thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
 
       val result = indexService.markIndexingComplete()
 
       verify(indexStatusService, times(2)).getIndexStatus()
-      result shouldBeRight IndexStatus(currentIndex = BLUE, otherIndexState = COMPLETED)
+      result shouldBeRight IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED)
     }
   }
 
