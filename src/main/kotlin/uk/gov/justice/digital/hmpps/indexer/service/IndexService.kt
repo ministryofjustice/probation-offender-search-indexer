@@ -111,8 +111,12 @@ class IndexService(
   }
 
   fun populateIndexWithOffenderPage(offenderPage: OffenderPage): Either<Error, Unit> =
-      offenderSynchroniserService.getAllOffenderIdentifiersInPage(offenderPage)
-          .forEach { indexQueueService.sendPopulateOffenderMessage(it.crn) }.right()
+      indexStatusService.getIndexStatus()
+          .failIf(IndexStatus::isNotBuilding) { BuildNotInProgressError(it) }
+          .flatMap {
+            offenderSynchroniserService.getAllOffenderIdentifiersInPage(offenderPage)
+                .forEach { indexQueueService.sendPopulateOffenderMessage(it.crn) }.right()
+          }
 
   fun populateIndexWithOffender(crn: String): Either<Error, String> =
       indexStatusService.getIndexStatus()
