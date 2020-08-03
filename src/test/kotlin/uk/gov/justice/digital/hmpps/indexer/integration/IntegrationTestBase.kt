@@ -1,8 +1,5 @@
 package uk.gov.justice.digital.hmpps.indexer.integration
 
-import ch.qos.logback.classic.Logger
-import ch.qos.logback.classic.spi.ILoggingEvent
-import ch.qos.logback.core.read.ListAppender
 import com.amazonaws.services.sqs.AmazonSQS
 import com.google.gson.Gson
 import org.awaitility.kotlin.await
@@ -18,7 +15,6 @@ import org.elasticsearch.index.query.QueryBuilders
 import org.elasticsearch.search.SearchHits
 import org.elasticsearch.search.builder.SearchSourceBuilder
 import org.junit.jupiter.api.extension.ExtendWith
-import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.test.context.SpringBootTest
@@ -36,6 +32,7 @@ import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.GREEN
 import uk.gov.justice.digital.hmpps.indexer.repository.IndexStatusRepository
 import uk.gov.justice.digital.hmpps.indexer.repository.OffenderRepository
+import uk.gov.justice.digital.hmpps.indexer.service.IndexQueueService
 import uk.gov.justice.digital.hmpps.indexer.service.IndexService
 import uk.gov.justice.digital.hmpps.indexer.service.IndexStatusService
 
@@ -53,6 +50,9 @@ abstract class IntegrationTestBase {
 
   @SpyBean
   protected lateinit var indexService: IndexService
+
+  @SpyBean
+  protected lateinit var indexQueueService: IndexQueueService
 
   @SpyBean
   @Qualifier("eventAwsSqsClient")
@@ -146,16 +146,6 @@ abstract class IntegrationTestBase {
     return queueAttributes.attributes["ApproximateNumberOfMessages"]?.toInt()
   }
 
-  fun getNumberOfMessagesCurrentlyOnIndexQueue(): Int? {
-    val queueAttributes = indexAwsSqsClient.getQueueAttributes(indexQueueUrl, listOf("ApproximateNumberOfMessages"))
-    return queueAttributes.attributes["ApproximateNumberOfMessages"]?.toInt()
-  }
-
-  fun getNumberOfMessagesCurrentlyOnIndexDLQ(): Int? {
-    val queueAttributes = indexAwsSqsClient.getQueueAttributes(indexDlqUrl, listOf("ApproximateNumberOfMessages"))
-    return queueAttributes.attributes["ApproximateNumberOfMessages"]?.toInt()
-  }
-
   fun getNumberOfMessagesCurrentlyOnEventDLQ(): Int? {
     val queueAttributes = eventAwsSqsClient.getQueueAttributes(eventDlqUrl, listOf("ApproximateNumberOfMessages"))
     return queueAttributes.attributes["ApproximateNumberOfMessages"]?.toInt()
@@ -188,15 +178,4 @@ abstract class IntegrationTestBase {
 }
 
 fun String.readResourceAsText(): String = IntegrationTestBase::class.java.getResource(this).readText()
-
-fun <T> findLogAppender(javaClass: Class<in T>): ListAppender<ILoggingEvent> {
-  val logger = LoggerFactory.getLogger(javaClass) as Logger
-  val listAppender = ListAppender<ILoggingEvent>()
-  listAppender.start()
-  logger.addAppender(listAppender)
-  return listAppender
-}
-
-infix fun List<ILoggingEvent>?.hasLogMessageContaining(partialMessage: String) =
-    this?.find { logEvent -> logEvent.message.contains(partialMessage) } != null
 

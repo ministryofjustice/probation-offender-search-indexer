@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.indexer.service
 
 import arrow.core.right
+import com.microsoft.applicationinsights.TelemetryClient
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.check
 import com.nhaarman.mockitokotlin2.isA
@@ -12,13 +13,15 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import uk.gov.justice.digital.hmpps.indexer.config.TelemetryEvents
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.GREEN
 import uk.gov.justice.digital.hmpps.indexer.repository.OffenderRepository
 
 internal class OffenderSynchroniserServiceTest {
   private val communityApi = mock<CommunityService>()
   private val offenderRepository = mock<OffenderRepository>()
-  private val service = OffenderSynchroniserService(communityApi, offenderRepository, 10)
+  private val telemetryClient = mock<TelemetryClient>()
+  private val service = OffenderSynchroniserService(communityApi, offenderRepository, telemetryClient, 10)
 
   @Nested
   inner class SynchroniseOffender {
@@ -136,7 +139,7 @@ internal class OffenderSynchroniserServiceTest {
 
     @Test
     internal fun `will create a large number of pages for a large number of offenders`() {
-      val service = OffenderSynchroniserService(communityApi, offenderRepository, 1000)
+      val service = OffenderSynchroniserService(communityApi, offenderRepository, telemetryClient,1000)
 
       whenever(communityApi.getCountAllOffenders()).thenReturn(OffendersPage(2_000_001, 1, listOf(OffenderIdentifier("X12345"))))
 
@@ -146,7 +149,7 @@ internal class OffenderSynchroniserServiceTest {
 
     @Test
     internal fun `will create a single pages for a tiny number of offenders`() {
-      val service = OffenderSynchroniserService(communityApi, offenderRepository, 1000)
+      val service = OffenderSynchroniserService(communityApi, offenderRepository, telemetryClient, 1000)
 
       whenever(communityApi.getCountAllOffenders()).thenReturn(OffendersPage(1, 1, listOf(OffenderIdentifier("X12345"))))
 
@@ -155,8 +158,18 @@ internal class OffenderSynchroniserServiceTest {
     }
 
     @Test
+    internal fun `will send a telemetry event`() {
+      val service = OffenderSynchroniserService(communityApi, offenderRepository, telemetryClient, 1000)
+      whenever(communityApi.getCountAllOffenders()).thenReturn(OffendersPage(1, 1, listOf(OffenderIdentifier("X12345"))))
+
+      service.splitAllOffendersIntoChunks()
+
+      verify(telemetryClient).trackEvent(TelemetryEvents.POPULATE_OFFENDER_PAGES.name, mapOf("totalNumberOfOffenders" to "1", "pageSize" to "1000"), null)
+    }
+
+    @Test
     internal fun `will create no pages for no offenders`() {
-      val service = OffenderSynchroniserService(communityApi, offenderRepository, 1000)
+      val service = OffenderSynchroniserService(communityApi, offenderRepository, telemetryClient, 1000)
 
       whenever(communityApi.getCountAllOffenders()).thenReturn(OffendersPage(0, 0, listOf()))
 

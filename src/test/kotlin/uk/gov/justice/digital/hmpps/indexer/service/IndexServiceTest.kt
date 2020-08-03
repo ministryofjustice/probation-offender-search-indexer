@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.indexer.service
 
 import arrow.core.right
+import com.microsoft.applicationinsights.TelemetryClient
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
@@ -17,6 +18,7 @@ import org.elasticsearch.client.core.CountResponse
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import uk.gov.justice.digital.hmpps.indexer.config.TelemetryEvents
 import uk.gov.justice.digital.hmpps.indexer.model.IndexState.ABSENT
 import uk.gov.justice.digital.hmpps.indexer.model.IndexState.BUILDING
 import uk.gov.justice.digital.hmpps.indexer.model.IndexState.CANCELLED
@@ -33,7 +35,8 @@ class IndexServiceTest {
   private val indexQueueService = mock<IndexQueueService>()
   private val queueAdminService = mock<QueueAdminService>()
   private val elasticSearchClient = mock<RestHighLevelClient>()
-  private val indexService = IndexService(indexStatusService, offenderSynchroniserService, indexQueueService, queueAdminService, elasticSearchClient)
+  private val telemetryClient = mock<TelemetryClient>()
+  private val indexService = IndexService(indexStatusService, offenderSynchroniserService, indexQueueService, queueAdminService, elasticSearchClient, telemetryClient)
 
   @Nested
   inner class BuildIndex {
@@ -84,6 +87,16 @@ class IndexServiceTest {
     }
 
     @Test
+    fun `A telemetry event is sent`() {
+      whenever(indexStatusService.getIndexStatus())
+          .thenReturn(IndexStatus(currentIndex = GREEN, otherIndexState = ABSENT))
+
+      indexService.prepareIndexForRebuild()
+
+      verify(telemetryClient).trackEvent(TelemetryEvents.BUILDING_INDEX.name, mapOf("index" to "BLUE"), null)
+    }
+
+    @Test
     fun `The updated index is returned`() {
       val expectedIndexStatus = IndexStatus(currentIndex = GREEN, otherIndexState = BUILDING)
       whenever(indexStatusService.getIndexStatus())
@@ -118,8 +131,10 @@ class IndexServiceTest {
 
     @Test
     fun `A request is made to mark the index state as complete`() {
-      val expectedIndexStatus = IndexStatus(currentIndex = GREEN, otherIndexState = BUILDING)
-      whenever(indexStatusService.getIndexStatus()).thenReturn(expectedIndexStatus)
+      whenever(indexStatusService.getIndexStatus())
+          .thenReturn(IndexStatus(currentIndex = GREEN, otherIndexState = BUILDING))
+          .thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
+      whenever(indexStatusService.markBuildCompleteAndSwitchIndex()).thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
 
       indexService.markIndexingComplete()
 
@@ -128,8 +143,9 @@ class IndexServiceTest {
 
     @Test
     fun `A request is made to switch alias`() {
-      val expectedIndexStatus = IndexStatus(currentIndex = GREEN, otherIndexState = BUILDING)
-      whenever(indexStatusService.getIndexStatus()).thenReturn(expectedIndexStatus)
+      whenever(indexStatusService.getIndexStatus())
+          .thenReturn(IndexStatus(currentIndex = GREEN, otherIndexState = BUILDING))
+          .thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
       whenever(indexStatusService.markBuildCompleteAndSwitchIndex()).thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
 
       indexService.markIndexingComplete()
@@ -139,8 +155,10 @@ class IndexServiceTest {
 
     @Test
     fun `A request is made to remove queued index requests`() {
-      val expectedIndexStatus = IndexStatus(currentIndex = GREEN, otherIndexState = BUILDING)
-      whenever(indexStatusService.getIndexStatus()).thenReturn(expectedIndexStatus)
+      whenever(indexStatusService.getIndexStatus())
+          .thenReturn(IndexStatus(currentIndex = GREEN, otherIndexState = BUILDING))
+          .thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
+      whenever(indexStatusService.markBuildCompleteAndSwitchIndex()).thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
 
       indexService.markIndexingComplete()
 
@@ -148,16 +166,28 @@ class IndexServiceTest {
     }
 
     @Test
-    fun `Once current index marked as complete, the 'other' index is current`() {
-      val expectedIndexStatus = IndexStatus(currentIndex = GREEN, otherIndexState = COMPLETED)
+    fun `A telemetry event is sent`() {
       whenever(indexStatusService.getIndexStatus())
           .thenReturn(IndexStatus(currentIndex = GREEN, otherIndexState = BUILDING))
-          .thenReturn(expectedIndexStatus)
+          .thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
+      whenever(indexStatusService.markBuildCompleteAndSwitchIndex()).thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
+
+      indexService.markIndexingComplete()
+
+      verify(telemetryClient).trackEvent(TelemetryEvents.COMPLETED_BUILDING_INDEX.name, mapOf("index" to "BLUE"), null)
+    }
+
+    @Test
+    fun `Once current index marked as complete, the 'other' index is current`() {
+      whenever(indexStatusService.getIndexStatus())
+          .thenReturn(IndexStatus(currentIndex = GREEN, otherIndexState = BUILDING))
+          .thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
+      whenever(indexStatusService.markBuildCompleteAndSwitchIndex()).thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
 
       val result = indexService.markIndexingComplete()
 
       verify(indexStatusService, times(2)).getIndexStatus()
-      result shouldBeRight expectedIndexStatus
+      result shouldBeRight IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED)
     }
   }
 
@@ -193,6 +223,16 @@ class IndexServiceTest {
       indexService.cancelIndexing()
 
       verify(queueAdminService).clearAllIndexQueueMessages()
+    }
+
+    @Test
+    fun `A telemetry event is sent`() {
+      val expectedIndexStatus = IndexStatus(currentIndex = GREEN, otherIndexState = BUILDING)
+      whenever(indexStatusService.getIndexStatus()).thenReturn(expectedIndexStatus)
+
+      indexService.cancelIndexing()
+
+      verify(telemetryClient).trackEvent(TelemetryEvents.CANCELLED_BUILDING_INDEX.name, mapOf("index" to "BLUE"), null)
     }
 
     @Test

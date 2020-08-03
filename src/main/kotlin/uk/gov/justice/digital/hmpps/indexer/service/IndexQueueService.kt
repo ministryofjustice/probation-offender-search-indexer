@@ -14,9 +14,12 @@ import uk.gov.justice.digital.hmpps.indexer.listeners.IndexRequestType.POPULATE_
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
 
 @Service
-class IndexQueueService(private val indexAwsSqsClient: AmazonSQS,
-                        @Value("\${index.sqs.queue.name}") private val indexQueueName: String,
-                        private val gson: Gson
+class IndexQueueService(
+    private val indexAwsSqsClient: AmazonSQS,
+    private val indexAwsSqsDlqClient: AmazonSQS,
+    @Value("\${index.sqs.queue.name}") private val indexQueueName: String,
+    @Value("\${index.sqs.dlq.name}") private val indexDlqName: String,
+    private val gson: Gson
 ) {
 
   companion object {
@@ -24,6 +27,7 @@ class IndexQueueService(private val indexAwsSqsClient: AmazonSQS,
   }
 
   val indexQueueUrl: String = indexAwsSqsClient.getQueueUrl(indexQueueName).queueUrl
+  val indexDlqUrl: String = indexAwsSqsDlqClient.getQueueUrl(indexDlqName).queueUrl
 
   fun sendPopulateIndexMessage(index: SyncIndex) {
     val result = indexAwsSqsClient.sendMessage(SendMessageRequest(indexQueueUrl, gson.toJson(IndexMessageRequest(type = POPULATE_INDEX, index = index))))
@@ -38,6 +42,16 @@ class IndexQueueService(private val indexAwsSqsClient: AmazonSQS,
   fun sendPopulateOffenderMessage(crn: String) {
     val result = indexAwsSqsClient.sendMessage(SendMessageRequest(indexQueueUrl, gson.toJson(IndexMessageRequest(type = POPULATE_OFFENDER, crn = crn))))
     log.info("Sent populate offender message request {}", result.messageId)
+  }
+
+  fun getNumberOfMessagesCurrentlyOnIndexQueue(): Int {
+    val queueAttributes = indexAwsSqsClient.getQueueAttributes(indexQueueUrl, listOf("ApproximateNumberOfMessages"))
+    return queueAttributes.attributes["ApproximateNumberOfMessages"]?.toInt()?:0
+  }
+
+  fun getNumberOfMessagesCurrentlyOnIndexDLQ(): Int {
+    val queueAttributes = indexAwsSqsDlqClient.getQueueAttributes(indexDlqUrl, listOf("ApproximateNumberOfMessages"))
+    return queueAttributes.attributes["ApproximateNumberOfMessages"]?.toInt() ?: 0
   }
 
 }

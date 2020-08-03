@@ -4,16 +4,20 @@ import com.amazonaws.services.sqs.AmazonSQS
 import com.amazonaws.services.sqs.model.PurgeQueueRequest
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest
 import com.google.gson.Gson
+import com.microsoft.applicationinsights.TelemetryClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.indexer.config.TelemetryEvents
 
 @Service
 class QueueAdminService(private val indexAwsSqsClient: AmazonSQS,
                         private val indexAwsSqsDlqClient: AmazonSQS,
                         private val eventAwsSqsClient: AmazonSQS,
                         private val eventAwsSqsDlqClient: AmazonSQS,
+                        private val indexQueueService: IndexQueueService,
+                        private val telemetryClient: TelemetryClient,
                         @Value("\${index.sqs.queue.name}") private val indexQueueName: String,
                         @Value("\${index.sqs.dlq.name}") private val indexDlqName: String,
                         @Value("\${event.sqs.queue.name}") private val eventQueueName: String,
@@ -31,13 +35,17 @@ class QueueAdminService(private val indexAwsSqsClient: AmazonSQS,
   val eventDlqUrl: String = eventAwsSqsDlqClient.getQueueUrl(eventDlqName).queueUrl
 
   fun clearAllIndexQueueMessages() {
+    val count = indexQueueService.getNumberOfMessagesCurrentlyOnIndexQueue()
     indexAwsSqsClient.purgeQueue(PurgeQueueRequest(indexQueueUrl))
     log.info("Clear all messages on index queue")
+    telemetryClient.trackEvent(TelemetryEvents.PURGED_INDEX_QUEUE.name, mapOf("messages-on-queue" to count.toString()), null)
   }
 
   fun clearAllDlqMessagesForIndex() {
+    val count = indexQueueService.getNumberOfMessagesCurrentlyOnIndexDLQ()
     indexAwsSqsDlqClient.purgeQueue(PurgeQueueRequest(indexDlqUrl))
     log.info("Clear all messages on index dead letter queue")
+    telemetryClient.trackEvent(TelemetryEvents.PURGED_INDEX_DLQ.name, mapOf("messages-on-queue" to count.toString()), null)
   }
 
   fun clearAllDlqMessagesForEvent() {
@@ -57,14 +65,14 @@ class QueueAdminService(private val indexAwsSqsClient: AmazonSQS,
           ?.toInt() ?: 0
 
   fun transferIndexMessages() =
-      repeat(getIndexDlqMessageCount()) {
-        indexAwsSqsDlqClient.receiveMessage(ReceiveMessageRequest(indexDlqUrl).withMaxNumberOfMessages(1)).messages
-            .forEach { indexAwsSqsClient.sendMessage(indexQueueUrl, it.body) }
-      }
-
-  private fun getIndexDlqMessageCount() =
-      indexAwsSqsDlqClient.getQueueAttributes(indexDlqUrl, listOf("ApproximateNumberOfMessages"))
-          .attributes["ApproximateNumberOfMessages"]
-          ?.toInt() ?: 0
+      indexQueueService.getNumberOfMessagesCurrentlyOnIndexDLQ()
+          .also { total ->
+            repeat(total) {
+              indexAwsSqsDlqClient.receiveMessage(ReceiveMessageRequest(indexDlqUrl).withMaxNumberOfMessages(1)).messages
+                  .forEach { msg -> indexAwsSqsClient.sendMessage(indexQueueUrl, msg.body) }
+            }
+          }.let { total ->
+            telemetryClient.trackEvent(TelemetryEvents.TRANSFERRED_INDEX_DLQ.name, mapOf("messages-on-queue" to total.toString()), null)
+          }
 
 }

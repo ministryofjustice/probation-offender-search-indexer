@@ -19,14 +19,18 @@ import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.GREEN
 internal class IndexQueueServiceTest {
 
   private val indexAwsSqsClient = mock<AmazonSQS>()
+  private val indexAwsSqsDlqClient = mock<AmazonSQS>()
   private lateinit var indexQueueService: IndexQueueService
 
   @BeforeEach
   internal fun setUp() {
     whenever(indexAwsSqsClient.getQueueUrl("index-queue")).thenReturn(GetQueueUrlResult().withQueueUrl("arn:eu-west-1:index-queue"))
+    whenever(indexAwsSqsDlqClient.getQueueUrl("index-dlq")).thenReturn(GetQueueUrlResult().withQueueUrl("arn:eu-west-1:index-dlq"))
     indexQueueService = IndexQueueService(
         indexAwsSqsClient = indexAwsSqsClient,
+        indexAwsSqsDlqClient = indexAwsSqsDlqClient,
         indexQueueName = "index-queue",
+        indexDlqName = "index-dlq",
         gson = Gson()
     )
   }
