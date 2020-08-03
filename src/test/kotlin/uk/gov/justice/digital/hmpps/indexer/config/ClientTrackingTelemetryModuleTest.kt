@@ -73,7 +73,7 @@ class ClientTrackingTelemetryModuleTest {
   }
 
   @Test
-  fun `should allow bad JwtToken and log a warning to insight telemetry`() {
+  fun `should allow bad JwtToken and log a warning, but cannot send clientId or username to insigh telemetry`() {
     val token = "This is not a valid token"
     val req = MockHttpServletRequest()
     req.addHeader(HttpHeaders.AUTHORIZATION, "Bearer $token")

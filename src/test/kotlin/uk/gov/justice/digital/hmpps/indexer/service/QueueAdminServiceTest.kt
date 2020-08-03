@@ -7,6 +7,7 @@ import com.amazonaws.services.sqs.model.Message
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest
 import com.amazonaws.services.sqs.model.ReceiveMessageResult
 import com.google.gson.Gson
+import com.microsoft.applicationinsights.TelemetryClient
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.check
 import com.nhaarman.mockitokotlin2.mock
@@ -17,6 +18,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import uk.gov.justice.digital.hmpps.indexer.config.TelemetryEvents
 
 internal class QueueAdminServiceTest {
 
@@ -24,6 +26,8 @@ internal class QueueAdminServiceTest {
   private val indexAwsSqsDlqClient = mock<AmazonSQS>()
   private val eventAwsSqsClient = mock<AmazonSQS>()
   private val eventAwsSqsDlqClient = mock<AmazonSQS>()
+  private val indexQueueService = mock<IndexQueueService>()
+  private val telemetryClient = mock<TelemetryClient>()
   private lateinit var queueAdminService: QueueAdminService
 
   @BeforeEach
@@ -37,6 +41,8 @@ internal class QueueAdminServiceTest {
         indexAwsSqsDlqClient = indexAwsSqsDlqClient,
         eventAwsSqsClient = eventAwsSqsClient,
         eventAwsSqsDlqClient = eventAwsSqsDlqClient,
+        indexQueueService = indexQueueService,
+        telemetryClient = telemetryClient,
         indexQueueName = "index-queue",
         indexDlqName = "index-dlq",
         eventQueueName = "event-queue",
@@ -46,7 +52,7 @@ internal class QueueAdminServiceTest {
   }
 
   @Nested
-  inner class ClearAllMessages {
+  inner class ClearAllMessagesForIndex {
     @Test
     internal fun `will purge index queue of messages`() {
       whenever(indexAwsSqsClient.getQueueUrl("index-queue")).thenReturn(GetQueueUrlResult().withQueueUrl("arn:eu-west-1:index-queue"))
@@ -55,6 +61,15 @@ internal class QueueAdminServiceTest {
       verify(indexAwsSqsClient).purgeQueue(check {
         assertThat(it.queueUrl).isEqualTo("arn:eu-west-1:index-queue")
       })
+    }
+
+    @Test
+    internal fun `will send a telemetry event`() {
+      whenever(indexAwsSqsClient.getQueueUrl("index-queue")).thenReturn(GetQueueUrlResult().withQueueUrl("arn:eu-west-1:index-queue"))
+
+      queueAdminService.clearAllIndexQueueMessages()
+
+      verify(telemetryClient).trackEvent(TelemetryEvents.PURGED_INDEX_QUEUE.name, mapOf("messages-on-queue" to "0"), null)
     }
   }
 
@@ -68,6 +83,15 @@ internal class QueueAdminServiceTest {
       verify(indexAwsSqsDlqClient).purgeQueue(check {
         assertThat(it.queueUrl).isEqualTo("arn:eu-west-1:index-dlq")
       })
+    }
+
+    @Test
+    internal fun `will send a telemetry event`() {
+      whenever(indexAwsSqsDlqClient.getQueueUrl("index-dlq")).thenReturn(GetQueueUrlResult().withQueueUrl("arn:eu-west-1:index-dlq"))
+
+      queueAdminService.clearAllDlqMessagesForIndex()
+
+      verify(telemetryClient).trackEvent(TelemetryEvents.PURGED_INDEX_DLQ.name, mapOf("messages-on-queue" to "0"), null)
     }
   }
 
@@ -148,6 +172,81 @@ internal class QueueAdminServiceTest {
         whenever(eventAwsSqsDlqClient.getQueueAttributes(eventDlqUrl, listOf("ApproximateNumberOfMessages")))
             .thenReturn(GetQueueAttributesResult().withAttributes(mutableMapOf("ApproximateNumberOfMessages" to count.toString())))
   }
+
+  @Nested
+  inner class TransferAllIndexDlqMessages {
+
+    private val indexQueueUrl = "arn:eu-west-1:index-queue"
+    private val indexDlqUrl = "arn:eu-west-1:index-dlq"
+
+    @Test
+    internal fun `will read single message from index dlq`() {
+      stubDlqMessageCount(1)
+      whenever(indexAwsSqsDlqClient.receiveMessage(any<ReceiveMessageRequest>()))
+          .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(populateOffenderMessage("X1"))))
+
+      queueAdminService.transferIndexMessages()
+
+      verify(indexAwsSqsDlqClient).receiveMessage(check<ReceiveMessageRequest> {
+        assertThat(it.queueUrl).isEqualTo(indexDlqUrl)
+      })
+    }
+
+    @Test
+    internal fun `will read multiple messages from dlq`() {
+      stubDlqMessageCount(3)
+      whenever(indexAwsSqsDlqClient.receiveMessage(any<ReceiveMessageRequest>()))
+          .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(populateOffenderMessage("X1"))))
+          .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(populateOffenderMessage("X2"))))
+          .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(populateOffenderMessage("X3"))))
+
+      queueAdminService.transferIndexMessages()
+
+      verify(indexAwsSqsDlqClient, times(3)).receiveMessage(check<ReceiveMessageRequest> {
+        assertThat(it.queueUrl).isEqualTo(indexDlqUrl)
+      })
+    }
+
+    @Test
+    internal fun `will send single message to the index queue`() {
+      stubDlqMessageCount(1)
+      whenever(indexAwsSqsDlqClient.receiveMessage(any<ReceiveMessageRequest>()))
+          .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(populateOffenderMessage("X1"))))
+
+      queueAdminService.transferIndexMessages()
+
+      verify(indexAwsSqsClient).sendMessage(indexQueueUrl, populateOffenderMessage("X1"))
+    }
+
+    @Test
+    internal fun `will send multiple messages to the index queue`() {
+      stubDlqMessageCount(3)
+      whenever(indexAwsSqsDlqClient.receiveMessage(any<ReceiveMessageRequest>()))
+          .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(populateOffenderMessage("X1"))))
+          .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(populateOffenderMessage("X2"))))
+          .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(populateOffenderMessage("X3"))))
+
+      queueAdminService.transferIndexMessages()
+
+      verify(indexAwsSqsClient).sendMessage(indexQueueUrl, populateOffenderMessage("X1"))
+      verify(indexAwsSqsClient).sendMessage(indexQueueUrl, populateOffenderMessage("X2"))
+      verify(indexAwsSqsClient).sendMessage(indexQueueUrl, populateOffenderMessage("X3"))
+    }
+
+    @Test
+    internal fun `will send a telemetry event`() {
+      stubDlqMessageCount(1)
+      whenever(indexAwsSqsDlqClient.receiveMessage(any<ReceiveMessageRequest>()))
+          .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(populateOffenderMessage("X1"))))
+
+      queueAdminService.transferIndexMessages()
+
+      verify(telemetryClient).trackEvent(TelemetryEvents.TRANSFERRED_INDEX_DLQ.name, mapOf("messages-on-queue" to "1"), null)
+    }
+
+    private fun stubDlqMessageCount(count: Int) =
+        whenever(indexQueueService.getNumberOfMessagesCurrentlyOnIndexDLQ()).thenReturn(count)
+  }
 }
 
 fun offenderChangedMessage(crn: String) = """
@@ -181,4 +280,11 @@ fun offenderChangedMessage(crn: String) = """
       }
     }
 
+  """.trimIndent()
+
+fun populateOffenderMessage(crn: String) = """
+  {
+    "type":"POPULATE_OFFENDER",
+    "crn":"$crn"
+  }
   """.trimIndent()
