@@ -634,43 +634,6 @@ class IndexResourceTest : IntegrationTestBase() {
 
   }
 
-  @Nested
-  inner class MessageAcknowledgement {
-
-    @BeforeEach
-    internal fun `build index and complete`() {
-      deleteOffenderIndexes()
-      initialiseIndexStatus()
-      CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345")
-      buildAndSwitchIndex(GREEN, 1)
-    }
-
-    @Test
-    internal fun `will move all message on index DLQ to index Queue and process them if building`() {
-      indexAwsSqsDlqClient.sendMessage(indexDlqUrl,
-          """
-            {
-              "type": "POPULATE_OFFENDER",
-              "crn": "X12346"
-            }
-          """.trimIndent()
-      )
-      CommunityApiExtension.communityApi.stubGetOffender("X12346")
-
-      webTestClient.put()
-          .uri("/probation-index/transfer-index-dlq")
-          .accept(MediaType.APPLICATION_JSON)
-          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
-          .exchange()
-          .expectStatus().isOk
-
-      await untilCallTo { indexQueueService.getNumberOfMessagesCurrentlyOnIndexDLQ() } matches { it == 0 }
-      await untilCallTo { indexQueueService.getNumberOfMessagesCurrentlyOnIndexQueue() } matches { it == 0 }
-      await untilCallTo { getIndexCount(GREEN) } matches { it == 2L }
-    }
-
-  }
-
 
   fun nomsNumberOf(crn: String): String? {
     val offender = getById(index = "offender", crn = crn)
