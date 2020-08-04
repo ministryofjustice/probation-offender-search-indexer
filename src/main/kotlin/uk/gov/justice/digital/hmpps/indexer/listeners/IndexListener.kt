@@ -12,6 +12,7 @@ import uk.gov.justice.digital.hmpps.indexer.listeners.IndexRequestType.POPULATE_
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
 import uk.gov.justice.digital.hmpps.indexer.service.IndexService
 import uk.gov.justice.digital.hmpps.indexer.service.OffenderPage
+import java.lang.IllegalArgumentException
 
 @Service
 class IndexListener(
@@ -24,27 +25,33 @@ class IndexListener(
   }
 
   @JmsListener(destination = "\${index.sqs.queue.name}", containerFactory = "jmsIndexListenerContainerFactory")
-  fun processIndexRequest(requestJson: String?): Unit =
-      runCatching {
-        gson.fromJson(requestJson, IndexMessageRequest::class.java)
-            .let { indexRequest ->
-              when (indexRequest.type) {
-                POPULATE_INDEX -> indexService.populateIndex(indexRequest.index!!)
-                POPULATE_OFFENDER_PAGE -> indexService.populateIndexWithOffenderPage(indexRequest.offenderPage!!)
-                POPULATE_OFFENDER -> indexService.populateIndexWithOffender(indexRequest.crn!!)
-              }
-                  .getOrHandle { error -> log.error("Message {} failed with error {}", indexRequest, error) }
+  fun processIndexRequest(requestJson: String?) {
+    val indexRequest = try {
+      gson.fromJson(requestJson, IndexMessageRequest::class.java)
+    } catch(e: Exception) {
+      log.error("Failed to process message {}", requestJson, e)
+      throw e
+    }
+    when (indexRequest.type) {
+      POPULATE_INDEX -> indexService.populateIndex(indexRequest.index!!)
+      POPULATE_OFFENDER_PAGE -> indexService.populateIndexWithOffenderPage(indexRequest.offenderPage!!)
+      POPULATE_OFFENDER -> indexService.populateIndexWithOffender(indexRequest.crn!!)
+      else -> {
+        "Unknown request type for message $requestJson"
+            .let {
+              log.error(it)
+              throw IllegalArgumentException(it)
             }
-      }.onFailure { throwable ->
-        log.error("Failed to process message {}", requestJson, throwable)
-      }.let {
-        return
       }
-
+    }
+        .getOrHandle {  log.error("Message {} failed with error {}", indexRequest, it) }
+  }
 }
 
+
+
 data class IndexMessageRequest(
-    val type: IndexRequestType,
+    val type: IndexRequestType?,
     val index: SyncIndex? = null,
     val offenderPage: OffenderPage? = null,
     val crn: String? = null

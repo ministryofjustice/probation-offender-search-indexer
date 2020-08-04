@@ -1,12 +1,16 @@
 package uk.gov.justice.digital.hmpps.indexer.listeners
 
 import arrow.core.left
+import arrow.core.right
 import ch.qos.logback.classic.Level
 import com.google.gson.Gson
+import com.google.gson.JsonSyntaxException
+import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import uk.gov.justice.digital.hmpps.indexer.helpers.findLogAppender
@@ -24,6 +28,8 @@ internal class IndexListenerTest {
   inner class PopulateIndex {
     @Test
     internal fun `will call service with index name`() {
+      whenever(indexService.populateIndex(GREEN)).thenReturn(1.right())
+
       listener.processIndexRequest("""
       {
         "type": "POPULATE_INDEX",
@@ -54,6 +60,8 @@ internal class IndexListenerTest {
   inner class PopulateOffenderPage {
     @Test
     internal fun `will call service with page details`() {
+      whenever(indexService.populateIndexWithOffenderPage(any())).thenReturn(Unit.right())
+
       listener.processIndexRequest("""
       {
         "type": "POPULATE_OFFENDER_PAGE",
@@ -72,6 +80,8 @@ internal class IndexListenerTest {
   inner class PopulateOffender {
     @Test
     internal fun `will call service with crn to populate`() {
+      whenever(indexService.populateIndexWithOffender(any())).thenReturn("{}".right())
+
       listener.processIndexRequest("""
       {
         "type": "POPULATE_OFFENDER",
@@ -89,7 +99,8 @@ internal class IndexListenerTest {
     internal fun `will fail for bad json`() {
       val logAppender = findLogAppender(IndexListener::class.java)
 
-      listener.processIndexRequest("this is bad json")
+      assertThatThrownBy { listener.processIndexRequest("this is bad json") }
+          .isInstanceOf(JsonSyntaxException::class.java)
 
       assertThat(logAppender.list).anyMatch { it.message.contains("Failed to process message") && it.level == Level.ERROR }
     }
@@ -98,14 +109,16 @@ internal class IndexListenerTest {
     internal fun `will fail for unknown message type`() {
       val logAppender = findLogAppender(IndexListener::class.java)
 
-      listener.processIndexRequest("""
-      {
-        "type": "THIS_IS_AN_UNEXPECTED_MESSAGE_TYPE",
-        "crn": "X12345"
-      }
-      """.trimIndent())
+      assertThatThrownBy {
+        listener.processIndexRequest("""
+            {
+              "type": "THIS_IS_AN_UNEXPECTED_MESSAGE_TYPE",
+              "crn": "X12345"
+            }
+            """.trimIndent())
+      }.isInstanceOf(IllegalArgumentException::class.java)
 
-      assertThat(logAppender.list).anyMatch { it.message.contains("Failed to process message") && it.level == Level.ERROR }
+      assertThat(logAppender.list).anyMatch { it.message.contains("Unknown request type for message") && it.level == Level.ERROR }
     }
   }
 }
