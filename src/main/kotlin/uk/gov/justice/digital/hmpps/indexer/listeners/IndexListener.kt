@@ -25,12 +25,16 @@ class IndexListener(
   }
 
   @JmsListener(destination = "\${index.sqs.queue.name}", containerFactory = "jmsIndexListenerContainerFactory")
-  fun processIndexRequest(requestJson: String?) {
+  fun processIndexRequest(requestJson: String?, msg : javax.jms.Message) {
     val indexRequest = try {
       gson.fromJson(requestJson, IndexMessageRequest::class.java)
     } catch(e: Exception) {
       log.error("Failed to process message {}", requestJson, e)
       throw e
+    }.also {
+      if (arrayOf(POPULATE_INDEX, POPULATE_OFFENDER_PAGE).contains(it.type)) {
+        msg.acknowledge()
+      }
     }
     when (indexRequest.type) {
       POPULATE_INDEX -> indexService.populateIndex(indexRequest.index!!)
