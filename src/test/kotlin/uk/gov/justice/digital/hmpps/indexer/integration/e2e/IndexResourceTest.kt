@@ -620,6 +620,8 @@ class IndexResourceTest : IntegrationTestBase() {
       )
       CommunityApiExtension.communityApi.stubGetOffender("X12346")
 
+      await untilCallTo { indexQueueService.getNumberOfMessagesCurrentlyOnIndexDLQ() } matches { it == 1 }
+
       webTestClient.put()
           .uri("/probation-index/transfer-index-dlq")
           .accept(MediaType.APPLICATION_JSON)
