@@ -52,6 +52,7 @@ class IndexResource(
   fun buildIndex(): IndexStatus =
       indexService.prepareIndexForRebuild()
           .getOrHandle { error ->
+            log.error("Request to /probation-index/build-index failed due to error {}", error)
             when (PrepareRebuildError.fromErrorClass(error)) {
               BUILD_IN_PROGRESS -> throw ResponseStatusException(HttpStatus.CONFLICT, error.message())
             }
@@ -71,6 +72,7 @@ class IndexResource(
   fun markComplete() =
       indexService.markIndexingComplete()
           .getOrHandle { error ->
+            log.error("Request to /probation-index/mark-complete failed due to error {}", error)
             when (MarkCompleteError.fromErrorClass(error)) {
               MarkCompleteError.BUILD_NOT_IN_PROGRESS -> throw ResponseStatusException(HttpStatus.CONFLICT, error.message())
             }
@@ -90,6 +92,7 @@ class IndexResource(
   fun cancelIndex() =
       indexService.cancelIndexing()
           .getOrHandle { error ->
+            log.error("Request to /probation-index/cancel-index failed due to error {}", error)
             when (CancelBuildError.fromErrorClass(error)) {
               CancelBuildError.BUILD_NOT_IN_PROGRESS -> throw ResponseStatusException(HttpStatus.CONFLICT, error.message())
             }
@@ -109,6 +112,7 @@ class IndexResource(
   ])
   fun indexOffender(@PathVariable("crn") crn: String) = indexService.updateOffender(crn)
       .getOrHandle { error ->
+        log.error("Request to /probation-index/index/offender/$crn failed due to error {}", error)
         when (UpdateOffenderError.fromErrorClass(error)) {
           NO_ACTIVE_INDEXES -> throw ResponseStatusException(HttpStatus.CONFLICT, error.message())
           OFFENDER_NOT_FOUND -> throw ResponseStatusException(HttpStatus.NOT_FOUND, error.message())

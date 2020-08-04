@@ -36,12 +36,11 @@ class IndexQueueService(
 
   fun sendPopulateOffenderPageMessage(offenderPage: OffenderPage) {
     val result = indexAwsSqsClient.sendMessage(SendMessageRequest(indexQueueUrl, gson.toJson(IndexMessageRequest(type = POPULATE_OFFENDER_PAGE, offenderPage = offenderPage))))
-    log.info("Sent populate offender page message request {}", result.messageId)
+    log.info("Sent populate offender page message request {} for page {}", result.messageId, offenderPage)
   }
 
   fun sendPopulateOffenderMessage(crn: String) {
-    val result = indexAwsSqsClient.sendMessage(SendMessageRequest(indexQueueUrl, gson.toJson(IndexMessageRequest(type = POPULATE_OFFENDER, crn = crn))))
-    log.info("Sent populate offender message request {}", result.messageId)
+    indexAwsSqsClient.sendMessage(SendMessageRequest(indexQueueUrl, gson.toJson(IndexMessageRequest(type = POPULATE_OFFENDER, crn = crn))))
   }
 
   fun getNumberOfMessagesCurrentlyOnIndexQueue(): Int {

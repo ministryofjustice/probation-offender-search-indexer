@@ -24,17 +24,23 @@ class IndexListener(
   }
 
   @JmsListener(destination = "\${index.sqs.queue.name}", containerFactory = "jmsIndexListenerContainerFactory")
-  fun processIndexRequest(requestJson: String?) {
-    log.debug(requestJson)
-    val indexRequest = gson.fromJson(requestJson, IndexMessageRequest::class.java)
-    log.info("Received message request {}", indexRequest)
-    when (indexRequest.type) {
-      POPULATE_INDEX -> indexService.populateIndex(indexRequest.index!!)
-      POPULATE_OFFENDER_PAGE -> indexService.populateIndexWithOffenderPage(indexRequest.offenderPage!!)
-      POPULATE_OFFENDER -> indexService.populateIndexWithOffender(indexRequest.crn!!)
-    }
-    ?.getOrHandle {  log.error("Message {} failed with error {}", indexRequest, it) }
-  }
+  fun processIndexRequest(requestJson: String?): Unit =
+      runCatching {
+        gson.fromJson(requestJson, IndexMessageRequest::class.java)
+            .let { indexRequest ->
+              when (indexRequest.type) {
+                POPULATE_INDEX -> indexService.populateIndex(indexRequest.index!!)
+                POPULATE_OFFENDER_PAGE -> indexService.populateIndexWithOffenderPage(indexRequest.offenderPage!!)
+                POPULATE_OFFENDER -> indexService.populateIndexWithOffender(indexRequest.crn!!)
+              }
+                  .getOrHandle { error -> log.error("Message {} failed with error {}", indexRequest, error) }
+            }
+      }.onFailure { throwable ->
+        log.error("Failed to process message {}", requestJson, throwable)
+      }.let {
+        return
+      }
+
 }
 
 data class IndexMessageRequest(

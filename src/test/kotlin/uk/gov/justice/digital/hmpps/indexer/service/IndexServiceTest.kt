@@ -329,6 +329,7 @@ class IndexServiceTest {
   inner class PopulateIndexWithOffenderPage {
     @BeforeEach
     internal fun setUp() {
+      whenever(indexStatusService.getIndexStatus()).thenReturn(IndexStatus(currentIndex = GREEN, currentIndexState = COMPLETED, otherIndexState = BUILDING))
       whenever(offenderSynchroniserService.getAllOffenderIdentifiersInPage(any()))
           .thenReturn(listOf(OffenderIdentifier(crn = "X12345"), OffenderIdentifier(crn = "A12345")))
     }

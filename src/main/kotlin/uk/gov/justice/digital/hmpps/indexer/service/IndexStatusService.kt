@@ -16,6 +16,7 @@ class IndexStatusService(private val indexStatusRepository: IndexStatusRepositor
   fun initialiseIndexWhenRequired(): IndexStatusService {
       if (!indexStatusRepository.existsById("STATUS")) {
         indexStatusRepository.save(IndexStatus.newIndex())
+            .also { log.info("Created missing index status {}", it) }
       }
     return this
   }
