@@ -98,12 +98,23 @@ class IndexService(
       }
 
   fun populateIndex(index: SyncIndex): Either<Error, Int> =
+    executeAndTrackTimeMillis("BuildOffenderIndexMsgPerformance") {
       indexStatusService.getIndexStatus()
           .also { logIndexStatuses(it) }
           .failIf(IndexStatus::isNotBuilding) { BuildNotInProgressError(it) }
           .failIf({ it.currentIndex.otherIndex() != index }) { WrongIndexRequestedError(it) }
           .map { doPopulateIndex() }
+    }
 
+  private inline fun <R> executeAndTrackTimeMillis(trackEventName: String, block: () -> R): R {
+    val start = System.currentTimeMillis()
+    val result = block()
+    telemetryClient.trackEvent(
+        trackEventName,
+        mutableMapOf("messageTimeMs" to (System.currentTimeMillis() - start).toString()),
+        null)
+    return result
+  }
   private fun doPopulateIndex(): Int {
     val chunks = offenderSynchroniserService.splitAllOffendersIntoChunks()
     chunks.forEach { indexQueueService.sendPopulateOffenderPageMessage(it) }
@@ -111,12 +122,14 @@ class IndexService(
   }
 
   fun populateIndexWithOffenderPage(offenderPage: OffenderPage): Either<Error, Unit> =
-      indexStatusService.getIndexStatus()
-          .failIf(IndexStatus::isNotBuilding) { BuildNotInProgressError(it) }
-          .flatMap {
-            offenderSynchroniserService.getAllOffenderIdentifiersInPage(offenderPage)
-                .forEach { indexQueueService.sendPopulateOffenderMessage(it.crn) }.right()
-          }
+      executeAndTrackTimeMillis("BuildOffenderPageMsgPerformance") {
+        indexStatusService.getIndexStatus()
+            .failIf(IndexStatus::isNotBuilding) { BuildNotInProgressError(it) }
+            .flatMap {
+              offenderSynchroniserService.getAllOffenderIdentifiersInPage(offenderPage)
+                  .forEach { indexQueueService.sendPopulateOffenderMessage(it.crn) }.right()
+            }
+      }
 
   fun populateIndexWithOffender(crn: String): Either<Error, String> =
       indexStatusService.getIndexStatus()
