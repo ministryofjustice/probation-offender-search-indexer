@@ -4,7 +4,9 @@ import arrow.core.right
 import com.microsoft.applicationinsights.TelemetryClient
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.check
+import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.isA
+import com.nhaarman.mockitokotlin2.isNull
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.verify
@@ -50,6 +52,13 @@ internal class OffenderSynchroniserServiceTest {
       service.synchroniseOffender("X12345", GREEN)
 
       verify(offenderRepository).save(isA(), check { assertThat(it).isEqualTo(GREEN) })
+    }
+
+    @Test
+    internal fun `will send telemetry event for update`() {
+      service.synchroniseOffender("X12345", GREEN)
+
+      verify(telemetryClient).trackEvent(eq("OFFENDER_UPDATED"), any(), isNull())
     }
   }
 
