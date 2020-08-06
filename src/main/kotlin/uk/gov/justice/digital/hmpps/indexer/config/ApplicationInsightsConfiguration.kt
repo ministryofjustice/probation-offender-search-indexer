@@ -4,7 +4,9 @@ import com.microsoft.applicationinsights.TelemetryClient
 import org.springframework.context.annotation.*
 import org.springframework.core.type.AnnotatedTypeMetadata
 
-enum class TelemetryEvents { BUILDING_INDEX, CANCELLED_BUILDING_INDEX, COMPLETED_BUILDING_INDEX, PURGED_INDEX_QUEUE, PURGED_INDEX_DLQ, TRANSFERRED_INDEX_DLQ, POPULATE_OFFENDER_PAGES }
+enum class TelemetryEvents {
+    BUILDING_INDEX, CANCELLED_BUILDING_INDEX, COMPLETED_BUILDING_INDEX, PURGED_INDEX_QUEUE,
+    PURGED_INDEX_DLQ, TRANSFERRED_INDEX_DLQ, POPULATE_OFFENDER_PAGES, OFFENDER_UPDATED }
 
 /**
  * Application insights now controlled by the spring-boot-starter dependency.  However when the key is not specified

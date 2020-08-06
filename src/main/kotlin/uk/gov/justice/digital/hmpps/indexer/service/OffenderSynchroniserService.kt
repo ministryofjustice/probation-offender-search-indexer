@@ -28,6 +28,7 @@ class OffenderSynchroniserService(
           .flatMap {
             indexes.map { index -> offenderRepository.save(it, index) }
             it.json.right()
+                .also { telemetryClient.trackEvent(TelemetryEvents.OFFENDER_UPDATED.name, mapOf("crn" to crn), null) }
           }
 
   fun checkExistsAndReset(index: SyncIndex) {

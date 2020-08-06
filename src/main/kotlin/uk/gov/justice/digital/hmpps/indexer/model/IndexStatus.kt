@@ -103,8 +103,10 @@ data class IndexStatus(
 
   fun activeIndexesEmpty(): Boolean = activeIndexes().isEmpty()
 
+  @JsonIgnore
   fun isBuilding() = otherIndexState == IndexState.BUILDING
 
+  @JsonIgnore
   fun isNotBuilding() = isBuilding().not()
 
   companion object {

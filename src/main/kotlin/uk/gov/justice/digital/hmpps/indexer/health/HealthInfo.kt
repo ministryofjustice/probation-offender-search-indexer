@@ -22,7 +22,6 @@ class HealthInfo(@param:Autowired(required = false) private val buildProperties:
 
   override fun health(): Health {
     val status = Health.up().withDetail("version", version).build()
-    log.info(status.toString())
     return status
   }
 }

@@ -20,14 +20,11 @@ class EventListener(
 
   @JmsListener(destination = "\${event.sqs.queue.name}", containerFactory = "jmsListenerContainerFactory")
   fun processOffenderEvent(requestJson: String?) {
-    val (message, messageId, messageAttributes) = gson.fromJson(requestJson, Message::class.java)
-    val eventType = messageAttributes.eventType.Value
-    log.debug("Received message {} type {}", messageId, eventType)
+    val (message, _, messageAttributes) = gson.fromJson(requestJson, Message::class.java)
 
-
-    when (eventType) {
+    when (val eventType = messageAttributes.eventType.Value) {
       "OFFENDER_CHANGED" -> indexService.updateOffender(gson.fromJson(message, OffenderChangedEvent::class.java).crn)
-      else -> log.warn("We received a message of event type {} which I really wasn't expecting", eventType)
+      else -> log.error("We received a message of event type {} which I really wasn't expecting", eventType)
     }
 
   }
