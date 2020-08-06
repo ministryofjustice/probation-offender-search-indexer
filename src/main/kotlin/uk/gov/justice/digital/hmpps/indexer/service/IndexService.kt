@@ -106,12 +106,12 @@ class IndexService(
           .map { doPopulateIndex() }
     }
 
-  private inline fun <R> executeAndTrackTimeMillis(trackEventName: String, block: () -> R): R {
+  private inline fun <R> executeAndTrackTimeMillis(trackEventName: String, properties: Map<String, String> = mapOf(), block: () -> R): R {
     val start = System.currentTimeMillis()
     val result = block()
     telemetryClient.trackEvent(
         trackEventName,
-        mutableMapOf("messageTimeMs" to (System.currentTimeMillis() - start).toString()),
+        mutableMapOf("messageTimeMs" to (System.currentTimeMillis() - start).toString()).plus(properties),
         null)
     return result
   }
@@ -122,12 +122,16 @@ class IndexService(
   }
 
   fun populateIndexWithOffenderPage(offenderPage: OffenderPage): Either<Error, Unit> =
-      executeAndTrackTimeMillis("BuildOffenderPageMsgPerformance") {
+      executeAndTrackTimeMillis("BuildOffenderPageMsgPerformance", mapOf("offenderPage" to offenderPage.page.toString())) {
         indexStatusService.getIndexStatus()
             .failIf(IndexStatus::isNotBuilding) { BuildNotInProgressError(it) }
             .flatMap {
               offenderSynchroniserService.getAllOffenderIdentifiersInPage(offenderPage)
-                  .forEach { indexQueueService.sendPopulateOffenderMessage(it.crn) }.right()
+                  .forEachIndexed { index, offenderIdentifier ->
+                    if (index == 0 || index.toLong() == offenderPage.pageSize-1) {
+                      telemetryClient.trackEvent("offenderPageBoundary", mutableMapOf("page" to offenderPage.page.toString(), "IndexOnPage" to index.toString(), "crn" to offenderIdentifier.crn), null)
+                    }
+                    indexQueueService.sendPopulateOffenderMessage(offenderIdentifier.crn) }.right()
             }
       }
 
