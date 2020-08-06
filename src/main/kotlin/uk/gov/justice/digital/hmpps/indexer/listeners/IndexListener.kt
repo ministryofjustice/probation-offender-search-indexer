@@ -34,6 +34,7 @@ class IndexListener(
     }.also {
       if (arrayOf(POPULATE_INDEX, POPULATE_OFFENDER_PAGE).contains(it.type)) {
         msg.acknowledge()
+        log.info("Acknowledged message {}", it)
       }
     }
     when (indexRequest.type) {
