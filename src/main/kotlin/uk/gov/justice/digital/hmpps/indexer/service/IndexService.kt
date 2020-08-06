@@ -127,7 +127,11 @@ class IndexService(
             .failIf(IndexStatus::isNotBuilding) { BuildNotInProgressError(it) }
             .flatMap {
               offenderSynchroniserService.getAllOffenderIdentifiersInPage(offenderPage)
-                  .forEach { indexQueueService.sendPopulateOffenderMessage(it.crn) }.right()
+                  .forEachIndexed { index, offenderIdentifier ->
+                    if (index == 0 || index.toLong() == offenderPage.pageSize-1) {
+                      telemetryClient.trackEvent("offenderPageBoundary", mutableMapOf("page" to offenderPage.page.toString(), "IndexOnPage" to index.toString(), "crn" to offenderIdentifier.crn), null)
+                    }
+                    indexQueueService.sendPopulateOffenderMessage(offenderIdentifier.crn) }.right()
             }
       }
 
