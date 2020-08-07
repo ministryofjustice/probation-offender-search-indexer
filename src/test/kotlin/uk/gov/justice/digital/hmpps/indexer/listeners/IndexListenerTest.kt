@@ -42,21 +42,6 @@ internal class IndexListenerTest {
     }
 
     @Test
-    internal fun `will acknowledge the message`() {
-      val msg = mock<Message>()
-      whenever(indexService.populateIndex(GREEN)).thenReturn(1.right())
-
-      listener.processIndexRequest("""
-      {
-        "type": "POPULATE_INDEX",
-        "index": "GREEN"
-      }
-      """.trimIndent(), msg)
-
-      verify(msg).acknowledge()
-    }
-
-    @Test
     internal fun `failed request`() {
       val logAppender = findLogAppender(IndexListener::class.java)
       whenever(indexService.populateIndex(GREEN)).thenReturn(BuildNotInProgressError(IndexStatus.newIndex()).left())
@@ -91,23 +76,6 @@ internal class IndexListenerTest {
       verify(indexService).populateIndexWithOffenderPage(OffenderPage(1, 1000))
     }
 
-    @Test
-    internal fun `will acknowledge the message`() {
-      val msg = mock<Message>()
-      whenever(indexService.populateIndexWithOffenderPage(any())).thenReturn(Unit.right())
-
-      listener.processIndexRequest("""
-      {
-        "type": "POPULATE_OFFENDER_PAGE",
-        "offenderPage": {
-          "page": 1,
-          "pageSize": 1000
-        }
-      }
-      """.trimIndent(), msg)
-
-      verify(msg).acknowledge()
-    }
   }
 
   @Nested

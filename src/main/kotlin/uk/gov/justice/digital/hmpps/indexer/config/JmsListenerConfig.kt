@@ -30,7 +30,6 @@ class JmsListenerConfig {
     factory.setConnectionFactory(SQSConnectionFactory(ProviderConfiguration(), awsSqsClient))
     factory.setDestinationResolver(DynamicDestinationResolver())
     factory.setConcurrency("1-1")
-    factory.setSessionAcknowledgeMode(Session.CLIENT_ACKNOWLEDGE)
     factory.setErrorHandler { t: Throwable? -> log.error("Error caught in jms listener", t) }
     return factory
   }

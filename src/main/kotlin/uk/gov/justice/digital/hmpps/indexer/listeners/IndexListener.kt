@@ -31,11 +31,6 @@ class IndexListener(
     } catch(e: Exception) {
       log.error("Failed to process message {}", requestJson, e)
       throw e
-    }.also {
-      if (arrayOf(POPULATE_INDEX, POPULATE_OFFENDER_PAGE).contains(it.type)) {
-        msg.acknowledge()
-        log.info("Acknowledged message {}", it)
-      }
     }
     when (indexRequest.type) {
       POPULATE_INDEX -> indexService.populateIndex(indexRequest.index!!)
