@@ -17,7 +17,7 @@ class OffenderSynchroniserService(
     val communityService: CommunityService,
     val offenderRepository: OffenderRepository,
     val telemetryClient: TelemetryClient,
-    @Value("\${index.page.size:1000}") private val pageSize: Long
+    @Value("\${index.page.size:10000}") private val pageSize: Long
 ) {
   companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
