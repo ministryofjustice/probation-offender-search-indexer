@@ -30,11 +30,14 @@ class IndexService(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  fun prepareIndexForRebuild(): Either<Error, IndexStatus> =
-      indexStatusService.initialiseIndexWhenRequired().getIndexStatus()
-          .also { logIndexStatuses(it) }
-          .failIf(IndexStatus::isBuilding) { BuildAlreadyInProgressError(it) }
-          .map { doPrepareIndexForRebuild(it) }
+  fun prepareIndexForRebuild(): Either<Error, IndexStatus> {
+    val indexQueueStatus = indexQueueService.getIndexQueueStatus()
+    return indexStatusService.initialiseIndexWhenRequired().getIndexStatus()
+        .also { logIndexStatuses(it) }
+        .failIf(IndexStatus::isBuilding) { BuildAlreadyInProgressError(it) }
+        .failIf({ indexQueueStatus.active }) { ActiveMessagesExistError(it.otherIndex, indexQueueStatus, "build index") }
+        .map { doPrepareIndexForRebuild(it) }
+  }
 
   private fun doPrepareIndexForRebuild(indexStatus: IndexStatus): IndexStatus {
     indexStatusService.markBuildInProgress()
@@ -187,7 +190,8 @@ enum class UpdateOffenderError(val errorClass: KClass<out Error>) {
 }
 
 enum class PrepareRebuildError(val errorClass: KClass<out Error>) {
-  BUILD_IN_PROGRESS(BuildAlreadyInProgressError::class);
+  BUILD_IN_PROGRESS(BuildAlreadyInProgressError::class),
+  ACTIVE_MESSAGES_EXIST(ActiveMessagesExistError::class);
 
   companion object {
     fun fromErrorClass(error: Error): PrepareRebuildError {
