@@ -5,6 +5,7 @@ import com.microsoft.applicationinsights.TelemetryClient
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
@@ -177,18 +178,6 @@ class IndexServiceTest {
       indexService.markIndexingComplete()
 
       verify(offenderSynchroniserService).switchAliasIndex(BLUE)
-    }
-
-    @Test
-    fun `A request is made to remove queued index requests`() {
-      whenever(indexStatusService.getIndexStatus())
-          .thenReturn(IndexStatus(currentIndex = GREEN, otherIndexState = BUILDING))
-          .thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
-      whenever(indexStatusService.markBuildCompleteAndSwitchIndex()).thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
-
-      indexService.markIndexingComplete()
-
-      verify(queueAdminService).clearAllIndexQueueMessages()
     }
 
     @Test

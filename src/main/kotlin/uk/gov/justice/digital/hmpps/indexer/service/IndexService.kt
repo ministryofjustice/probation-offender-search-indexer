@@ -70,7 +70,6 @@ class IndexService(
     indexStatusService.markBuildCompleteAndSwitchIndex()
         .let { newStatus ->
           offenderSynchroniserService.switchAliasIndex(newStatus.currentIndex)
-          queueAdminService.clearAllIndexQueueMessages()
           return indexStatusService.getIndexStatus()
               .also { latestStatus -> logIndexStatuses(latestStatus) }
               .also { telemetryClient.trackEvent(TelemetryEvents.COMPLETED_BUILDING_INDEX.name, mapOf("index" to it.currentIndex.name), null) }
