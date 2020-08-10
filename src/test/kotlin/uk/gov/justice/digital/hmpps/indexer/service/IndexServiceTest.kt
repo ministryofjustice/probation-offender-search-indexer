@@ -116,6 +116,7 @@ class IndexServiceTest {
     @BeforeEach
     internal fun setUp() {
       whenever(indexStatusService.markBuildCompleteAndSwitchIndex()).thenReturn(IndexStatus(currentIndex = GREEN, otherIndexState = COMPLETED))
+      whenever(indexQueueService.getIndexQueueStatus()).thenReturn(IndexQueueStatus(0, 0, 0))
     }
 
     @Test
@@ -127,6 +128,18 @@ class IndexServiceTest {
 
       verify(indexStatusService).getIndexStatus()
       result shouldBeLeft BuildNotInProgressError(expectedIndexStatus)
+    }
+
+    @Test
+    fun `Index with active messages returns error`() {
+      whenever(indexStatusService.getIndexStatus()).thenReturn(IndexStatus(currentIndex = GREEN, otherIndexState = BUILDING))
+      val expectedIndexQueueStatus = IndexQueueStatus(1, 0, 0)
+      whenever(indexQueueService.getIndexQueueStatus()).thenReturn(expectedIndexQueueStatus)
+
+      val result = indexService.markIndexingComplete()
+
+      verify(indexStatusService).getIndexStatus()
+      result shouldBeLeft ActiveMessagesExistError(BLUE, expectedIndexQueueStatus, "mark complete")
     }
 
     @Test

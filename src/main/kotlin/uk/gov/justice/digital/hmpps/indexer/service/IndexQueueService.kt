@@ -13,6 +13,11 @@ import uk.gov.justice.digital.hmpps.indexer.listeners.IndexRequestType.POPULATE_
 import uk.gov.justice.digital.hmpps.indexer.listeners.IndexRequestType.POPULATE_OFFENDER_PAGE
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
 
+data class IndexQueueStatus(val messagesOnQueue: Int, val messagesOnDlq: Int, val messagesInFlight: Int) {
+  val active
+    get() = messagesOnQueue > 0 || messagesOnDlq > 0 || messagesInFlight > 0
+}
+
 @Service
 class IndexQueueService(
     private val indexAwsSqsClient: AmazonSQS,
@@ -45,7 +50,7 @@ class IndexQueueService(
 
   fun getNumberOfMessagesCurrentlyOnIndexQueue(): Int {
     val queueAttributes = indexAwsSqsClient.getQueueAttributes(indexQueueUrl, listOf("ApproximateNumberOfMessages"))
-    return queueAttributes.attributes["ApproximateNumberOfMessages"]?.toInt()?:0
+    return queueAttributes.attributes["ApproximateNumberOfMessages"]?.toInt() ?: 0
   }
 
   fun getNumberOfMessagesCurrentlyOnIndexDLQ(): Int {
@@ -53,4 +58,15 @@ class IndexQueueService(
     return queueAttributes.attributes["ApproximateNumberOfMessages"]?.toInt() ?: 0
   }
 
+  private fun getNumberOfMessagesCurrentlyInFlight(): Int {
+    val queueAttributes = indexAwsSqsDlqClient.getQueueAttributes(indexQueueUrl, listOf("ApproximateNumberOfMessagesNotVisible"))
+    return queueAttributes.attributes["ApproximateNumberOfMessagesNotVisible"]?.toInt() ?: 0
+  }
+
+  fun getIndexQueueStatus(): IndexQueueStatus =
+      IndexQueueStatus(
+          messagesOnQueue = getNumberOfMessagesCurrentlyOnIndexQueue(),
+          messagesInFlight = getNumberOfMessagesCurrentlyInFlight(),
+          messagesOnDlq = getNumberOfMessagesCurrentlyOnIndexDLQ()
+      )
 }

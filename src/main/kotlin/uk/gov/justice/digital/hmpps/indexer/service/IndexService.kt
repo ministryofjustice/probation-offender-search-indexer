@@ -53,11 +53,15 @@ class IndexService(
     )
   }
 
-  fun markIndexingComplete(): Either<Error, IndexStatus> =
-      indexStatusService.getIndexStatus()
-          .also { logIndexStatuses(it) }
-          .failIf(IndexStatus::isNotBuilding) { BuildNotInProgressError(it) }
-          .map { doMarkIndexingComplete() }
+  fun markIndexingComplete(): Either<Error, IndexStatus> {
+    val indexQueueStatus = indexQueueService.getIndexQueueStatus()
+    return indexStatusService.getIndexStatus()
+        .also { logIndexStatuses(it) }
+        .failIf(IndexStatus::isNotBuilding) { BuildNotInProgressError(it) }
+        .failIf({ indexQueueStatus.active }) { ActiveMessagesExistError(it.otherIndex, indexQueueStatus, "mark complete") }
+        .map { indexQueueService.getIndexQueueStatus() }
+        .map { doMarkIndexingComplete() }
+  }
 
   private fun doMarkIndexingComplete(): IndexStatus =
     indexStatusService.markBuildCompleteAndSwitchIndex()
@@ -193,7 +197,8 @@ enum class PrepareRebuildError(val errorClass: KClass<out Error>) {
 }
 
 enum class MarkCompleteError(val errorClass: KClass<out Error>) {
-  BUILD_NOT_IN_PROGRESS(BuildNotInProgressError::class);
+  BUILD_NOT_IN_PROGRESS(BuildNotInProgressError::class),
+  ACTIVE_MESSAGES_EXIST(ActiveMessagesExistError::class);
 
   companion object {
     fun fromErrorClass(error: Error): MarkCompleteError {

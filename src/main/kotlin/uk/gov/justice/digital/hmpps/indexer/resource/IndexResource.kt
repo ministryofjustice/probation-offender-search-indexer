@@ -75,6 +75,7 @@ class IndexResource(
             log.error("Request to /probation-index/mark-complete failed due to error {}", error)
             when (MarkCompleteError.fromErrorClass(error)) {
               MarkCompleteError.BUILD_NOT_IN_PROGRESS -> throw ResponseStatusException(HttpStatus.CONFLICT, error.message())
+              MarkCompleteError.ACTIVE_MESSAGES_EXIST -> throw ResponseStatusException(HttpStatus.CONFLICT, error.message())
             }
           }
 

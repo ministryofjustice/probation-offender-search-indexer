@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.indexer.service
 
 import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
+import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
 
 
 interface Error {
@@ -28,4 +29,8 @@ data class NoActiveIndexesError(val indexStatus: IndexStatus) : IndexError {
 
 data class OffenderNotFoundError(val crn: String): OffenderError {
   override fun message() = "The offender $crn could not be found"
+}
+
+data class ActiveMessagesExistError(val index: SyncIndex, val indexQueueStatus: IndexQueueStatus, val action: String) : IndexError {
+  override fun message() = "The index ${index.indexName} has active messages $indexQueueStatus so we cannot process $action"
 }
