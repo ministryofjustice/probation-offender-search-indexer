@@ -20,7 +20,6 @@ class VersionOutputter(buildProperties: BuildProperties) {
   @Bean
   fun versionContextInitializer() = ContextInitializer {
     it.component.setVersion(version)
-    it.cloud.role = "probation-offender-search-indexer" // Workaround bug where cloud_RoleName is not included in App Insights logs until the app has started
   }
 
   companion object {

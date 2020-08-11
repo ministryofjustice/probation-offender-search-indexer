@@ -50,9 +50,8 @@ class IndexInfoTest : IntegrationTestBase() {
       deleteOffenderIndexes()
       createOffenderIndexes()
       initialiseIndexStatus()
-      CommunityApiExtension.communityApi.stubAllOffenderGets(10 )
+      CommunityApiExtension.communityApi.stubAllOffenderGets(10 , 0)
       buildAndSwitchIndex(SyncIndex.GREEN, 0)
-      await untilCallTo { indexQueueService.getNumberOfMessagesCurrentlyInFlight() } matches { it == 0 }
     }
 
     @Test
