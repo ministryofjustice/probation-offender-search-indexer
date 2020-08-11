@@ -5,6 +5,7 @@ import com.microsoft.applicationinsights.TelemetryClient
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
+import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
@@ -43,6 +44,7 @@ class IndexServiceTest {
     @BeforeEach
     internal fun setUp() {
       whenever(indexStatusService.initialiseIndexWhenRequired()).thenReturn(indexStatusService)
+      whenever(indexQueueService.getIndexQueueStatus()).thenReturn(IndexQueueStatus(0, 0, 0))
     }
 
     @Test
@@ -54,6 +56,18 @@ class IndexServiceTest {
 
       verify(indexStatusService).getIndexStatus()
       result shouldBeLeft BuildAlreadyInProgressError(expectedIndexStatus)
+    }
+
+    @Test
+    fun `Index has active messages returns an error`() {
+      whenever(indexStatusService.getIndexStatus()).thenReturn(IndexStatus(currentIndex = GREEN, otherIndexState = COMPLETED))
+      val expectedIndexQueueStatus = IndexQueueStatus(1, 0, 0)
+      whenever(indexQueueService.getIndexQueueStatus()).thenReturn(expectedIndexQueueStatus)
+
+      val result = indexService.prepareIndexForRebuild()
+
+      verify(indexStatusService).getIndexStatus()
+      result shouldBeLeft ActiveMessagesExistError(BLUE, expectedIndexQueueStatus, "build index")
     }
 
     @Test
@@ -116,6 +130,7 @@ class IndexServiceTest {
     @BeforeEach
     internal fun setUp() {
       whenever(indexStatusService.markBuildCompleteAndSwitchIndex()).thenReturn(IndexStatus(currentIndex = GREEN, otherIndexState = COMPLETED))
+      whenever(indexQueueService.getIndexQueueStatus()).thenReturn(IndexQueueStatus(0, 0, 0))
     }
 
     @Test
@@ -127,6 +142,18 @@ class IndexServiceTest {
 
       verify(indexStatusService).getIndexStatus()
       result shouldBeLeft BuildNotInProgressError(expectedIndexStatus)
+    }
+
+    @Test
+    fun `Index with active messages returns error`() {
+      whenever(indexStatusService.getIndexStatus()).thenReturn(IndexStatus(currentIndex = GREEN, otherIndexState = BUILDING))
+      val expectedIndexQueueStatus = IndexQueueStatus(1, 0, 0)
+      whenever(indexQueueService.getIndexQueueStatus()).thenReturn(expectedIndexQueueStatus)
+
+      val result = indexService.markIndexingComplete()
+
+      verify(indexStatusService).getIndexStatus()
+      result shouldBeLeft ActiveMessagesExistError(BLUE, expectedIndexQueueStatus, "mark complete")
     }
 
     @Test
@@ -151,18 +178,6 @@ class IndexServiceTest {
       indexService.markIndexingComplete()
 
       verify(offenderSynchroniserService).switchAliasIndex(BLUE)
-    }
-
-    @Test
-    fun `A request is made to remove queued index requests`() {
-      whenever(indexStatusService.getIndexStatus())
-          .thenReturn(IndexStatus(currentIndex = GREEN, otherIndexState = BUILDING))
-          .thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
-      whenever(indexStatusService.markBuildCompleteAndSwitchIndex()).thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
-
-      indexService.markIndexingComplete()
-
-      verify(queueAdminService).clearAllIndexQueueMessages()
     }
 
     @Test

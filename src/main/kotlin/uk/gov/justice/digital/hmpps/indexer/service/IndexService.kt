@@ -30,11 +30,14 @@ class IndexService(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  fun prepareIndexForRebuild(): Either<Error, IndexStatus> =
-      indexStatusService.initialiseIndexWhenRequired().getIndexStatus()
-          .also { logIndexStatuses(it) }
-          .failIf(IndexStatus::isBuilding) { BuildAlreadyInProgressError(it) }
-          .map { doPrepareIndexForRebuild(it) }
+  fun prepareIndexForRebuild(): Either<Error, IndexStatus> {
+    val indexQueueStatus = indexQueueService.getIndexQueueStatus()
+    return indexStatusService.initialiseIndexWhenRequired().getIndexStatus()
+        .also { logIndexStatuses(it) }
+        .failIf(IndexStatus::isBuilding) { BuildAlreadyInProgressError(it) }
+        .failIf({ indexQueueStatus.active }) { ActiveMessagesExistError(it.otherIndex, indexQueueStatus, "build index") }
+        .map { doPrepareIndexForRebuild(it) }
+  }
 
   private fun doPrepareIndexForRebuild(indexStatus: IndexStatus): IndexStatus {
     indexStatusService.markBuildInProgress()
@@ -53,17 +56,20 @@ class IndexService(
     )
   }
 
-  fun markIndexingComplete(): Either<Error, IndexStatus> =
-      indexStatusService.getIndexStatus()
-          .also { logIndexStatuses(it) }
-          .failIf(IndexStatus::isNotBuilding) { BuildNotInProgressError(it) }
-          .map { doMarkIndexingComplete() }
+  fun markIndexingComplete(): Either<Error, IndexStatus> {
+    val indexQueueStatus = indexQueueService.getIndexQueueStatus()
+    return indexStatusService.getIndexStatus()
+        .also { logIndexStatuses(it) }
+        .failIf(IndexStatus::isNotBuilding) { BuildNotInProgressError(it) }
+        .failIf({ indexQueueStatus.active }) { ActiveMessagesExistError(it.otherIndex, indexQueueStatus, "mark complete") }
+        .map { indexQueueService.getIndexQueueStatus() }
+        .map { doMarkIndexingComplete() }
+  }
 
   private fun doMarkIndexingComplete(): IndexStatus =
     indexStatusService.markBuildCompleteAndSwitchIndex()
         .let { newStatus ->
           offenderSynchroniserService.switchAliasIndex(newStatus.currentIndex)
-          queueAdminService.clearAllIndexQueueMessages()
           return indexStatusService.getIndexStatus()
               .also { latestStatus -> logIndexStatuses(latestStatus) }
               .also { telemetryClient.trackEvent(TelemetryEvents.COMPLETED_BUILDING_INDEX.name, mapOf("index" to it.currentIndex.name), null) }
@@ -183,7 +189,8 @@ enum class UpdateOffenderError(val errorClass: KClass<out Error>) {
 }
 
 enum class PrepareRebuildError(val errorClass: KClass<out Error>) {
-  BUILD_IN_PROGRESS(BuildAlreadyInProgressError::class);
+  BUILD_IN_PROGRESS(BuildAlreadyInProgressError::class),
+  ACTIVE_MESSAGES_EXIST(ActiveMessagesExistError::class);
 
   companion object {
     fun fromErrorClass(error: Error): PrepareRebuildError {
@@ -193,7 +200,8 @@ enum class PrepareRebuildError(val errorClass: KClass<out Error>) {
 }
 
 enum class MarkCompleteError(val errorClass: KClass<out Error>) {
-  BUILD_NOT_IN_PROGRESS(BuildNotInProgressError::class);
+  BUILD_NOT_IN_PROGRESS(BuildNotInProgressError::class),
+  ACTIVE_MESSAGES_EXIST(ActiveMessagesExistError::class);
 
   companion object {
     fun fromErrorClass(error: Error): MarkCompleteError {

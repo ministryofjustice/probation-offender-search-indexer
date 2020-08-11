@@ -16,15 +16,11 @@ import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.server.ResponseStatusException
 import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
 import uk.gov.justice.digital.hmpps.indexer.service.CancelBuildError
-import uk.gov.justice.digital.hmpps.indexer.service.IndexQueueService
 import uk.gov.justice.digital.hmpps.indexer.service.IndexService
 import uk.gov.justice.digital.hmpps.indexer.service.MarkCompleteError
 import uk.gov.justice.digital.hmpps.indexer.service.PrepareRebuildError
-import uk.gov.justice.digital.hmpps.indexer.service.PrepareRebuildError.BUILD_IN_PROGRESS
 import uk.gov.justice.digital.hmpps.indexer.service.QueueAdminService
 import uk.gov.justice.digital.hmpps.indexer.service.UpdateOffenderError
-import uk.gov.justice.digital.hmpps.indexer.service.UpdateOffenderError.NO_ACTIVE_INDEXES
-import uk.gov.justice.digital.hmpps.indexer.service.UpdateOffenderError.OFFENDER_NOT_FOUND
 
 @Api(tags = ["probation-index"])
 @RestController
@@ -54,7 +50,8 @@ class IndexResource(
           .getOrHandle { error ->
             log.error("Request to /probation-index/build-index failed due to error {}", error)
             when (PrepareRebuildError.fromErrorClass(error)) {
-              BUILD_IN_PROGRESS -> throw ResponseStatusException(HttpStatus.CONFLICT, error.message())
+              PrepareRebuildError.BUILD_IN_PROGRESS -> throw ResponseStatusException(HttpStatus.CONFLICT, error.message())
+              PrepareRebuildError.ACTIVE_MESSAGES_EXIST -> throw ResponseStatusException(HttpStatus.CONFLICT, error.message())
             }
           }
 
@@ -75,6 +72,7 @@ class IndexResource(
             log.error("Request to /probation-index/mark-complete failed due to error {}", error)
             when (MarkCompleteError.fromErrorClass(error)) {
               MarkCompleteError.BUILD_NOT_IN_PROGRESS -> throw ResponseStatusException(HttpStatus.CONFLICT, error.message())
+              MarkCompleteError.ACTIVE_MESSAGES_EXIST -> throw ResponseStatusException(HttpStatus.CONFLICT, error.message())
             }
           }
 
@@ -114,8 +112,8 @@ class IndexResource(
       .getOrHandle { error ->
         log.error("Request to /probation-index/index/offender/$crn failed due to error {}", error)
         when (UpdateOffenderError.fromErrorClass(error)) {
-          NO_ACTIVE_INDEXES -> throw ResponseStatusException(HttpStatus.CONFLICT, error.message())
-          OFFENDER_NOT_FOUND -> throw ResponseStatusException(HttpStatus.NOT_FOUND, error.message())
+          UpdateOffenderError.NO_ACTIVE_INDEXES -> throw ResponseStatusException(HttpStatus.CONFLICT, error.message())
+          UpdateOffenderError.OFFENDER_NOT_FOUND -> throw ResponseStatusException(HttpStatus.NOT_FOUND, error.message())
         }
       }
 
