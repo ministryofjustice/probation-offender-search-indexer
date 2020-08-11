@@ -1,6 +1,9 @@
 package uk.gov.justice.digital.hmpps.indexer.integration.health
 
 import org.assertj.core.api.Assertions.assertThat
+import org.awaitility.kotlin.await
+import org.awaitility.kotlin.matches
+import org.awaitility.kotlin.untilCallTo
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -49,6 +52,7 @@ class IndexInfoTest : IntegrationTestBase() {
       initialiseIndexStatus()
       CommunityApiExtension.communityApi.stubAllOffenderGets(10 )
       buildAndSwitchIndex(SyncIndex.GREEN, 0)
+      await untilCallTo { indexQueueService.getNumberOfMessagesCurrentlyInFlight() } matches { it == 0 }
     }
 
     @Test
