@@ -59,7 +59,7 @@ class IndexQueueService(
   }
 
   private fun getNumberOfMessagesCurrentlyInFlight(): Int {
-    val queueAttributes = indexAwsSqsDlqClient.getQueueAttributes(indexQueueUrl, listOf("ApproximateNumberOfMessagesNotVisible"))
+    val queueAttributes = indexAwsSqsClient.getQueueAttributes(indexQueueUrl, listOf("ApproximateNumberOfMessagesNotVisible"))
     return queueAttributes.attributes["ApproximateNumberOfMessagesNotVisible"]?.toInt() ?: 0
   }
 
