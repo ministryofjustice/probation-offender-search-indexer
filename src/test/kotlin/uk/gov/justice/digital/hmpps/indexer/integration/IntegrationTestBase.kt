@@ -161,7 +161,6 @@ abstract class IntegrationTestBase {
         .exchange()
         .expectStatus().isOk
 
-    await untilCallTo { getIndexCount("offender") } matches { it == expectedCount }
   }
 
   fun buildIndex(index: SyncIndex, expectedCount: Long) {
@@ -172,7 +171,11 @@ abstract class IntegrationTestBase {
         .exchange()
         .expectStatus().isOk
 
-    await untilCallTo { getIndexCount(index) } matches { it == expectedCount }
+    await untilCallTo { indexQueueService.getNumberOfMessagesCurrentlyOnIndexQueue() } matches { it == 0 }
+    await untilCallTo { indexQueueService.getNumberOfMessagesCurrentlyInFlight() } matches { it == 0 }
+    if (expectedCount > 0) {
+      await untilCallTo { getIndexCount("offender") } matches { it == expectedCount }
+    }
   }
 
 }
