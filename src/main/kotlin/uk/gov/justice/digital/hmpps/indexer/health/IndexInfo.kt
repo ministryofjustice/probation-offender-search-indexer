@@ -28,8 +28,8 @@ class IndexInfo(
   override fun contribute(builder: Info.Builder) {
     try {
       builder.withDetail("index-status", indexStatusService.getIndexStatus())
-    } catch (e: NoSuchElementException) {
-      builder.withDetail("index-status", "No status exists yet")
+    } catch (e: Exception) {
+      builder.withDetail("index-status", "No status exists yet (${e.message})")
     }
     builder.withDetail("index-size", mapOf(
         GREEN to indexService.getIndexCount(GREEN),
