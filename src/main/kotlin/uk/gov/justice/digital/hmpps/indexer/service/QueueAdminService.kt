@@ -30,10 +30,10 @@ class QueueAdminService(private val indexAwsSqsClient: AmazonSQS,
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  val indexQueueUrl: String = indexAwsSqsClient.getQueueUrl(indexQueueName).queueUrl
-  val indexDlqUrl: String = indexAwsSqsDlqClient.getQueueUrl(indexDlqName).queueUrl
-  val eventQueueUrl: String = eventAwsSqsClient.getQueueUrl(eventQueueName).queueUrl
-  val eventDlqUrl: String = eventAwsSqsDlqClient.getQueueUrl(eventDlqName).queueUrl
+  val indexQueueUrl: String by lazy { indexAwsSqsClient.getQueueUrl(indexQueueName).queueUrl }
+  val indexDlqUrl: String by lazy { indexAwsSqsDlqClient.getQueueUrl(indexDlqName).queueUrl }
+  val eventQueueUrl: String by lazy { eventAwsSqsClient.getQueueUrl(eventQueueName).queueUrl }
+  val eventDlqUrl: String by lazy { eventAwsSqsDlqClient.getQueueUrl(eventDlqName).queueUrl }
 
   fun clearAllIndexQueueMessages() {
     val count = indexQueueService.getNumberOfMessagesCurrentlyOnIndexQueue()
