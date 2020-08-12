@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.indexer.service
 
 import com.amazonaws.services.sqs.AmazonSQS
+import com.amazonaws.services.sqs.model.DeleteMessageRequest
 import com.amazonaws.services.sqs.model.PurgeQueueRequest
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest
 import com.google.gson.Gson
@@ -56,7 +57,10 @@ class QueueAdminService(private val indexAwsSqsClient: AmazonSQS,
   fun transferEventMessages() =
       repeat(getEventDlqMessageCount()) {
         eventAwsSqsDlqClient.receiveMessage(ReceiveMessageRequest(eventDlqUrl).withMaxNumberOfMessages(1)).messages
-            .forEach { eventAwsSqsClient.sendMessage(eventQueueUrl, it.body) }
+            .forEach { msg ->
+              eventAwsSqsClient.sendMessage(eventQueueUrl, msg.body)
+              eventAwsSqsDlqClient.deleteMessage(DeleteMessageRequest(eventDlqUrl, msg.receiptHandle))
+            }
       }
 
   private fun getEventDlqMessageCount() =
@@ -69,7 +73,10 @@ class QueueAdminService(private val indexAwsSqsClient: AmazonSQS,
           .also { total ->
             repeat(total) {
               indexAwsSqsDlqClient.receiveMessage(ReceiveMessageRequest(indexDlqUrl).withMaxNumberOfMessages(1)).messages
-                  .forEach { msg -> indexAwsSqsClient.sendMessage(indexQueueUrl, msg.body) }
+                  .forEach { msg ->
+                    indexAwsSqsClient.sendMessage(indexQueueUrl, msg.body)
+                    indexAwsSqsDlqClient.deleteMessage(DeleteMessageRequest(indexDlqUrl, msg.receiptHandle))
+                  }
             }
           }.let { total ->
             telemetryClient.trackEvent(TelemetryEvents.TRANSFERRED_INDEX_DLQ.name, mapOf("messages-on-queue" to total.toString()), null)
