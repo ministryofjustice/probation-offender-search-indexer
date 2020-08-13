@@ -14,12 +14,19 @@ class IndexStatusService(private val indexStatusRepository: IndexStatusRepositor
   }
 
   fun initialiseIndexWhenRequired(): IndexStatusService {
-      if (!indexStatusRepository.existsById("STATUS")) {
+      if (!checkIndexStatusExistsIgnoringMissingRepo()) {
         indexStatusRepository.save(IndexStatus.newIndex())
             .also { log.info("Created missing index status {}", it) }
       }
     return this
   }
+
+  private fun checkIndexStatusExistsIgnoringMissingRepo(): Boolean =
+    try {
+      indexStatusRepository.existsById("STATUS")
+    } catch (e: Exception) {
+      false
+    }
 
   fun getIndexStatus(): IndexStatus =
       indexStatusRepository.findById(INDEX_STATUS_ID).orElseThrow()

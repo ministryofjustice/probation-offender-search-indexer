@@ -28,14 +28,18 @@ class IndexInfo(
   override fun contribute(builder: Info.Builder) {
     try {
       builder.withDetail("index-status", indexStatusService.getIndexStatus())
-    } catch (e: NoSuchElementException) {
-      builder.withDetail("index-status", "No status exists yet")
+    } catch (e: Exception) {
+      builder.withDetail("index-status", "No status exists yet (${e.message})")
     }
     builder.withDetail("index-size", mapOf(
         GREEN to indexService.getIndexCount(GREEN),
         BLUE to indexService.getIndexCount(BLUE)
     ))
-    builder.withDetail("offender-alias", offenderRepository.offenderAliasIsPointingAt().joinToString())
+    try {
+      builder.withDetail("offender-alias", offenderRepository.offenderAliasIsPointingAt().joinToString())
+    } catch(e: Exception) {
+      builder.withDetail("offender-alias", "Elasticsearch is not available yet ")
+    }
     builder.withDetail("index-queue-backlog", safeQueueCount())
   }
 

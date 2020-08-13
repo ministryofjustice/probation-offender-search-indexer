@@ -31,8 +31,8 @@ class IndexQueueService(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  val indexQueueUrl: String = indexAwsSqsClient.getQueueUrl(indexQueueName).queueUrl
-  val indexDlqUrl: String = indexAwsSqsDlqClient.getQueueUrl(indexDlqName).queueUrl
+  val indexQueueUrl: String by lazy { indexAwsSqsClient.getQueueUrl(indexQueueName).queueUrl }
+  val indexDlqUrl: String by lazy { indexAwsSqsDlqClient.getQueueUrl(indexDlqName).queueUrl }
 
   fun sendPopulateIndexMessage(index: SyncIndex) {
     val result = indexAwsSqsClient.sendMessage(SendMessageRequest(indexQueueUrl, gson.toJson(IndexMessageRequest(type = POPULATE_INDEX, index = index))))
