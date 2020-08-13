@@ -32,7 +32,7 @@ class IndexInfoTest : IntegrationTestBase() {
           .expectStatus()
           .isOk
           .expectBody()
-          .jsonPath("index-status").value<String> { sts -> assertThat(sts).contains("No status exists yet") }
+          .jsonPath("index-status").value<String> { assertThat(it).contains("No status exists yet") }
           .jsonPath("index-status.currentIndex").doesNotExist()
           .jsonPath("index-status.otherIndex").doesNotExist()
           .jsonPath("index-size.GREEN").isEqualTo(-1)
