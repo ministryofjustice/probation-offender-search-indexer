@@ -35,7 +35,11 @@ class IndexInfo(
         GREEN to indexService.getIndexCount(GREEN),
         BLUE to indexService.getIndexCount(BLUE)
     ))
-    builder.withDetail("offender-alias", offenderRepository.offenderAliasIsPointingAt().joinToString())
+    try {
+      builder.withDetail("offender-alias", offenderRepository.offenderAliasIsPointingAt().joinToString())
+    } catch(e: Exception) {
+      builder.withDetail("offender-alias", "Elasticsearch is not available yet ")
+    }
     builder.withDetail("index-queue-backlog", safeQueueCount())
   }
 
