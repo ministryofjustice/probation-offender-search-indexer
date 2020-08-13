@@ -14,6 +14,9 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.GREEN
 
 internal class IndexQueueServiceTest {
@@ -119,5 +122,26 @@ internal class IndexQueueServiceTest {
         assertThat(it.queueUrl).isEqualTo("arn:eu-west-1:index-queue")
       })
     }
+  }
+
+  companion object {
+    @JvmStatic
+    fun activeTestSource() = listOf(
+        Arguments.of(0, 0, 0, false),
+        Arguments.of(1, 0, 0, true),
+        Arguments.of(0, 1, 0, true),
+        Arguments.of(0, 0, 1, true),
+        Arguments.of(0, 1, 1, true),
+        Arguments.of(1, 1, 0, true),
+        Arguments.of(0, 1, 1, true),
+        Arguments.of(1, 0, 1, true),
+        Arguments.of(1, 1, 1, true)
+    )
+  }
+
+  @ParameterizedTest
+  @MethodSource("activeTestSource")
+  fun `index queue status active`(messagesOnQueue: Int, messagesOnDlq: Int, messagesInFlight: Int, expectedActive: Boolean) {
+    assertThat(IndexQueueStatus(messagesOnQueue, messagesOnDlq, messagesInFlight).active).isEqualTo(expectedActive)
   }
 }
