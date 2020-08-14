@@ -22,9 +22,9 @@ dependencies {
 	implementation("com.google.code.gson:gson:2.8.6")
 	implementation("io.arrow-kt:arrow-core:0.10.5")
 
-	implementation("io.springfox:springfox-swagger2:2.9.2")
-	implementation("io.springfox:springfox-swagger-ui:2.9.2")
-	implementation("io.swagger:swagger-core:1.6.1")
+	implementation("org.springdoc:springdoc-openapi-ui:1.4.3")
+	implementation("org.springdoc:springdoc-openapi-data-rest:1.4.3")
+	implementation("org.springdoc:springdoc-openapi-kotlin:1.4.3")
 
 	testImplementation("com.github.tomakehurst:wiremock-standalone:2.27.1")
 	testImplementation("org.testcontainers:localstack:1.14.3")

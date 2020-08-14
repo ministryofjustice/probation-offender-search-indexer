@@ -1,8 +1,7 @@
 package uk.gov.justice.digital.hmpps.indexer.model
 
 import com.fasterxml.jackson.annotation.JsonIgnore
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 import org.springframework.data.annotation.Id
 import org.springframework.data.elasticsearch.annotations.DateFormat
 import org.springframework.data.elasticsearch.annotations.Document
@@ -20,7 +19,7 @@ enum class IndexState(val active: Boolean) {
 }
 
 @Document(indexName = "offender-index-status")
-@ApiModel(description = "The status of the two indexes, the current index being actively used for searches and the other index being inactive but available for rebuilding ")
+@Schema(description = "The status of the two indexes, the current index being actively used for searches and the other index being inactive but available for rebuilding ")
 data class IndexStatus(
     @Id
     @Field(type = FieldType.Keyword)
@@ -28,37 +27,37 @@ data class IndexStatus(
     val id: String = INDEX_STATUS_ID,
 
     @Field(type = FieldType.Keyword)
-    @ApiModelProperty(value = "The index currently active for searches", example = "GREEN")
+    @Schema(description = "The index currently active for searches", example = "GREEN")
     val currentIndex: SyncIndex,
 
     @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second)
-    @ApiModelProperty(value = "The last time the current index started building", example = "2020-07-17T10:25:49.842Z")
+    @Schema(description = "The last time the current index started building", example = "2020-07-17T10:25:49.842Z")
     val currentIndexStartBuildTime: LocalDateTime? = null,
 
     @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second)
-    @ApiModelProperty(value = "The last time the current index finished building", example = "2020-07-17T11:35:29.833Z")
+    @Schema(description = "The last time the current index finished building", example = "2020-07-17T11:35:29.833Z")
     val currentIndexEndBuildTime: LocalDateTime? = null,
 
     @Field(type = FieldType.Text)
-    @ApiModelProperty(value = "The status of the current index before it became active", example = "COMPLETED")
+    @Schema(description = "The status of the current index before it became active", example = "COMPLETED")
     val currentIndexState: IndexState = IndexState.ABSENT,
 
     @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second)
-    @ApiModelProperty(value = "The time the inactive index started building", example = "2020-07-17T12:26:48.822Z")
+    @Schema(description = "The time the inactive index started building", example = "2020-07-17T12:26:48.822Z")
     val otherIndexStartBuildTime: LocalDateTime? = null,
 
     @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second)
-    @ApiModelProperty(value = "The time the inactive index ended building", example = "null")
+    @Schema(description = "The time the inactive index ended building", example = "null")
     val otherIndexEndBuildTime: LocalDateTime? = null,
 
     @Field(type = FieldType.Text)
-    @ApiModelProperty(value = "The status of the inactive index", example = "BUILDING")
+    @Schema(description = "The status of the inactive index", example = "BUILDING")
     val otherIndexState: IndexState = IndexState.ABSENT
 
 ) {
 
   val otherIndex
-    @ApiModelProperty(value = "The index currently available for rebuilding", example = "BLUE")
+    @Schema(description = "The index currently available for rebuilding", example = "BLUE")
     get() = currentIndex.otherIndex()
 
   fun inProgress(): Boolean {
