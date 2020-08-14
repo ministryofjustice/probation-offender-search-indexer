@@ -104,7 +104,7 @@ class IndexService(
       }
 
   fun populateIndex(index: SyncIndex): Either<Error, Int> =
-    executeAndTrackTimeMillis("BuildOffenderIndexMsgPerformance") {
+    executeAndTrackTimeMillis(TelemetryEvents.BUILD_INDEX_MSG.name) {
       indexStatusService.getIndexStatus()
           .also { logIndexStatuses(it) }
           .failIf(IndexStatus::isNotBuilding) { BuildNotInProgressError(it) }
@@ -128,14 +128,14 @@ class IndexService(
   }
 
   fun populateIndexWithOffenderPage(offenderPage: OffenderPage): Either<Error, Unit> =
-      executeAndTrackTimeMillis("BuildOffenderPageMsgPerformance", mapOf("offenderPage" to offenderPage.page.toString())) {
+      executeAndTrackTimeMillis(TelemetryEvents.BUILD_PAGE_MSG.name, mapOf("offenderPage" to offenderPage.page.toString())) {
         indexStatusService.getIndexStatus()
             .failIf(IndexStatus::isNotBuilding) { BuildNotInProgressError(it) }
             .flatMap {
               offenderSynchroniserService.getAllOffenderIdentifiersInPage(offenderPage)
                   .forEachIndexed { index, offenderIdentifier ->
                     if (index == 0 || index.toLong() == offenderPage.pageSize-1) {
-                      telemetryClient.trackEvent("offenderPageBoundary", mutableMapOf("page" to offenderPage.page.toString(), "IndexOnPage" to index.toString(), "crn" to offenderIdentifier.crn), null)
+                      telemetryClient.trackEvent(TelemetryEvents.BUILD_PAGE_BOUNDARY.name, mutableMapOf("page" to offenderPage.page.toString(), "IndexOnPage" to index.toString(), "crn" to offenderIdentifier.crn), null)
                     }
                     indexQueueService.sendPopulateOffenderMessage(offenderIdentifier.crn) }.right()
             }
