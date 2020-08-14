@@ -492,7 +492,7 @@ class IndexResourceTest : IntegrationTestBase() {
           query.must(QueryBuilders.matchQuery("offenderAliases.firstName", "Jane"))
           val results = search(query)
 
-          assertThat(results.hits.asList()).extracting<String> { it.id }.containsExactly("X12345", "X12346")
+          assertThat(results.hits.asList()).extracting<String> { it.id }.containsExactlyInAnyOrder("X12345", "X12346")
         }
 
         @Test
