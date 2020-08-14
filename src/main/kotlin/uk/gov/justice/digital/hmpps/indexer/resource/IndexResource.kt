@@ -40,7 +40,6 @@ class IndexResource(
       value = "Start building a new index",
       notes = "The current index will be left untouched and continue to be maintained while the new index is built.  The new index must not be currently building.  Requires PROBATION_INDEX role.  Returns the new status of the index.")
   @ApiResponses(value = [
-    ApiResponse(code = 200, message = "OK", response = IndexStatus::class),
     ApiResponse(code = 401, message = "Unauthorised, requires a valid Oauth2 token"),
     ApiResponse(code = 403, message = "Forbidden, requires an authorisation with role PROBATION_INDEX"),
     ApiResponse(code = 409, message = "Conflict, the index was not in a state to start building")
@@ -59,7 +58,6 @@ class IndexResource(
       value = "Mark the current index build as complete",
       notes = "Completes the index build if it is currently building.  Requires PROBATION_INDEX role.  Returns the new status of the index.")
   @ApiResponses(value = [
-    ApiResponse(code = 200, message = "OK", response = IndexStatus::class),
     ApiResponse(code = 401, message = "Unauthorised, requires a valid Oauth2 token"),
     ApiResponse(code = 403, message = "Forbidden, requires an authorisation with role PROBATION_INDEX"),
     ApiResponse(code = 409, message = "Conflict, the index was not currently building")
@@ -82,7 +80,6 @@ class IndexResource(
       value = "Cancel building an index",
       notes = "Cancels the building of the current index if it is currently building.  Requires PROBATION_INDEX role.  Returns the new status of the index.")
   @ApiResponses(value = [
-    ApiResponse(code = 200, message = "OK", response = IndexStatus::class),
     ApiResponse(code = 401, message = "Unauthorised, requires a valid Oauth2 token"),
     ApiResponse(code = 403, message = "Forbidden, requires an authorisation with role PROBATION_INDEX"),
     ApiResponse(code = 409, message = "Conflict, the index was not currently building")
@@ -102,7 +99,6 @@ class IndexResource(
       value = "Add or refresh the offender in the current index",
       notes = "Requires PROBATION_INDEX role.  Returns the offender details added to the index.")
   @ApiResponses(value = [
-    ApiResponse(code = 200, message = "OK", response = String::class),
     ApiResponse(code = 401, message = "Unauthorised, requires a valid Oauth2 token"),
     ApiResponse(code = 403, message = "Forbidden, requires an authorisation with role PROBATION_INDEX"),
     ApiResponse(code = 404, message = "Not Found, the offender could not be found"),
