@@ -6,7 +6,9 @@ import org.springframework.core.type.AnnotatedTypeMetadata
 
 enum class TelemetryEvents {
     BUILDING_INDEX, CANCELLED_BUILDING_INDEX, COMPLETED_BUILDING_INDEX, PURGED_INDEX_QUEUE,
-    PURGED_INDEX_DLQ, TRANSFERRED_INDEX_DLQ, POPULATE_OFFENDER_PAGES, OFFENDER_UPDATED }
+    PURGED_INDEX_DLQ, TRANSFERRED_INDEX_DLQ, POPULATE_OFFENDER_PAGES, OFFENDER_UPDATED,
+    BUILD_INDEX_MSG, BUILD_PAGE_MSG, BUILD_PAGE_BOUNDARY
+}
 
 /**
  * Application insights now controlled by the spring-boot-starter dependency.  However when the key is not specified
