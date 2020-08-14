@@ -48,6 +48,25 @@ Running all services locally:
 ```bash
 docker-compose up 
 ```
+Since localstack persists data between runs it maybe neccessary to delete the localstack temporary data:
+
+Mac
+```bash
+rm -rf $TMPDIR/data
+```
+Linux
+```bash
+sudo rm -rf /tmp/localstack
+```
+
+*Please note the above will not work on a Mac using docker desktop since the docker network host mode is not supported on a Mac*
+
+For a Mac it recommended running all components *except* probation-offender-search-indexer (see below) then running probation-offender-search-indexer externally:
+
+```bash
+SPRING_PROFILES_ACTIVE=dev ./gradlew bootRun 
+```
+
 Queues and topics and an ES instance will automatically be created when the `localstack` container starts.
 
 Running all services except this application (hence allowing you to run this in the IDE)
