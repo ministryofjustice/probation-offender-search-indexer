@@ -172,7 +172,7 @@ abstract class IntegrationTestBase {
         .exchange()
         .expectStatus().isOk
 
-    await untilCallTo { getIndexCount(index) } matches { it == expectedCount }
+    await untilCallTo { indexQueueService.getIndexQueueStatus().active } matches { it == false }
   }
 
 }
