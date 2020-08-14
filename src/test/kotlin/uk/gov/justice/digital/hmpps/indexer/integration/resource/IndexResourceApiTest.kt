@@ -9,6 +9,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.Mockito
@@ -24,38 +26,40 @@ import uk.gov.justice.digital.hmpps.indexer.service.OffenderNotFoundError
 
 class IndexResourceApiTest : IntegrationTestBase() {
 
-  companion object {
-    @JvmStatic
-    private fun secureEndpoints() =
-        listOf("/probation-index/build-index", "/probation-index/mark-complete", "/probation-index/cancel-index",
-            "/probation-index/index/offender/SOME_CRN", "/probation-index/purge-index-dlq", "/probation-index/transfer-event-dlq",
-            "/probation-index/transfer-index-dlq")
-  }
-
   @BeforeEach
   fun `reset mocks`() {
     Mockito.reset(indexService)
   }
 
-  @ParameterizedTest
-  @MethodSource("secureEndpoints")
-  internal fun `requires a valid authentication token`(uri: String) {
-    webTestClient.put()
-        .uri(uri)
-        .accept(MediaType.APPLICATION_JSON)
-        .exchange()
-        .expectStatus().isUnauthorized
-  }
+  @Nested
+  @TestInstance(PER_CLASS)
+  inner class SecureEndpoints() {
+    private fun secureEndpoints() =
+        listOf("/probation-index/build-index", "/probation-index/mark-complete", "/probation-index/cancel-index",
+            "/probation-index/index/offender/SOME_CRN", "/probation-index/purge-index-dlq", "/probation-index/transfer-event-dlq",
+            "/probation-index/transfer-index-dlq")
 
-  @ParameterizedTest
-  @MethodSource("secureEndpoints")
-  internal fun `requires the correct role`(uri: String) {
-    webTestClient.put()
-        .uri(uri)
-        .headers(setAuthorisation(roles = listOf()))
-        .accept(MediaType.APPLICATION_JSON)
-        .exchange()
-        .expectStatus().isForbidden
+    @ParameterizedTest
+    @MethodSource("secureEndpoints")
+    internal fun `requires a valid authentication token`(uri: String) {
+      webTestClient.put()
+          .uri(uri)
+          .accept(MediaType.APPLICATION_JSON)
+          .exchange()
+          .expectStatus().isUnauthorized
+    }
+
+    @ParameterizedTest
+    @MethodSource("secureEndpoints")
+    internal fun `requires the correct role`(uri: String) {
+      webTestClient.put()
+          .uri(uri)
+          .headers(setAuthorisation(roles = listOf()))
+          .accept(MediaType.APPLICATION_JSON)
+          .exchange()
+          .expectStatus().isForbidden
+    }
+
   }
 
   @Nested
