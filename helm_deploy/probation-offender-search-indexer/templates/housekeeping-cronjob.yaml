@@ -11,7 +11,7 @@ spec:
         spec:
           containers:
             - name: housekeeping
-              image: buildpack-deps:curl
+              image: quay.io/hmpps/dps-tools
               args:
                 - /bin/sh
                 - -c
