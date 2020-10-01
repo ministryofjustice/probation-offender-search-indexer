@@ -2,6 +2,7 @@
 
 [![CircleCI](https://circleci.com/gh/ministryofjustice/probation-offender-search-indexer/tree/main.svg?style=svg)](https://circleci.com/gh/ministryofjustice/probation-offender-search-indexer)
 [![Docker](https://quay.io/repository/hmpps/probation-offender-search-indexer/status)](https://quay.io/repository/hmpps/probation-offender-search-indexer/status)
+[![API docs](https://img.shields.io/badge/API_docs_(needs_VPN)-view-85EA2D.svg?logo=swagger)](https://probation-search-indexer-dev.hmpps.service.justice.gov.uk/swagger-ui.html)
 
 The purpose of this service is two fold:
 * Keep the Elastic Search  (ES) probation index up to date with changes from Delius
