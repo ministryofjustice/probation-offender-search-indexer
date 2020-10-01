@@ -1,0 +1,19 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: {{ template "app.fullname" . }}-housekeeping-cronjob
+spec:
+  schedule: "*/1 * * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: housekeeping
+              image: quay.io/hmpps/dps-tools
+              args:
+                - /bin/sh
+                - -c
+                - curl -XPUT http://probation-offender-search-indexer/index-queue-housekeeping
+          restartPolicy: Never

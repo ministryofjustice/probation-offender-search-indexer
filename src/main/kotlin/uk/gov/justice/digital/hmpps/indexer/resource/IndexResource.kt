@@ -155,4 +155,9 @@ class IndexResource(
   ])
   fun transferEventDlq(): Unit = queueAdminService.transferEventMessages()
 
+  @PutMapping("/index-queue-housekeeping")
+  @Operation(
+      summary = "Triggers maintenance of the index queue"
+  )
+  fun indexQueueHousekeeping() = log.info("Received index-queue-housekeeping request")
 }
