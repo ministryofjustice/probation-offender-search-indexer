@@ -25,7 +25,7 @@ import uk.gov.justice.digital.hmpps.indexer.service.UpdateOffenderError
 @RequestMapping("/probation-index", produces = [MediaType.APPLICATION_JSON_VALUE])
 class IndexResource(
     private val indexService: IndexService,
-    private val queueAdminService: QueueAdminService,
+    private val queueAdminService: QueueAdminService
 ) {
 
   companion object {

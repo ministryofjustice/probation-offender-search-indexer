@@ -11,7 +11,7 @@ version.BuildInfo{Version:"v3.0.1", GitCommit:"7c22ef9ce89e0ebeb7125ba2ebf7d421f
 
 - Ensure a TLS cert for your intended hostname is configured and ready, see section below.
 
-### Useful helm (v3) commands:
+## Useful helm (v3) commands:
 
 __Test chart template rendering:__
 
@@ -54,7 +54,7 @@ helm upgrade [release name] [path to chart]. \
   --values example-secrets.yaml
 ```
 
-### Ingress TLS certificate
+## Ingress TLS certificate
 
 Ensure a certificate definition exists in the cloud-platform-environments repo under the relevant namespaces folder:
 
@@ -67,3 +67,10 @@ cloud-platform-environments/namespaces/live-1.cloud-platform.service.justice.gov
 Ensure the certificate is created and ready for use.
 
 The name of the kubernetes secret where the certificate is stored is used as a value to the helm chart - this is used to configured the ingress.
+
+## Housekeeping Cronjob
+There is a Kubernetes CronJob which runs on a schedule to perform the following tasks:
+* Checks if an index build has completed and if so then marks the build as complete (which switches the search to the new index)
+
+The CronJob calls the endpoint `/probation-index/index-queue-housekeeping` which is not secured by Spring Security. To prevent external calls to the endpoint it has been secured in the ingress instead. 
+
