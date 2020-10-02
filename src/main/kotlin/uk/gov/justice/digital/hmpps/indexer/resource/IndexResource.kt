@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.server.ResponseStatusException
 import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
 import uk.gov.justice.digital.hmpps.indexer.service.CancelBuildError
+import uk.gov.justice.digital.hmpps.indexer.service.IndexHousekeepingService
 import uk.gov.justice.digital.hmpps.indexer.service.IndexService
 import uk.gov.justice.digital.hmpps.indexer.service.MarkCompleteError
 import uk.gov.justice.digital.hmpps.indexer.service.PrepareRebuildError
@@ -25,7 +26,8 @@ import uk.gov.justice.digital.hmpps.indexer.service.UpdateOffenderError
 @RequestMapping("/probation-index", produces = [MediaType.APPLICATION_JSON_VALUE])
 class IndexResource(
     private val indexService: IndexService,
-    private val queueAdminService: QueueAdminService
+    private val queueAdminService: QueueAdminService,
+    private val indexHousekeepingService: IndexHousekeepingService
 ) {
 
   companion object {
@@ -157,7 +159,9 @@ class IndexResource(
 
   @PutMapping("/index-queue-housekeeping")
   @Operation(
-      summary = "Triggers maintenance of the index queue"
+      summary = "Triggers maintenance of the index queue",
+      description = "This is an internal service which isn't exposed to the outside world. It is called from a Kubernetes CronJob named `index-housekeeping-cronjob`"
   )
-  fun indexQueueHousekeeping() = log.info("Received index-queue-housekeeping request")
+  fun indexQueueHousekeeping() = indexHousekeepingService.checkForCompletedBuild()
+
 }

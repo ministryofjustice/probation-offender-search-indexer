@@ -28,7 +28,7 @@ class IndexResourceApiTest : IntegrationTestBase() {
 
   @BeforeEach
   fun `reset mocks`() {
-    Mockito.reset(indexService)
+    Mockito.reset(indexService, indexHousekeepingService)
   }
 
   @Nested
@@ -223,6 +223,30 @@ class IndexResourceApiTest : IntegrationTestBase() {
           .expectStatus().isEqualTo(404)
 
       verify(indexService).updateOffender("SOME_CRN")
+    }
+  }
+
+
+  @Nested
+  inner class IndexHouseKeeping {
+
+    @Test
+    fun `endpoint is not secured`() {
+      webTestClient.put()
+          .uri("/probation-index/index-queue-housekeeping")
+          .accept(MediaType.APPLICATION_JSON)
+          .exchange()
+          .expectStatus().isOk
+    }
+
+    @Test
+    fun `calls the housekeeping service`() {
+      webTestClient.put()
+          .uri("/probation-index/index-queue-housekeeping")
+          .accept(MediaType.APPLICATION_JSON)
+          .exchange()
+
+      verify(indexHousekeepingService).checkForCompletedBuild()
     }
   }
 
