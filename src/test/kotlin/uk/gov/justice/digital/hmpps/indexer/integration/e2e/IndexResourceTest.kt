@@ -32,6 +32,7 @@ class IndexResourceTest : IntegrationTestBase() {
   @BeforeEach
   internal fun setUp() {
     indexAwsSqsClient.purgeQueue(PurgeQueueRequest(indexQueueUrl))
+    indexAwsSqsDlqClient.purgeQueue(PurgeQueueRequest(indexDlqUrl))
     CommunityApiExtension.communityApi.resetMappings()
   }
 
