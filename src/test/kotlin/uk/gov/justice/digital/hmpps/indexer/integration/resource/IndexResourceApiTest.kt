@@ -239,7 +239,6 @@ class IndexResourceApiTest : IntegrationTestBase() {
     }
 
     @Test
-    @Order(2)
     fun `endpoint is not secured`() {
       webTestClient.put()
           .uri("/probation-index/index-queue-housekeeping")
@@ -249,7 +248,6 @@ class IndexResourceApiTest : IntegrationTestBase() {
     }
 
     @Test
-    @Order(1)
     fun `attempts to mark the build as complete`() {
       webTestClient.put()
           .uri("/probation-index/index-queue-housekeeping")
