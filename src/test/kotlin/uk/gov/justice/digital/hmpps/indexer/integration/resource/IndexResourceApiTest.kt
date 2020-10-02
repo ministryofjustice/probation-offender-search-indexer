@@ -28,7 +28,7 @@ class IndexResourceApiTest : IntegrationTestBase() {
 
   @BeforeEach
   fun `reset mocks`() {
-    Mockito.reset(indexService, indexHousekeepingService)
+    Mockito.reset(indexService)
   }
 
   @Nested
@@ -240,13 +240,13 @@ class IndexResourceApiTest : IntegrationTestBase() {
     }
 
     @Test
-    fun `calls the housekeeping service`() {
+    fun `attempts to mark the build as complete`() {
       webTestClient.put()
           .uri("/probation-index/index-queue-housekeeping")
           .accept(MediaType.APPLICATION_JSON)
           .exchange()
 
-      verify(indexHousekeepingService).checkForCompletedBuild()
+      verify(indexService).markIndexingComplete()
     }
   }
 

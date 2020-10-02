@@ -32,7 +32,6 @@ import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.GREEN
 import uk.gov.justice.digital.hmpps.indexer.repository.IndexStatusRepository
 import uk.gov.justice.digital.hmpps.indexer.repository.OffenderRepository
-import uk.gov.justice.digital.hmpps.indexer.service.IndexHousekeepingService
 import uk.gov.justice.digital.hmpps.indexer.service.IndexQueueService
 import uk.gov.justice.digital.hmpps.indexer.service.IndexService
 import uk.gov.justice.digital.hmpps.indexer.service.IndexStatusService
@@ -70,9 +69,6 @@ abstract class IntegrationTestBase {
   @SpyBean
   @Qualifier("indexAwsSqsDlqClient")
   internal lateinit var indexAwsSqsDlqClient: AmazonSQS
-
-  @SpyBean
-  internal lateinit var indexHousekeepingService: IndexHousekeepingService
 
   @Autowired
   internal lateinit var gson: Gson
