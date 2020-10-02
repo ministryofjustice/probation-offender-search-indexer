@@ -25,6 +25,7 @@ import uk.gov.justice.digital.hmpps.indexer.model.IndexState.COMPLETED
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.BLUE
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.GREEN
 import uk.gov.justice.digital.hmpps.indexer.service.OffenderDetail
+import java.time.Duration
 
 class IndexResourceTest : IntegrationTestBase() {
 
@@ -726,7 +727,7 @@ class IndexResourceTest : IntegrationTestBase() {
           .exchange()
           .expectStatus().isOk
 
-      await untilCallTo { indexQueueService.getNumberOfMessagesCurrentlyOnIndexQueue() } matches { it == 0 }
+      await.atMost(Duration.ofSeconds(20)) untilCallTo { indexQueueService.getNumberOfMessagesCurrentlyOnIndexQueue() } matches { it == 0 }
     }
 
     private fun addMessageToDlq() = indexAwsSqsDlqClient.sendMessage(indexDlqUrl, "{}")
