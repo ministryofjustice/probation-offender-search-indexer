@@ -47,8 +47,6 @@ class IndexInfoTest : IntegrationTestBase() {
 
     @BeforeEach
     fun init() {
-      deleteOffenderIndexes()
-      createOffenderIndexes()
       initialiseIndexStatus()
       CommunityApiExtension.communityApi.stubAllOffenderGets(10 , 0)
       buildAndSwitchIndex(SyncIndex.GREEN, 0)

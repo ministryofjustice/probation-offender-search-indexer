@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.indexer.integration.e2e
 
-import com.amazonaws.services.sqs.model.PurgeQueueRequest
 import org.apache.lucene.search.join.ScoreMode
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.await
@@ -29,18 +28,10 @@ import uk.gov.justice.digital.hmpps.indexer.service.OffenderDetail
 
 class IndexResourceTest : IntegrationTestBase() {
 
-  @BeforeEach
-  internal fun setUp() {
-    indexAwsSqsClient.purgeQueue(PurgeQueueRequest(indexQueueUrl))
-    indexAwsSqsDlqClient.purgeQueue(PurgeQueueRequest(indexDlqUrl))
-    CommunityApiExtension.communityApi.resetMappings()
-  }
-
   @Nested
   inner class BuildIndexAndMarkComplete {
     @BeforeEach
     internal fun setUp() {
-      deleteOffenderIndexes()
       initialiseIndexStatus()
     }
 
@@ -247,7 +238,6 @@ class IndexResourceTest : IntegrationTestBase() {
   inner class BuildIndexAndCancel {
     @BeforeEach
     internal fun setUp() {
-      deleteOffenderIndexes()
       initialiseIndexStatus()
       CommunityApiExtension.communityApi.stubAllOffenderGets(10, numberOfOffenders = 1)
       buildAndSwitchIndex(GREEN, 1)
@@ -291,7 +281,6 @@ class IndexResourceTest : IntegrationTestBase() {
   inner class IndexOffender {
     @BeforeEach
     internal fun setUp() {
-      deleteOffenderIndexes()
       initialiseIndexStatus()
       CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345")
       buildAndSwitchIndex(GREEN, 1)
@@ -365,7 +354,6 @@ class IndexResourceTest : IntegrationTestBase() {
     inner class IndexBehaviour {
       @BeforeEach
       internal fun setUp() {
-        deleteOffenderIndexes()
         initialiseIndexStatus()
         CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345", "X12346", "X12347")
         CommunityApiExtension.communityApi.stubGetOffender(crn = "X12345", pncNumber = "1999/0460155D")
@@ -420,7 +408,6 @@ class IndexResourceTest : IntegrationTestBase() {
       inner class CROMapping {
         @BeforeEach
         fun setup() {
-          deleteOffenderIndexes()
           initialiseIndexStatus()
           CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345", "X12346", "X12347")
           CommunityApiExtension.communityApi.stubGetOffender(crn = "X12345", croNumber = "46189/08G")
@@ -446,7 +433,6 @@ class IndexResourceTest : IntegrationTestBase() {
       inner class ProbationAreaMapping {
         @BeforeEach
         fun setup() {
-          deleteOffenderIndexes()
           initialiseIndexStatus()
           CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345", "X12346")
           CommunityApiExtension.communityApi.stubGetOffender(crn = "X12345", offenderManagers = listOf(
@@ -475,7 +461,6 @@ class IndexResourceTest : IntegrationTestBase() {
       inner class AliasMapping {
         @BeforeEach
         fun setup() {
-          deleteOffenderIndexes()
           initialiseIndexStatus()
           CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345", "X12346")
           CommunityApiExtension.communityApi.stubGetOffender(crn = "X12345", offenderAliases = listOf(
@@ -572,7 +557,6 @@ class IndexResourceTest : IntegrationTestBase() {
 
       @BeforeEach
       internal fun setUp() {
-        deleteOffenderIndexes()
         initialiseIndexStatus()
         CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345")
         buildAndSwitchIndex(GREEN, 1)
@@ -606,7 +590,6 @@ class IndexResourceTest : IntegrationTestBase() {
 
     @BeforeEach
     internal fun `build index but don't complete`() {
-      deleteOffenderIndexes()
       initialiseIndexStatus()
       CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345")
       buildIndex(GREEN, 1)
@@ -645,7 +628,6 @@ class IndexResourceTest : IntegrationTestBase() {
 
     @BeforeEach
     fun createEmptyIndex() {
-      deleteOffenderIndexes()
       initialiseIndexStatus()
     }
 

@@ -9,9 +9,9 @@ import org.elasticsearch.ElasticsearchStatusException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import uk.gov.justice.digital.hmpps.indexer.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.indexer.helpers.findLogAppender
 import uk.gov.justice.digital.hmpps.indexer.helpers.hasLogMessageContaining
+import uk.gov.justice.digital.hmpps.indexer.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.indexer.integration.readResourceAsText
 import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.CommunityApiExtension
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
@@ -23,8 +23,6 @@ class OffenderUpdateMessageTest : IntegrationTestBase() {
   inner class OffenderIndexesOk {
     @BeforeEach
     fun bothIndexesOK() {
-      deleteOffenderIndexes()
-      createOffenderIndexes()
       initialiseIndexStatus()
       CommunityApiExtension.communityApi.stubAllOffenderGets(10, numberOfOffenders = 0)
       buildAndSwitchIndex(SyncIndex.GREEN, 0)
@@ -103,8 +101,6 @@ class OffenderUpdateMessageTest : IntegrationTestBase() {
   inner class OffenderNotFound {
     @BeforeEach
     fun singleIndexExists() {
-      deleteOffenderIndexes()
-      createOffenderIndexes()
       initialiseIndexStatus()
       CommunityApiExtension.communityApi.stubAllOffenderGets(10, numberOfOffenders = 0)
       buildAndSwitchIndex(SyncIndex.GREEN, 0)
