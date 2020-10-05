@@ -20,7 +20,8 @@ class ResourceServerConfiguration : WebSecurityConfigurerAdapter() {
         .authorizeRequests { auth ->
           auth.antMatchers("/webjars/**", "/favicon.ico",
               "/health/**", "/info",
-              "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html")
+              "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html",
+              "/probation-index/index-queue-housekeeping") // This endpoint is secured in the ingress rather than the app so that it can be called from within the namespace without requiring authentication
               .permitAll().anyRequest().authenticated()
         }.oauth2ResourceServer().jwt().jwtAuthenticationConverter(AuthAwareTokenConverter())
   }

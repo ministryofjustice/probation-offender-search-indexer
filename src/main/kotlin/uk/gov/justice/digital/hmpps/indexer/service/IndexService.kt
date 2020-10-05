@@ -62,7 +62,6 @@ class IndexService(
         .also { logIndexStatuses(it) }
         .failIf(IndexStatus::isNotBuilding) { BuildNotInProgressError(it) }
         .failIf({ indexQueueStatus.active }) { ActiveMessagesExistError(it.otherIndex, indexQueueStatus, "mark complete") }
-        .map { indexQueueService.getIndexQueueStatus() }
         .map { doMarkIndexingComplete() }
   }
 

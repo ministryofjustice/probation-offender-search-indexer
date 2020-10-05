@@ -8,6 +8,7 @@ import com.nhaarman.mockitokotlin2.whenever
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
+import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
@@ -16,9 +17,11 @@ import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.Mockito
 import org.springframework.http.MediaType
 import uk.gov.justice.digital.hmpps.indexer.integration.IntegrationTestBase
-import uk.gov.justice.digital.hmpps.indexer.model.IndexState
+import uk.gov.justice.digital.hmpps.indexer.model.IndexState.BUILDING
+import uk.gov.justice.digital.hmpps.indexer.model.IndexState.CANCELLED
+import uk.gov.justice.digital.hmpps.indexer.model.IndexState.COMPLETED
 import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
-import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
+import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.GREEN
 import uk.gov.justice.digital.hmpps.indexer.service.BuildAlreadyInProgressError
 import uk.gov.justice.digital.hmpps.indexer.service.BuildNotInProgressError
 import uk.gov.justice.digital.hmpps.indexer.service.NoActiveIndexesError
@@ -33,7 +36,7 @@ class IndexResourceApiTest : IntegrationTestBase() {
 
   @Nested
   @TestInstance(PER_CLASS)
-  inner class SecureEndpoints() {
+  inner class SecureEndpoints {
     private fun secureEndpoints() =
         listOf("/probation-index/build-index", "/probation-index/mark-complete", "/probation-index/cancel-index",
             "/probation-index/index/offender/SOME_CRN", "/probation-index/purge-index-dlq", "/probation-index/transfer-event-dlq",
@@ -66,7 +69,7 @@ class IndexResourceApiTest : IntegrationTestBase() {
   inner class BuildIndex {
     @Test
     fun `Request build index is successful and calls service`() {
-      doReturn(IndexStatus(currentIndex = SyncIndex.GREEN, otherIndexState = IndexState.BUILDING).right()).whenever(indexService)
+      doReturn(IndexStatus(currentIndex = GREEN, otherIndexState = BUILDING).right()).whenever(indexService)
           .prepareIndexForRebuild()
 
 
@@ -85,7 +88,7 @@ class IndexResourceApiTest : IntegrationTestBase() {
 
     @Test
     fun `Request build index already building returns conflict`() {
-      val expectedIndexStatus = IndexStatus(currentIndex = SyncIndex.GREEN, otherIndexState = IndexState.BUILDING)
+      val expectedIndexStatus = IndexStatus(currentIndex = GREEN, otherIndexState = BUILDING)
       doReturn(BuildAlreadyInProgressError(expectedIndexStatus).left()).whenever(indexService).prepareIndexForRebuild()
 
       webTestClient.put()
@@ -123,7 +126,7 @@ class IndexResourceApiTest : IntegrationTestBase() {
 
     @Test
     fun `Request to mark index complete when index not building returns error`() {
-      val expectedIndexStatus = IndexStatus(currentIndex = SyncIndex.GREEN, otherIndexState = IndexState.COMPLETED)
+      val expectedIndexStatus = IndexStatus(currentIndex = GREEN, otherIndexState = COMPLETED)
       doReturn(BuildNotInProgressError(expectedIndexStatus).left()).whenever(indexService).markIndexingComplete()
 
       webTestClient.put()
@@ -161,7 +164,7 @@ class IndexResourceApiTest : IntegrationTestBase() {
 
     @Test
     fun `Request to mark index cancelled when index not building returns error`() {
-      val expectedIndexStatus = IndexStatus(currentIndex = SyncIndex.GREEN, otherIndexState = IndexState.CANCELLED)
+      val expectedIndexStatus = IndexStatus(currentIndex = GREEN, otherIndexState = CANCELLED)
       doReturn(BuildNotInProgressError(expectedIndexStatus).left()).whenever(indexService).cancelIndexing()
 
       webTestClient.put()
@@ -223,6 +226,35 @@ class IndexResourceApiTest : IntegrationTestBase() {
           .expectStatus().isEqualTo(404)
 
       verify(indexService).updateOffender("SOME_CRN")
+    }
+  }
+
+
+  @Nested
+  inner class IndexHouseKeeping {
+
+    @BeforeEach
+    fun mockService() {
+      doReturn(IndexStatus("any_id", GREEN).right()).whenever(indexService).markIndexingComplete()
+    }
+
+    @Test
+    fun `endpoint is not secured`() {
+      webTestClient.put()
+          .uri("/probation-index/index-queue-housekeeping")
+          .accept(MediaType.APPLICATION_JSON)
+          .exchange()
+          .expectStatus().isOk
+    }
+
+    @Test
+    fun `attempts to mark the build as complete`() {
+      webTestClient.put()
+          .uri("/probation-index/index-queue-housekeeping")
+          .accept(MediaType.APPLICATION_JSON)
+          .exchange()
+
+      verify(indexService).markIndexingComplete()
     }
   }
 

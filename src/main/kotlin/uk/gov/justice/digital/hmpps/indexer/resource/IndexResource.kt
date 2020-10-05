@@ -157,7 +157,11 @@ class IndexResource(
 
   @PutMapping("/index-queue-housekeeping")
   @Operation(
-      summary = "Triggers maintenance of the index queue"
+      summary = "Triggers maintenance of the index queue",
+      description = "This is an internal service which isn't exposed to the outside world. It is called from a Kubernetes CronJob named `index-housekeeping-cronjob`"
   )
-  fun indexQueueHousekeeping() = log.info("Received index-queue-housekeeping request")
+  fun indexQueueHousekeeping() {
+    indexService.markIndexingComplete()
+  }
+
 }

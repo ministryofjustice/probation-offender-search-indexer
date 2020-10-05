@@ -89,9 +89,6 @@ internal class OffenderRepositoryTest : IntegrationTestBase() {
       lateinit var mappingProperties: Map<String, Any>
       @BeforeEach
       internal fun setUp() {
-        deleteOffenderIndexes()
-        createOffenderIndexes()
-
         val mappings = highLevelClient.indices()
             .getMapping(GetMappingsRequest().indices(BLUE.indexName), RequestOptions.DEFAULT)
         mappingProperties = mappings.properties(BLUE.indexName)
@@ -175,11 +172,6 @@ internal class OffenderRepositoryTest : IntegrationTestBase() {
 
   @Nested
   inner class Save {
-    @BeforeEach
-    internal fun setUp() {
-      deleteOffenderIndexes()
-      createOffenderIndexes()
-    }
 
     @Test
     internal fun `will save offender in the correct index`() {
@@ -298,11 +290,6 @@ internal class OffenderRepositoryTest : IntegrationTestBase() {
 
   @Nested
   inner class SwitchAliasIndex {
-    @BeforeEach
-    internal fun setUp() {
-      deleteOffenderIndexes()
-      createOffenderIndexes()
-    }
 
     @Nested
     inner class BeforeAliasExists {

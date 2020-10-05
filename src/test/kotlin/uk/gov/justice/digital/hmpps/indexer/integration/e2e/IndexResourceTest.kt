@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.indexer.integration.e2e
 
-import com.amazonaws.services.sqs.model.PurgeQueueRequest
 import org.apache.lucene.search.join.ScoreMode
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.await
@@ -20,23 +19,20 @@ import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.OffenderAlias
 import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.OffenderManager
 import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.ProbationArea
 import uk.gov.justice.digital.hmpps.indexer.listeners.IndexListener
+import uk.gov.justice.digital.hmpps.indexer.model.IndexState.ABSENT
+import uk.gov.justice.digital.hmpps.indexer.model.IndexState.BUILDING
+import uk.gov.justice.digital.hmpps.indexer.model.IndexState.COMPLETED
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.BLUE
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.GREEN
 import uk.gov.justice.digital.hmpps.indexer.service.OffenderDetail
+import java.time.Duration
 
 class IndexResourceTest : IntegrationTestBase() {
-
-  @BeforeEach
-  internal fun setUp() {
-    indexAwsSqsClient.purgeQueue(PurgeQueueRequest(indexQueueUrl))
-    CommunityApiExtension.communityApi.resetMappings()
-  }
 
   @Nested
   inner class BuildIndexAndMarkComplete {
     @BeforeEach
     internal fun setUp() {
-      deleteOffenderIndexes()
       initialiseIndexStatus()
     }
 
@@ -243,7 +239,6 @@ class IndexResourceTest : IntegrationTestBase() {
   inner class BuildIndexAndCancel {
     @BeforeEach
     internal fun setUp() {
-      deleteOffenderIndexes()
       initialiseIndexStatus()
       CommunityApiExtension.communityApi.stubAllOffenderGets(10, numberOfOffenders = 1)
       buildAndSwitchIndex(GREEN, 1)
@@ -287,7 +282,6 @@ class IndexResourceTest : IntegrationTestBase() {
   inner class IndexOffender {
     @BeforeEach
     internal fun setUp() {
-      deleteOffenderIndexes()
       initialiseIndexStatus()
       CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345")
       buildAndSwitchIndex(GREEN, 1)
@@ -361,7 +355,6 @@ class IndexResourceTest : IntegrationTestBase() {
     inner class IndexBehaviour {
       @BeforeEach
       internal fun setUp() {
-        deleteOffenderIndexes()
         initialiseIndexStatus()
         CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345", "X12346", "X12347")
         CommunityApiExtension.communityApi.stubGetOffender(crn = "X12345", pncNumber = "1999/0460155D")
@@ -416,7 +409,6 @@ class IndexResourceTest : IntegrationTestBase() {
       inner class CROMapping {
         @BeforeEach
         fun setup() {
-          deleteOffenderIndexes()
           initialiseIndexStatus()
           CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345", "X12346", "X12347")
           CommunityApiExtension.communityApi.stubGetOffender(crn = "X12345", croNumber = "46189/08G")
@@ -442,7 +434,6 @@ class IndexResourceTest : IntegrationTestBase() {
       inner class ProbationAreaMapping {
         @BeforeEach
         fun setup() {
-          deleteOffenderIndexes()
           initialiseIndexStatus()
           CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345", "X12346")
           CommunityApiExtension.communityApi.stubGetOffender(crn = "X12345", offenderManagers = listOf(
@@ -471,7 +462,6 @@ class IndexResourceTest : IntegrationTestBase() {
       inner class AliasMapping {
         @BeforeEach
         fun setup() {
-          deleteOffenderIndexes()
           initialiseIndexStatus()
           CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345", "X12346")
           CommunityApiExtension.communityApi.stubGetOffender(crn = "X12345", offenderAliases = listOf(
@@ -516,7 +506,7 @@ class IndexResourceTest : IntegrationTestBase() {
       @BeforeEach
       internal fun setUp() {
         repeat(10) {
-          indexAwsSqsClient.sendMessage(indexDlqUrl, "{}")
+          indexAwsSqsDlqClient.sendMessage(indexDlqUrl, "{}")
         }
         await untilCallTo { indexQueueService.getNumberOfMessagesCurrentlyOnIndexDLQ() } matches { it == 10 }
       }
@@ -539,7 +529,7 @@ class IndexResourceTest : IntegrationTestBase() {
       @BeforeEach
       internal fun setUp() {
         repeat(10) {
-          eventAwsSqsClient.sendMessage(eventDlqUrl, "{}")
+          eventAwsSqsDlqClient.sendMessage(eventDlqUrl, "{}")
         }
         await untilCallTo { getNumberOfMessagesCurrentlyOnEventDLQ() } matches { it == 10 }
       }
@@ -568,7 +558,6 @@ class IndexResourceTest : IntegrationTestBase() {
 
       @BeforeEach
       internal fun setUp() {
-        deleteOffenderIndexes()
         initialiseIndexStatus()
         CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345")
         buildAndSwitchIndex(GREEN, 1)
@@ -602,7 +591,6 @@ class IndexResourceTest : IntegrationTestBase() {
 
     @BeforeEach
     internal fun `build index but don't complete`() {
-      deleteOffenderIndexes()
       initialiseIndexStatus()
       CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345")
       buildIndex(GREEN, 1)
@@ -636,6 +624,114 @@ class IndexResourceTest : IntegrationTestBase() {
 
   }
 
+  @Nested
+  inner class Housekeeping {
+
+    @BeforeEach
+    fun createEmptyIndex() {
+      initialiseIndexStatus()
+    }
+
+    @Test
+    fun `marks build complete if it is finished`() {
+      buildIndexAndWaitUntilFinished()
+
+      callHousekeeping()
+
+      assertBuildStatusComplete()
+    }
+
+    @Test
+    fun `does nothing if build already completed`() {
+      buildIndexAndWaitUntilFinished()
+      markBuildComplete()
+      val beforeHousekeepingStatus = indexStatusService.getIndexStatus()
+
+      callHousekeeping()
+
+      assertBuildStatusComplete()
+      assertThat(indexStatusService.getIndexStatus()).isEqualTo(beforeHousekeepingStatus)
+    }
+
+    @Test
+    fun `does nothing if build is still in progress`() {
+      buildIndex(1000)
+      val beforeHousekeepingStatus = indexStatusService.getIndexStatus()
+
+      callHousekeeping()
+
+      assertBuildStatusBuilding()
+      assertThat(indexStatusService.getIndexStatus()).isEqualTo(beforeHousekeepingStatus)
+
+      cancelBuildAndWait() // Ensures there are no messages still active before next test
+    }
+
+    @Test
+    fun `does nothing if build was not successful`() {
+      buildIndexAndWaitUntilFinished()
+      addMessageToDlq()
+      val beforeHousekeepingStatus = indexStatusService.getIndexStatus()
+
+      callHousekeeping()
+
+      assertBuildStatusBuilding()
+      assertThat(indexStatusService.getIndexStatus()).isEqualTo(beforeHousekeepingStatus)
+    }
+
+    private fun buildIndexAndWaitUntilFinished() {
+      buildIndex(1)
+      await untilCallTo { getIndexCount(GREEN) } matches { it == 1L }
+      assertBuildStatusBuilding()
+    }
+
+    private fun buildIndex(numberOfOffenders: Long) {
+      CommunityApiExtension.communityApi.stubAllOffenderGets(10, numberOfOffenders = numberOfOffenders)
+      webTestClient.put()
+          .uri("/probation-index/build-index")
+          .accept(MediaType.APPLICATION_JSON)
+          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+          .exchange()
+          .expectStatus().isOk
+    }
+
+    private fun markBuildComplete() =
+        webTestClient.put()
+            .uri("/probation-index/mark-complete")
+            .accept(MediaType.APPLICATION_JSON)
+            .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+            .exchange()
+            .expectStatus().isOk
+
+    private fun callHousekeeping() =
+        webTestClient.put()
+            .uri("/probation-index/index-queue-housekeeping")
+            .accept(MediaType.APPLICATION_JSON)
+            .exchange()
+            .expectStatus().isOk
+
+    private fun assertBuildStatusBuilding() =
+      indexStatusService.getIndexStatus()
+          .also { assertThat(it.currentIndexState).isEqualTo(ABSENT) }
+          .also { assertThat(it.otherIndexState).isEqualTo(BUILDING) }
+
+    private fun assertBuildStatusComplete() =
+      indexStatusService.getIndexStatus()
+          .also { assertThat(it.currentIndexState).isEqualTo(COMPLETED) }
+          .also { assertThat(it.otherIndexState).isEqualTo(ABSENT) }
+
+    private fun cancelBuildAndWait() {
+      webTestClient.put()
+          .uri("/probation-index/cancel-index")
+          .accept(MediaType.APPLICATION_JSON)
+          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+          .exchange()
+          .expectStatus().isOk
+
+      await.atMost(Duration.ofSeconds(20)) untilCallTo { indexQueueService.getNumberOfMessagesCurrentlyOnIndexQueue() } matches { it == 0 }
+    }
+
+    private fun addMessageToDlq() = indexAwsSqsDlqClient.sendMessage(indexDlqUrl, "{}")
+  }
 
   fun nomsNumberOf(crn: String): String? {
     val offender = getById(index = "offender", crn = crn)

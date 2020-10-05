@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.indexer.integration
 
 import com.amazonaws.services.sqs.AmazonSQS
+import com.amazonaws.services.sqs.model.PurgeQueueRequest
 import com.google.gson.Gson
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.matches
@@ -14,6 +15,7 @@ import org.elasticsearch.index.query.QueryBuilder
 import org.elasticsearch.index.query.QueryBuilders
 import org.elasticsearch.search.SearchHits
 import org.elasticsearch.search.builder.SearchSourceBuilder
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
@@ -96,6 +98,15 @@ abstract class IntegrationTestBase {
   @Autowired
   lateinit var eventDlqUrl: String
 
+  @BeforeEach
+  fun cleanElasticsearch() {
+    deleteOffenderIndexes()
+    indexAwsSqsClient.purgeQueue(PurgeQueueRequest(indexQueueUrl))
+    eventAwsSqsClient.purgeQueue(PurgeQueueRequest(eventQueueUrl))
+    indexAwsSqsDlqClient.purgeQueue(PurgeQueueRequest(indexDlqUrl))
+    eventAwsSqsDlqClient.purgeQueue(PurgeQueueRequest(eventDlqUrl))
+    createOffenderIndexes()
+  }
 
   internal fun setAuthorisation(
       user: String = "probation-offender-search-indexer-client",
