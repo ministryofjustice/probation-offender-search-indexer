@@ -657,6 +657,7 @@ class IndexResourceTest : IntegrationTestBase() {
     fun `does nothing if build is still in progress`() {
       buildIndex(1000)
       val beforeHousekeepingStatus = indexStatusService.getIndexStatus()
+      assertThat(indexQueueService.getIndexQueueStatus().active).isTrue
 
       callHousekeeping()
 
