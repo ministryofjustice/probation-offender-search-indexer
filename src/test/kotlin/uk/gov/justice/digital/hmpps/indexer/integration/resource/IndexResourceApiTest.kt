@@ -8,7 +8,6 @@ import com.nhaarman.mockitokotlin2.whenever
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
-import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
@@ -241,7 +240,7 @@ class IndexResourceApiTest : IntegrationTestBase() {
     @Test
     fun `endpoint is not secured`() {
       webTestClient.put()
-          .uri("/probation-index/index-queue-housekeeping")
+          .uri("/probation-index/queue-housekeeping")
           .accept(MediaType.APPLICATION_JSON)
           .exchange()
           .expectStatus().isOk
@@ -250,7 +249,7 @@ class IndexResourceApiTest : IntegrationTestBase() {
     @Test
     fun `attempts to mark the build as complete`() {
       webTestClient.put()
-          .uri("/probation-index/index-queue-housekeeping")
+          .uri("/probation-index/queue-housekeeping")
           .accept(MediaType.APPLICATION_JSON)
           .exchange()
 

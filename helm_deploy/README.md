@@ -72,5 +72,5 @@ The name of the kubernetes secret where the certificate is stored is used as a v
 There is a Kubernetes CronJob which runs on a schedule to perform the following tasks:
 * Checks if an index build has completed and if so then marks the build as complete (which switches the search to the new index)
 
-The CronJob calls the endpoint `/probation-index/index-queue-housekeeping` which is not secured by Spring Security. To prevent external calls to the endpoint it has been secured in the ingress instead. 
+The CronJob calls the endpoint `/probation-index/queue-housekeeping` which is not secured by Spring Security. To prevent external calls to the endpoint it has been secured in the ingress instead. 
 
