@@ -162,6 +162,7 @@ class IndexResource(
   )
   fun indexQueueHousekeeping() {
     indexService.markIndexingComplete()
+    queueAdminService.transferIndexMessages()
   }
 
 }

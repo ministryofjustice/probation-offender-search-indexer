@@ -625,7 +625,7 @@ class IndexResourceTest : IntegrationTestBase() {
   }
 
   @Nested
-  inner class Housekeeping {
+  inner class HousekeepingBuildComplete {
 
     @BeforeEach
     fun createEmptyIndex() {
@@ -732,6 +732,76 @@ class IndexResourceTest : IntegrationTestBase() {
     }
 
     private fun addMessageToDlq() = indexAwsSqsDlqClient.sendMessage(indexDlqUrl, "{}")
+  }
+
+  @Nested
+  inner class HousekeepingIndexDlq {
+
+    @BeforeEach
+    fun setUp() {
+      initialiseIndexStatus()
+      CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345")
+      buildIndex(GREEN, 1)
+    }
+
+    @Test
+    fun `will add good DLQ messages to the index`() {
+      CommunityApiExtension.communityApi.stubGetOffender("X12346")
+      indexAwsSqsDlqClient.sendMessage(indexDlqUrl,
+          """
+            {
+              "type": "POPULATE_OFFENDER",
+              "crn": "X12346"
+            }
+          """.trimIndent()
+      )
+      await untilCallTo { indexQueueService.getNumberOfMessagesCurrentlyOnIndexDLQ() } matches { it == 1 }
+
+      webTestClient.put()
+          .uri("/probation-index/index-queue-housekeeping")
+          .accept(MediaType.APPLICATION_JSON)
+          .exchange()
+          .expectStatus().isOk
+
+      await untilCallTo { indexQueueService.getNumberOfMessagesCurrentlyOnIndexDLQ() } matches { it == 0 }
+      await untilCallTo { indexQueueService.getNumberOfMessagesCurrentlyOnIndexQueue() } matches { it == 0 }
+      await untilCallTo { getIndexCount(GREEN) } matches { it == 2L }
+
+    }
+
+    @Test
+    fun `will only complete build after 2nd housekeeping call if there are good DLQ messages`() {
+      CommunityApiExtension.communityApi.stubGetOffender("X12346")
+      indexAwsSqsDlqClient.sendMessage(indexDlqUrl,
+          """
+            {
+              "type": "POPULATE_OFFENDER",
+              "crn": "X12346"
+            }
+          """.trimIndent()
+      )
+      await untilCallTo { indexQueueService.getNumberOfMessagesCurrentlyOnIndexDLQ() } matches { it == 1 }
+
+      webTestClient.put()
+          .uri("/probation-index/index-queue-housekeeping")
+          .accept(MediaType.APPLICATION_JSON)
+          .exchange()
+          .expectStatus().isOk
+
+      await untilCallTo { indexQueueService.getNumberOfMessagesCurrentlyOnIndexDLQ() } matches { it == 0 }
+      await untilCallTo { indexQueueService.getNumberOfMessagesCurrentlyOnIndexQueue() } matches { it == 0 }
+      await untilCallTo { getIndexCount(GREEN) } matches { it == 2L }
+      assertThat(indexStatusService.getIndexStatus().otherIndexState).isEqualTo(BUILDING)
+
+      webTestClient.put()
+          .uri("/probation-index/index-queue-housekeeping")
+          .accept(MediaType.APPLICATION_JSON)
+          .exchange()
+          .expectStatus().isOk
+      assertThat(indexStatusService.getIndexStatus().otherIndexState).isEqualTo(ABSENT)
+      assertThat(indexStatusService.getIndexStatus().currentIndexState).isEqualTo(COMPLETED)
+
+    }
   }
 
   fun nomsNumberOf(crn: String): String? {
