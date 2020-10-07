@@ -155,7 +155,7 @@ class IndexResource(
   ])
   fun transferEventDlq(): Unit = queueAdminService.transferEventMessages()
 
-  @PutMapping("/index-queue-housekeeping")
+  @PutMapping("/queue-housekeeping")
   @Operation(
       summary = "Triggers maintenance of the index queue",
       description = "This is an internal service which isn't exposed to the outside world. It is called from a Kubernetes CronJob named `index-housekeeping-cronjob`"
@@ -163,6 +163,7 @@ class IndexResource(
   fun indexQueueHousekeeping() {
     indexService.markIndexingComplete()
     queueAdminService.transferIndexMessages()
+    queueAdminService.transferEventMessages()
   }
 
 }

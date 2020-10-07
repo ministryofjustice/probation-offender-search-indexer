@@ -705,7 +705,7 @@ class IndexResourceTest : IntegrationTestBase() {
 
     private fun callHousekeeping() =
         webTestClient.put()
-            .uri("/probation-index/index-queue-housekeeping")
+            .uri("/probation-index/queue-housekeeping")
             .accept(MediaType.APPLICATION_JSON)
             .exchange()
             .expectStatus().isOk
@@ -758,7 +758,7 @@ class IndexResourceTest : IntegrationTestBase() {
       await untilCallTo { indexQueueService.getNumberOfMessagesCurrentlyOnIndexDLQ() } matches { it == 1 }
 
       webTestClient.put()
-          .uri("/probation-index/index-queue-housekeeping")
+          .uri("/probation-index/queue-housekeeping")
           .accept(MediaType.APPLICATION_JSON)
           .exchange()
           .expectStatus().isOk
@@ -783,7 +783,7 @@ class IndexResourceTest : IntegrationTestBase() {
       await untilCallTo { indexQueueService.getNumberOfMessagesCurrentlyOnIndexDLQ() } matches { it == 1 }
 
       webTestClient.put()
-          .uri("/probation-index/index-queue-housekeeping")
+          .uri("/probation-index/queue-housekeeping")
           .accept(MediaType.APPLICATION_JSON)
           .exchange()
           .expectStatus().isOk
@@ -794,7 +794,7 @@ class IndexResourceTest : IntegrationTestBase() {
       assertThat(indexStatusService.getIndexStatus().otherIndexState).isEqualTo(BUILDING)
 
       webTestClient.put()
-          .uri("/probation-index/index-queue-housekeeping")
+          .uri("/probation-index/queue-housekeeping")
           .accept(MediaType.APPLICATION_JSON)
           .exchange()
           .expectStatus().isOk
@@ -802,6 +802,71 @@ class IndexResourceTest : IntegrationTestBase() {
       assertThat(indexStatusService.getIndexStatus().currentIndexState).isEqualTo(COMPLETED)
 
     }
+  }
+
+  @Nested
+  inner class HousekeepingEventDlq {
+
+    @BeforeEach
+    fun setUp() {
+      initialiseIndexStatus()
+      CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345")
+      buildIndex(GREEN, 1)
+    }
+
+    @Test
+    fun `will add good DLQ messages to the index`() {
+      CommunityApiExtension.communityApi.stubGetOffender("X12346")
+      eventAwsSqsDlqClient.sendMessage(eventDlqUrl, offenderChangedMessage("X12346"))
+      await untilCallTo { getNumberOfMessagesCurrentlyOnEventDLQ() } matches { it == 1 }
+
+      webTestClient.put()
+          .uri("/probation-index/queue-housekeeping")
+          .accept(MediaType.APPLICATION_JSON)
+          .exchange()
+          .expectStatus().isOk
+
+      await untilCallTo { getNumberOfMessagesCurrentlyOnEventDLQ() } matches { it == 0 }
+      await untilCallTo { getNumberOfMessagesCurrentlyOnEventQueue() } matches { it == 0 }
+      await untilCallTo { getIndexCount(GREEN) } matches { it == 2L }
+
+    }
+
+    @Test
+    fun `will not add bad DLQ messages to the index`() {
+      // NOT stubbing the offender in community API Mock - hence the message is considered "bad"
+      eventAwsSqsDlqClient.sendMessage(eventDlqUrl, offenderChangedMessage("X12346"))
+      await untilCallTo { getNumberOfMessagesCurrentlyOnEventDLQ() } matches { it == 1 }
+
+      webTestClient.put()
+          .uri("/probation-index/queue-housekeeping")
+          .accept(MediaType.APPLICATION_JSON)
+          .exchange()
+          .expectStatus().isOk
+
+      await untilCallTo { getNumberOfMessagesCurrentlyOnEventQueue() } matches { it == 0 }
+      await untilCallTo { getNumberOfMessagesCurrentlyInFlight() } matches { it == 0 }
+      await untilCallTo { getIndexCount(GREEN) } matches { it == 1L }
+      // Unfortunately localstack doesn't put the message onto the DLQ when it fails - if they ever fix that then we can uncomment the next line
+      // await untilCallTo { getNumberOfMessagesCurrentlyOnEventDLQ() } matches { it == 1 }
+
+    }
+
+    fun getNumberOfMessagesCurrentlyOnEventQueue(): Int {
+      val queueAttributes = eventAwsSqsClient.getQueueAttributes(eventQueueUrl, listOf("ApproximateNumberOfMessages"))
+      return queueAttributes.attributes["ApproximateNumberOfMessages"]?.toInt() ?: 0
+    }
+
+    fun getNumberOfMessagesCurrentlyOnEventDLQ(): Int {
+      val queueAttributes = eventAwsSqsDlqClient.getQueueAttributes(eventDlqUrl, listOf("ApproximateNumberOfMessages"))
+      return queueAttributes.attributes["ApproximateNumberOfMessages"]?.toInt() ?: 0
+    }
+
+    fun getNumberOfMessagesCurrentlyInFlight(): Int {
+      val queueAttributes = eventAwsSqsClient.getQueueAttributes(eventQueueUrl, listOf("ApproximateNumberOfMessagesNotVisible"))
+      return queueAttributes.attributes["ApproximateNumberOfMessagesNotVisible"]?.toInt() ?: 0
+    }
+
   }
 
   fun nomsNumberOf(crn: String): String? {
