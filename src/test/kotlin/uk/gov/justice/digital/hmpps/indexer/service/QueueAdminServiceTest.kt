@@ -13,6 +13,7 @@ import com.nhaarman.mockitokotlin2.check
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyZeroInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -56,6 +57,7 @@ internal class QueueAdminServiceTest {
     @Test
     internal fun `will purge index queue of messages`() {
       whenever(indexAwsSqsClient.getQueueUrl("index-queue")).thenReturn(GetQueueUrlResult().withQueueUrl("arn:eu-west-1:index-queue"))
+      whenever(indexQueueService.getNumberOfMessagesCurrentlyOnIndexQueue()).thenReturn(1)
 
       queueAdminService.clearAllIndexQueueMessages()
       verify(indexAwsSqsClient).purgeQueue(check {
@@ -66,10 +68,21 @@ internal class QueueAdminServiceTest {
     @Test
     internal fun `will send a telemetry event`() {
       whenever(indexAwsSqsClient.getQueueUrl("index-queue")).thenReturn(GetQueueUrlResult().withQueueUrl("arn:eu-west-1:index-queue"))
+      whenever(indexQueueService.getNumberOfMessagesCurrentlyOnIndexQueue()).thenReturn(1)
 
       queueAdminService.clearAllIndexQueueMessages()
 
-      verify(telemetryClient).trackEvent(TelemetryEvents.PURGED_INDEX_QUEUE.name, mapOf("messages-on-queue" to "0"), null)
+      verify(telemetryClient).trackEvent(TelemetryEvents.PURGED_INDEX_QUEUE.name, mapOf("messages-on-queue" to "1"), null)
+    }
+
+    @Test
+    internal fun `will not send a telemetry event if there were no messages`() {
+      whenever(indexAwsSqsClient.getQueueUrl("index-queue")).thenReturn(GetQueueUrlResult().withQueueUrl("arn:eu-west-1:index-queue"))
+      whenever(indexQueueService.getNumberOfMessagesCurrentlyOnIndexQueue()).thenReturn(0)
+
+      queueAdminService.clearAllIndexQueueMessages()
+
+      verifyZeroInteractions(telemetryClient)
     }
   }
 
@@ -78,6 +91,7 @@ internal class QueueAdminServiceTest {
     @Test
     internal fun `will purge index dlq of messages`() {
       whenever(indexAwsSqsDlqClient.getQueueUrl("index-dlq")).thenReturn(GetQueueUrlResult().withQueueUrl("arn:eu-west-1:index-dlq"))
+      whenever(indexQueueService.getNumberOfMessagesCurrentlyOnIndexDLQ()).thenReturn(1)
 
       queueAdminService.clearAllDlqMessagesForIndex()
       verify(indexAwsSqsDlqClient).purgeQueue(check {
@@ -88,10 +102,21 @@ internal class QueueAdminServiceTest {
     @Test
     internal fun `will send a telemetry event`() {
       whenever(indexAwsSqsDlqClient.getQueueUrl("index-dlq")).thenReturn(GetQueueUrlResult().withQueueUrl("arn:eu-west-1:index-dlq"))
+      whenever(indexQueueService.getNumberOfMessagesCurrentlyOnIndexDLQ()).thenReturn(1)
 
       queueAdminService.clearAllDlqMessagesForIndex()
 
-      verify(telemetryClient).trackEvent(TelemetryEvents.PURGED_INDEX_DLQ.name, mapOf("messages-on-queue" to "0"), null)
+      verify(telemetryClient).trackEvent(TelemetryEvents.PURGED_INDEX_DLQ.name, mapOf("messages-on-queue" to "1"), null)
+    }
+
+    @Test
+    internal fun `will not send a telemetry event if there are no messages`() {
+      whenever(indexAwsSqsDlqClient.getQueueUrl("index-dlq")).thenReturn(GetQueueUrlResult().withQueueUrl("arn:eu-west-1:index-dlq"))
+      whenever(indexQueueService.getNumberOfMessagesCurrentlyOnIndexDLQ()).thenReturn(0)
+
+      queueAdminService.clearAllDlqMessagesForIndex()
+
+      verifyZeroInteractions(telemetryClient)
     }
   }
 
@@ -242,6 +267,15 @@ internal class QueueAdminServiceTest {
       queueAdminService.transferIndexMessages()
 
       verify(telemetryClient).trackEvent(TelemetryEvents.TRANSFERRED_INDEX_DLQ.name, mapOf("messages-on-queue" to "1"), null)
+    }
+
+    @Test
+    internal fun `will not send a telemetry event if there are no messages`() {
+      stubDlqMessageCount(0)
+
+      queueAdminService.transferIndexMessages()
+
+      verifyZeroInteractions(telemetryClient)
     }
 
     private fun stubDlqMessageCount(count: Int) =

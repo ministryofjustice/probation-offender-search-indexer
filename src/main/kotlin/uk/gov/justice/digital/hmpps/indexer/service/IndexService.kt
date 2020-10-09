@@ -58,10 +58,11 @@ class IndexService(
 
   fun markIndexingComplete(): Either<Error, IndexStatus> {
     val indexQueueStatus = indexQueueService.getIndexQueueStatus()
-    return indexStatusService.getIndexStatus()
-        .also { logIndexStatuses(it) }
+    val indexStatus = indexStatusService.getIndexStatus()
+    return indexStatus
         .failIf(IndexStatus::isNotBuilding) { BuildNotInProgressError(it) }
         .failIf({ indexQueueStatus.active }) { ActiveMessagesExistError(it.otherIndex, indexQueueStatus, "mark complete") }
+        .also { logIndexStatuses(indexStatus) }
         .map { doMarkIndexingComplete() }
   }
 
