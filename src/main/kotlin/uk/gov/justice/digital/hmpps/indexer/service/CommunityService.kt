@@ -20,7 +20,7 @@ class CommunityService(@Qualifier("communityApiWebClient") private val webClient
 
   fun getOffender(crn: String): Either<OffenderError, Offender> =
       webClient.get()
-          .uri("/secure/offenders/crn/${crn}/all")
+          .uri("/secure/offenders/crn/{crn}/all", crn)
           .retrieve()
           .bodyToMono(String::class.java)
           .onErrorResume(::emptyIfNotFound)
