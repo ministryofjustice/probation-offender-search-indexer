@@ -12,7 +12,8 @@ class EventListenerTest {
 
   @Test
   fun `Calls offender synchroniser service`() {
-    eventListener.processOffenderEvent("""
+    eventListener.processOffenderEvent(
+      """
       {  
         "MessageId": "20e13002-d1be-56e7-be8c-66cdd7e23341",
         "Message": "{\"offenderId\":490001467,\"crn\":\"X123456\",\"nomsNumber\":\"A1234BC\"}",
@@ -23,7 +24,8 @@ class EventListenerTest {
           }
         }
       }
-      """.trimIndent())
+      """.trimIndent()
+    )
 
     verify(indexService).updateOffender("X123456")
   }

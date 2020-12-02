@@ -109,8 +109,8 @@ abstract class IntegrationTestBase {
   }
 
   internal fun setAuthorisation(
-      user: String = "probation-offender-search-indexer-client",
-      roles: List<String> = listOf()
+    user: String = "probation-offender-search-indexer-client",
+    roles: List<String> = listOf()
   ): (HttpHeaders) -> Unit = jwtAuthHelper.setAuthorisation(user, roles)
 
   fun createOffenderIndexes() {
@@ -135,7 +135,6 @@ abstract class IntegrationTestBase {
   }
 
   fun getIndexCount(index: String): Long = elasticSearchClient.count(CountRequest(index), RequestOptions.DEFAULT).count
-
 
   fun searchByCrn(crn: String, index: SyncIndex = GREEN): SearchHits {
     val query = QueryBuilders.matchQuery("otherIds.crn", crn)
@@ -166,28 +165,26 @@ abstract class IntegrationTestBase {
     buildIndex(index, expectedCount)
 
     webTestClient.put()
-        .uri("/probation-index/mark-complete")
-        .accept(MediaType.APPLICATION_JSON)
-        .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
-        .exchange()
-        .expectStatus().isOk
+      .uri("/probation-index/mark-complete")
+      .accept(MediaType.APPLICATION_JSON)
+      .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+      .exchange()
+      .expectStatus().isOk
 
     await untilCallTo { getIndexCount("offender") } matches { it == expectedCount }
   }
 
   fun buildIndex(index: SyncIndex, expectedCount: Long) {
     webTestClient.put()
-        .uri("/probation-index/build-index")
-        .accept(MediaType.APPLICATION_JSON)
-        .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
-        .exchange()
-        .expectStatus().isOk
+      .uri("/probation-index/build-index")
+      .accept(MediaType.APPLICATION_JSON)
+      .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+      .exchange()
+      .expectStatus().isOk
 
     await untilCallTo { indexQueueService.getIndexQueueStatus().active } matches { it == false }
     await untilCallTo { getIndexCount(index) } matches { it == expectedCount }
   }
-
 }
 
 fun String.readResourceAsText(): String = IntegrationTestBase::class.java.getResource(this).readText()
-

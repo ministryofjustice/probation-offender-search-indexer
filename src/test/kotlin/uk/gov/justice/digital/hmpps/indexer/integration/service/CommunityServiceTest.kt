@@ -28,34 +28,47 @@ internal class CommunityServiceTest : IntegrationTestBase() {
   inner class GetOffender {
     @Test
     fun `will get offender using the crn `() {
-      CommunityApiExtension.communityApi.stubFor(WireMock.get(WireMock.anyUrl()).willReturn(WireMock.aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withBody("""{
+      CommunityApiExtension.communityApi.stubFor(
+        WireMock.get(WireMock.anyUrl()).willReturn(
+          WireMock.aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withBody(
+              """{
             "offenderId": 99,
             "otherIds": {
               "crn": "X12345"
             }
-          }""")
-          .withStatus(HttpURLConnection.HTTP_OK)))
+          }"""
+            )
+            .withStatus(HttpURLConnection.HTTP_OK)
+        )
+      )
 
       service.getOffender("X12345")
 
-      CommunityApiExtension.communityApi.verify(WireMock.getRequestedFor(WireMock.urlEqualTo("/secure/offenders/crn/X12345/all"))
-          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")))
-
+      CommunityApiExtension.communityApi.verify(
+        WireMock.getRequestedFor(WireMock.urlEqualTo("/secure/offenders/crn/X12345/all"))
+          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE"))
+      )
     }
 
     @Test
     fun `will return an offender whose JSON can be retrieved as a String`() {
-      CommunityApiExtension.communityApi.stubFor(WireMock.get(WireMock.anyUrl()).willReturn(WireMock.aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withBody("""{
+      CommunityApiExtension.communityApi.stubFor(
+        WireMock.get(WireMock.anyUrl()).willReturn(
+          WireMock.aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withBody(
+              """{
             "offenderId": 99,
             "otherIds": {
               "crn": "X12345"
             }
-          }""")
-          .withStatus(HttpURLConnection.HTTP_OK)))
+          }"""
+            )
+            .withStatus(HttpURLConnection.HTTP_OK)
+        )
+      )
 
       val offender = service.getOffender("X12345").right()
 
@@ -66,15 +79,21 @@ internal class CommunityServiceTest : IntegrationTestBase() {
 
     @Test
     fun `will return an offender whose ID can be retrieved`() {
-      CommunityApiExtension.communityApi.stubFor(WireMock.get(WireMock.anyUrl()).willReturn(WireMock.aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withBody("""{
+      CommunityApiExtension.communityApi.stubFor(
+        WireMock.get(WireMock.anyUrl()).willReturn(
+          WireMock.aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withBody(
+              """{
             "offenderId": 99,
             "otherIds": {
               "crn": "X12345"
             }
-          }""")
-          .withStatus(HttpURLConnection.HTTP_OK)))
+          }"""
+            )
+            .withStatus(HttpURLConnection.HTTP_OK)
+        )
+      )
 
       val offender = service.getOffender("X12345")
 
@@ -85,10 +104,14 @@ internal class CommunityServiceTest : IntegrationTestBase() {
 
     @Test
     fun `a 404 not found is an expected error`() {
-      CommunityApiExtension.communityApi.stubFor(WireMock.get(WireMock.anyUrl()).willReturn(WireMock.aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withBody("{\"error\": \"not found\"}")
-          .withStatus(HttpURLConnection.HTTP_NOT_FOUND)))
+      CommunityApiExtension.communityApi.stubFor(
+        WireMock.get(WireMock.anyUrl()).willReturn(
+          WireMock.aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withBody("{\"error\": \"not found\"}")
+            .withStatus(HttpURLConnection.HTTP_NOT_FOUND)
+        )
+      )
 
       val result = service.getOffender("X12345")
 
@@ -100,9 +123,12 @@ internal class CommunityServiceTest : IntegrationTestBase() {
   inner class GetCountAllOffenders {
     @BeforeEach
     internal fun setUp() {
-      CommunityApiExtension.communityApi.stubFor(WireMock.get(WireMock.anyUrl()).willReturn(WireMock.aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withBody("""
+      CommunityApiExtension.communityApi.stubFor(
+        WireMock.get(WireMock.anyUrl()).willReturn(
+          WireMock.aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withBody(
+              """
           {
               "content": [
                   {
@@ -136,29 +162,38 @@ internal class CommunityServiceTest : IntegrationTestBase() {
               "numberOfElements": 1,
               "empty": false
           }            
-          """)
-          .withStatus(HttpURLConnection.HTTP_OK)))
+          """
+            )
+            .withStatus(HttpURLConnection.HTTP_OK)
+        )
+      )
     }
 
     @Test
     internal fun `will securely request primary identifiers for all offenders`() {
       service.getCountAllOffenders()
-      CommunityApiExtension.communityApi.verify(WireMock.getRequestedFor(WireMock.urlPathEqualTo("/secure/offenders/primaryIdentifiers"))
-          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")))
+      CommunityApiExtension.communityApi.verify(
+        WireMock.getRequestedFor(WireMock.urlPathEqualTo("/secure/offenders/primaryIdentifiers"))
+          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE"))
+      )
     }
 
     @Test
     internal fun `will request deleted offenders`() {
       service.getCountAllOffenders()
-      CommunityApiExtension.communityApi.verify(WireMock.getRequestedFor(WireMock.urlPathEqualTo("/secure/offenders/primaryIdentifiers"))
-          .withQueryParam("includeDeleted", WireMock.equalTo("true")))
+      CommunityApiExtension.communityApi.verify(
+        WireMock.getRequestedFor(WireMock.urlPathEqualTo("/secure/offenders/primaryIdentifiers"))
+          .withQueryParam("includeDeleted", WireMock.equalTo("true"))
+      )
     }
 
     @Test
     internal fun `will request smallest page size since we only care about the total count`() {
       service.getCountAllOffenders()
-      CommunityApiExtension.communityApi.verify(WireMock.getRequestedFor(WireMock.urlPathEqualTo("/secure/offenders/primaryIdentifiers"))
-          .withQueryParam("size", WireMock.equalTo("1")))
+      CommunityApiExtension.communityApi.verify(
+        WireMock.getRequestedFor(WireMock.urlPathEqualTo("/secure/offenders/primaryIdentifiers"))
+          .withQueryParam("size", WireMock.equalTo("1"))
+      )
     }
 
     @Test
@@ -174,9 +209,12 @@ internal class CommunityServiceTest : IntegrationTestBase() {
   inner class GetPageOfOffenders {
     @BeforeEach
     internal fun setUp() {
-      CommunityApiExtension.communityApi.stubFor(WireMock.get(WireMock.anyUrl()).willReturn(WireMock.aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withBody("""{
+      CommunityApiExtension.communityApi.stubFor(
+        WireMock.get(WireMock.anyUrl()).willReturn(
+          WireMock.aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withBody(
+              """{
             "content": [
                 {
                     "offenderId": 2500000501,
@@ -244,36 +282,47 @@ internal class CommunityServiceTest : IntegrationTestBase() {
             "size": 10,
             "numberOfElements": 10,
             "empty": false
-        }""")
-          .withStatus(HttpURLConnection.HTTP_OK)))
+        }"""
+            )
+            .withStatus(HttpURLConnection.HTTP_OK)
+        )
+      )
     }
 
     @Test
     internal fun `will securely request primary identifiers for all offenders in the page`() {
       service.getPageOfOffenders(0, 10)
-      CommunityApiExtension.communityApi.verify(WireMock.getRequestedFor(WireMock.urlPathEqualTo("/secure/offenders/primaryIdentifiers"))
-          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")))
+      CommunityApiExtension.communityApi.verify(
+        WireMock.getRequestedFor(WireMock.urlPathEqualTo("/secure/offenders/primaryIdentifiers"))
+          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE"))
+      )
     }
 
     @Test
     internal fun `will request deleted offenders`() {
       service.getPageOfOffenders(0, 10)
-      CommunityApiExtension.communityApi.verify(WireMock.getRequestedFor(WireMock.urlPathEqualTo("/secure/offenders/primaryIdentifiers"))
-          .withQueryParam("includeDeleted", WireMock.equalTo("true")))
+      CommunityApiExtension.communityApi.verify(
+        WireMock.getRequestedFor(WireMock.urlPathEqualTo("/secure/offenders/primaryIdentifiers"))
+          .withQueryParam("includeDeleted", WireMock.equalTo("true"))
+      )
     }
 
     @Test
     internal fun `will request the supplied page number`() {
       service.getPageOfOffenders(0, 10)
-      CommunityApiExtension.communityApi.verify(WireMock.getRequestedFor(WireMock.urlPathEqualTo("/secure/offenders/primaryIdentifiers"))
-          .withQueryParam("page", WireMock.equalTo("0")))
+      CommunityApiExtension.communityApi.verify(
+        WireMock.getRequestedFor(WireMock.urlPathEqualTo("/secure/offenders/primaryIdentifiers"))
+          .withQueryParam("page", WireMock.equalTo("0"))
+      )
     }
 
     @Test
     internal fun `will request the supplied page size`() {
       service.getPageOfOffenders(0, 10)
-      CommunityApiExtension.communityApi.verify(WireMock.getRequestedFor(WireMock.urlPathEqualTo("/secure/offenders/primaryIdentifiers"))
-          .withQueryParam("size", WireMock.equalTo("10")))
+      CommunityApiExtension.communityApi.verify(
+        WireMock.getRequestedFor(WireMock.urlPathEqualTo("/secure/offenders/primaryIdentifiers"))
+          .withQueryParam("size", WireMock.equalTo("10"))
+      )
     }
 
     @Test

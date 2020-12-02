@@ -14,10 +14,10 @@ class IndexStatusService(private val indexStatusRepository: IndexStatusRepositor
   }
 
   fun initialiseIndexWhenRequired(): IndexStatusService {
-      if (!checkIndexStatusExistsIgnoringMissingRepo()) {
-        indexStatusRepository.save(IndexStatus.newIndex())
-            .also { log.info("Created missing index status {}", it) }
-      }
+    if (!checkIndexStatusExistsIgnoringMissingRepo()) {
+      indexStatusRepository.save(IndexStatus.newIndex())
+        .also { log.info("Created missing index status {}", it) }
+    }
     return this
   }
 
@@ -29,7 +29,7 @@ class IndexStatusService(private val indexStatusRepository: IndexStatusRepositor
     }
 
   fun getIndexStatus(): IndexStatus =
-      indexStatusRepository.findById(INDEX_STATUS_ID).orElseThrow()
+    indexStatusRepository.findById(INDEX_STATUS_ID).orElseThrow()
 
   fun markBuildInProgress(): IndexStatus {
     val currentIndexStatus = getIndexStatus()

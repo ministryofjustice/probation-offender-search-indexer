@@ -15,7 +15,6 @@ import uk.gov.justice.digital.hmpps.indexer.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.CommunityApiExtension
 import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.OAuthExtension
 
-
 @ExtendWith(SpringExtension::class)
 class HealthCheckTest : IntegrationTestBase() {
   @Autowired
@@ -57,14 +56,14 @@ class HealthCheckTest : IntegrationTestBase() {
     stubPingWithResponse(200)
 
     webTestClient.get()
-        .uri("/health")
-        .exchange()
-        .expectStatus()
-        .isOk()
-        .expectBody()
-        .jsonPath("components.OAuthApiHealth.details.HttpStatus").isEqualTo("OK")
-        .jsonPath("components.communityApiHealth.details.HttpStatus").isEqualTo("OK")
-        .jsonPath("status").isEqualTo("UP")
+      .uri("/health")
+      .exchange()
+      .expectStatus()
+      .isOk()
+      .expectBody()
+      .jsonPath("components.OAuthApiHealth.details.HttpStatus").isEqualTo("OK")
+      .jsonPath("components.communityApiHealth.details.HttpStatus").isEqualTo("OK")
+      .jsonPath("status").isEqualTo("UP")
   }
 
   @Test
@@ -72,12 +71,12 @@ class HealthCheckTest : IntegrationTestBase() {
     stubPingWithResponse(200)
 
     webTestClient.get()
-        .uri("/health/ping")
-        .exchange()
-        .expectStatus()
-        .isOk
-        .expectBody()
-        .jsonPath("status").isEqualTo("UP")
+      .uri("/health/ping")
+      .exchange()
+      .expectStatus()
+      .isOk
+      .expectBody()
+      .jsonPath("status").isEqualTo("UP")
   }
 
   @Test
@@ -85,12 +84,12 @@ class HealthCheckTest : IntegrationTestBase() {
     stubPingWithResponse(200)
 
     webTestClient.get()
-        .uri("/health/readiness")
-        .exchange()
-        .expectStatus()
-        .isOk
-        .expectBody()
-        .jsonPath("status").isEqualTo("UP")
+      .uri("/health/readiness")
+      .exchange()
+      .expectStatus()
+      .isOk
+      .expectBody()
+      .jsonPath("status").isEqualTo("UP")
   }
 
   @Test
@@ -98,12 +97,12 @@ class HealthCheckTest : IntegrationTestBase() {
     stubPingWithResponse(200)
 
     webTestClient.get()
-        .uri("/health/liveness")
-        .exchange()
-        .expectStatus()
-        .isOk
-        .expectBody()
-        .jsonPath("status").isEqualTo("UP")
+      .uri("/health/liveness")
+      .exchange()
+      .expectStatus()
+      .isOk
+      .expectBody()
+      .jsonPath("status").isEqualTo("UP")
   }
 
   @Test
@@ -111,14 +110,14 @@ class HealthCheckTest : IntegrationTestBase() {
     stubPingWithResponse(404)
 
     webTestClient.get()
-        .uri("/health")
-        .exchange()
-        .expectStatus()
-        .is5xxServerError
-        .expectBody()
-        .jsonPath("status").isEqualTo("DOWN")
-        .jsonPath("components.OAuthApiHealth.details.HttpStatus").isEqualTo("NOT_FOUND")
-        .jsonPath("components.communityApiHealth.details.HttpStatus").isEqualTo("NOT_FOUND")
+      .uri("/health")
+      .exchange()
+      .expectStatus()
+      .is5xxServerError
+      .expectBody()
+      .jsonPath("status").isEqualTo("DOWN")
+      .jsonPath("components.OAuthApiHealth.details.HttpStatus").isEqualTo("NOT_FOUND")
+      .jsonPath("components.communityApiHealth.details.HttpStatus").isEqualTo("NOT_FOUND")
   }
 
   @Test
@@ -126,14 +125,14 @@ class HealthCheckTest : IntegrationTestBase() {
     stubPingWithResponse(418)
 
     webTestClient.get()
-        .uri("/health")
-        .exchange()
-        .expectStatus()
-        .is5xxServerError
-        .expectBody()
-        .jsonPath("components.OAuthApiHealth.details.HttpStatus").isEqualTo("I_AM_A_TEAPOT")
-        .jsonPath("components.communityApiHealth.details.HttpStatus").isEqualTo("I_AM_A_TEAPOT")
-        .jsonPath("status").isEqualTo("DOWN")
+      .uri("/health")
+      .exchange()
+      .expectStatus()
+      .is5xxServerError
+      .expectBody()
+      .jsonPath("components.OAuthApiHealth.details.HttpStatus").isEqualTo("I_AM_A_TEAPOT")
+      .jsonPath("components.communityApiHealth.details.HttpStatus").isEqualTo("I_AM_A_TEAPOT")
+      .jsonPath("status").isEqualTo("DOWN")
   }
 
   @Nested
@@ -144,14 +143,13 @@ class HealthCheckTest : IntegrationTestBase() {
       stubPingWithResponse(200)
 
       webTestClient.get()
-          .uri("/health")
-          .exchange()
-          .expectStatus()
-          .is5xxServerError
-          .expectBody()
-          .jsonPath("components.eventQueueHealth.status").isEqualTo("DOWN")
-          .jsonPath("status").isEqualTo("DOWN")
-
+        .uri("/health")
+        .exchange()
+        .expectStatus()
+        .is5xxServerError
+        .expectBody()
+        .jsonPath("components.eventQueueHealth.status").isEqualTo("DOWN")
+        .jsonPath("status").isEqualTo("DOWN")
     }
 
     @Test
@@ -159,15 +157,14 @@ class HealthCheckTest : IntegrationTestBase() {
       stubPingWithResponse(200)
 
       webTestClient.get()
-          .uri("/health")
-          .exchange()
-          .expectStatus()
-          .isOk
-          .expectBody()
-          .jsonPath("components.eventQueueHealth.status").isEqualTo("UP")
-          .jsonPath("components.eventQueueHealth.status").isEqualTo(DlqStatus.UP.description)
-          .jsonPath("status").isEqualTo("UP")
-
+        .uri("/health")
+        .exchange()
+        .expectStatus()
+        .isOk
+        .expectBody()
+        .jsonPath("components.eventQueueHealth.status").isEqualTo("UP")
+        .jsonPath("components.eventQueueHealth.status").isEqualTo(DlqStatus.UP.description)
+        .jsonPath("status").isEqualTo("UP")
     }
 
     @Test
@@ -175,13 +172,12 @@ class HealthCheckTest : IntegrationTestBase() {
       stubPingWithResponse(200)
 
       webTestClient.get()
-          .uri("/health")
-          .exchange()
-          .expectStatus()
-          .isOk
-          .expectBody()
-          .jsonPath("components.eventQueueHealth.details.${QueueAttributes.MESSAGES_ON_DLQ.healthName}").isEqualTo(0)
-
+        .uri("/health")
+        .exchange()
+        .expectStatus()
+        .isOk
+        .expectBody()
+        .jsonPath("components.eventQueueHealth.details.${QueueAttributes.MESSAGES_ON_DLQ.healthName}").isEqualTo(0)
     }
 
     @Test
@@ -190,13 +186,12 @@ class HealthCheckTest : IntegrationTestBase() {
       ReflectionTestUtils.setField(eventQueueHealth, "dlqName", "missing_queue")
 
       webTestClient.get()
-          .uri("/health")
-          .exchange()
-          .expectStatus()
-          .is5xxServerError
-          .expectBody()
-          .jsonPath("components.eventQueueHealth.details.dlqStatus").isEqualTo(DlqStatus.NOT_FOUND.description)
-
+        .uri("/health")
+        .exchange()
+        .expectStatus()
+        .is5xxServerError
+        .expectBody()
+        .jsonPath("components.eventQueueHealth.details.dlqStatus").isEqualTo(DlqStatus.NOT_FOUND.description)
     }
   }
 
@@ -208,14 +203,13 @@ class HealthCheckTest : IntegrationTestBase() {
       stubPingWithResponse(200)
 
       webTestClient.get()
-          .uri("/health")
-          .exchange()
-          .expectStatus()
-          .is5xxServerError
-          .expectBody()
-          .jsonPath("components.indexQueueHealth.status").isEqualTo("DOWN")
-          .jsonPath("status").isEqualTo("DOWN")
-
+        .uri("/health")
+        .exchange()
+        .expectStatus()
+        .is5xxServerError
+        .expectBody()
+        .jsonPath("components.indexQueueHealth.status").isEqualTo("DOWN")
+        .jsonPath("status").isEqualTo("DOWN")
     }
 
     @Test
@@ -223,15 +217,14 @@ class HealthCheckTest : IntegrationTestBase() {
       stubPingWithResponse(200)
 
       webTestClient.get()
-          .uri("/health")
-          .exchange()
-          .expectStatus()
-          .isOk
-          .expectBody()
-          .jsonPath("components.indexQueueHealth.status").isEqualTo("UP")
-          .jsonPath("components.indexQueueHealth.status").isEqualTo(DlqStatus.UP.description)
-          .jsonPath("status").isEqualTo("UP")
-
+        .uri("/health")
+        .exchange()
+        .expectStatus()
+        .isOk
+        .expectBody()
+        .jsonPath("components.indexQueueHealth.status").isEqualTo("UP")
+        .jsonPath("components.indexQueueHealth.status").isEqualTo(DlqStatus.UP.description)
+        .jsonPath("status").isEqualTo("UP")
     }
 
     @Test
@@ -239,13 +232,12 @@ class HealthCheckTest : IntegrationTestBase() {
       stubPingWithResponse(200)
 
       webTestClient.get()
-          .uri("/health")
-          .exchange()
-          .expectStatus()
-          .isOk
-          .expectBody()
-          .jsonPath("components.indexQueueHealth.details.${QueueAttributes.MESSAGES_ON_DLQ.healthName}").isEqualTo(0)
-
+        .uri("/health")
+        .exchange()
+        .expectStatus()
+        .isOk
+        .expectBody()
+        .jsonPath("components.indexQueueHealth.details.${QueueAttributes.MESSAGES_ON_DLQ.healthName}").isEqualTo(0)
     }
 
     @Test
@@ -254,13 +246,12 @@ class HealthCheckTest : IntegrationTestBase() {
       ReflectionTestUtils.setField(indexQueueHealth, "dlqName", "missing_queue")
 
       webTestClient.get()
-          .uri("/health")
-          .exchange()
-          .expectStatus()
-          .is5xxServerError
-          .expectBody()
-          .jsonPath("components.indexQueueHealth.details.dlqStatus").isEqualTo(DlqStatus.NOT_FOUND.description)
-
+        .uri("/health")
+        .exchange()
+        .expectStatus()
+        .is5xxServerError
+        .expectBody()
+        .jsonPath("components.indexQueueHealth.details.dlqStatus").isEqualTo(DlqStatus.NOT_FOUND.description)
     }
   }
 
@@ -268,5 +259,4 @@ class HealthCheckTest : IntegrationTestBase() {
     OAuthExtension.oAuthApi.stubHealthPing(status)
     CommunityApiExtension.communityApi.stubHealthPing(status)
   }
-
 }

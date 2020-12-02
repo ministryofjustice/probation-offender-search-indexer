@@ -46,30 +46,30 @@ class IndexResourceTest : IntegrationTestBase() {
       @Test
       internal fun `will build the green index`() {
         webTestClient.put()
-            .uri("/probation-index/build-index")
-            .accept(MediaType.APPLICATION_JSON)
-            .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
-            .exchange()
-            .expectStatus().isOk
-            .expectBody()
-            .jsonPath("$.currentIndex").isEqualTo("NONE")
-            .jsonPath("$.currentIndexState").isEqualTo("ABSENT")
-            .jsonPath("$.otherIndex").isEqualTo("GREEN")
-            .jsonPath("$.otherIndexState").isEqualTo("BUILDING")
+          .uri("/probation-index/build-index")
+          .accept(MediaType.APPLICATION_JSON)
+          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.currentIndex").isEqualTo("NONE")
+          .jsonPath("$.currentIndexState").isEqualTo("ABSENT")
+          .jsonPath("$.otherIndex").isEqualTo("GREEN")
+          .jsonPath("$.otherIndexState").isEqualTo("BUILDING")
 
         await untilCallTo { getIndexCount(GREEN) } matches { it == 1L }
 
         webTestClient.put()
-            .uri("/probation-index/mark-complete")
-            .accept(MediaType.APPLICATION_JSON)
-            .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
-            .exchange()
-            .expectStatus().isOk
-            .expectBody()
-            .jsonPath("$.currentIndex").isEqualTo("GREEN")
-            .jsonPath("$.currentIndexState").isEqualTo("COMPLETED")
-            .jsonPath("$.otherIndex").isEqualTo("BLUE")
-            .jsonPath("$.otherIndexState").isEqualTo("ABSENT")
+          .uri("/probation-index/mark-complete")
+          .accept(MediaType.APPLICATION_JSON)
+          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.currentIndex").isEqualTo("GREEN")
+          .jsonPath("$.currentIndexState").isEqualTo("COMPLETED")
+          .jsonPath("$.otherIndex").isEqualTo("BLUE")
+          .jsonPath("$.otherIndexState").isEqualTo("ABSENT")
 
         await untilCallTo { getIndexCount("offender") } matches { it == 1L }
       }
@@ -87,34 +87,33 @@ class IndexResourceTest : IntegrationTestBase() {
       @Test
       internal fun `will build the blue index`() {
         webTestClient.put()
-            .uri("/probation-index/build-index")
-            .accept(MediaType.APPLICATION_JSON)
-            .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
-            .exchange()
-            .expectStatus().isOk
-            .expectBody()
-            .jsonPath("$.currentIndex").isEqualTo("GREEN")
-            .jsonPath("$.currentIndexState").isEqualTo("COMPLETED")
-            .jsonPath("$.otherIndex").isEqualTo("BLUE")
-            .jsonPath("$.otherIndexState").isEqualTo("BUILDING")
+          .uri("/probation-index/build-index")
+          .accept(MediaType.APPLICATION_JSON)
+          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.currentIndex").isEqualTo("GREEN")
+          .jsonPath("$.currentIndexState").isEqualTo("COMPLETED")
+          .jsonPath("$.otherIndex").isEqualTo("BLUE")
+          .jsonPath("$.otherIndexState").isEqualTo("BUILDING")
 
         await untilCallTo { getIndexCount(BLUE) } matches { it == 3L }
 
         webTestClient.put()
-            .uri("/probation-index/mark-complete")
-            .accept(MediaType.APPLICATION_JSON)
-            .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
-            .exchange()
-            .expectStatus().isOk
-            .expectBody()
-            .jsonPath("$.currentIndex").isEqualTo("BLUE")
-            .jsonPath("$.currentIndexState").isEqualTo("COMPLETED")
-            .jsonPath("$.otherIndex").isEqualTo("GREEN")
-            .jsonPath("$.otherIndexState").isEqualTo("COMPLETED")
+          .uri("/probation-index/mark-complete")
+          .accept(MediaType.APPLICATION_JSON)
+          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.currentIndex").isEqualTo("BLUE")
+          .jsonPath("$.currentIndexState").isEqualTo("COMPLETED")
+          .jsonPath("$.otherIndex").isEqualTo("GREEN")
+          .jsonPath("$.otherIndexState").isEqualTo("COMPLETED")
 
         await untilCallTo { getIndexCount("offender") } matches { it == 3L }
       }
-
     }
 
     @Nested
@@ -130,34 +129,33 @@ class IndexResourceTest : IntegrationTestBase() {
       @Test
       internal fun `will build the green index`() {
         webTestClient.put()
-            .uri("/probation-index/build-index")
-            .accept(MediaType.APPLICATION_JSON)
-            .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
-            .exchange()
-            .expectStatus().isOk
-            .expectBody()
-            .jsonPath("$.currentIndex").isEqualTo("BLUE")
-            .jsonPath("$.currentIndexState").isEqualTo("COMPLETED")
-            .jsonPath("$.otherIndex").isEqualTo("GREEN")
-            .jsonPath("$.otherIndexState").isEqualTo("BUILDING")
+          .uri("/probation-index/build-index")
+          .accept(MediaType.APPLICATION_JSON)
+          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.currentIndex").isEqualTo("BLUE")
+          .jsonPath("$.currentIndexState").isEqualTo("COMPLETED")
+          .jsonPath("$.otherIndex").isEqualTo("GREEN")
+          .jsonPath("$.otherIndexState").isEqualTo("BUILDING")
 
         await untilCallTo { getIndexCount(GREEN) } matches { it == 3L }
 
         webTestClient.put()
-            .uri("/probation-index/mark-complete")
-            .accept(MediaType.APPLICATION_JSON)
-            .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
-            .exchange()
-            .expectStatus().isOk
-            .expectBody()
-            .jsonPath("$.currentIndex").isEqualTo("GREEN")
-            .jsonPath("$.currentIndexState").isEqualTo("COMPLETED")
-            .jsonPath("$.otherIndex").isEqualTo("BLUE")
-            .jsonPath("$.otherIndexState").isEqualTo("COMPLETED")
+          .uri("/probation-index/mark-complete")
+          .accept(MediaType.APPLICATION_JSON)
+          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.currentIndex").isEqualTo("GREEN")
+          .jsonPath("$.currentIndexState").isEqualTo("COMPLETED")
+          .jsonPath("$.otherIndex").isEqualTo("BLUE")
+          .jsonPath("$.otherIndexState").isEqualTo("COMPLETED")
 
         await untilCallTo { getIndexCount("offender") } matches { it == 3L }
       }
-
     }
 
     @Nested
@@ -170,30 +168,30 @@ class IndexResourceTest : IntegrationTestBase() {
       @Test
       internal fun `will build the green index`() {
         webTestClient.put()
-            .uri("/probation-index/build-index")
-            .accept(MediaType.APPLICATION_JSON)
-            .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
-            .exchange()
-            .expectStatus().isOk
-            .expectBody()
-            .jsonPath("$.currentIndex").isEqualTo("NONE")
-            .jsonPath("$.currentIndexState").isEqualTo("ABSENT")
-            .jsonPath("$.otherIndex").isEqualTo("GREEN")
-            .jsonPath("$.otherIndexState").isEqualTo("BUILDING")
+          .uri("/probation-index/build-index")
+          .accept(MediaType.APPLICATION_JSON)
+          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.currentIndex").isEqualTo("NONE")
+          .jsonPath("$.currentIndexState").isEqualTo("ABSENT")
+          .jsonPath("$.otherIndex").isEqualTo("GREEN")
+          .jsonPath("$.otherIndexState").isEqualTo("BUILDING")
 
         await untilCallTo { getIndexCount(GREEN) } matches { it == 31L }
 
         webTestClient.put()
-            .uri("/probation-index/mark-complete")
-            .accept(MediaType.APPLICATION_JSON)
-            .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
-            .exchange()
-            .expectStatus().isOk
-            .expectBody()
-            .jsonPath("$.currentIndex").isEqualTo("GREEN")
-            .jsonPath("$.currentIndexState").isEqualTo("COMPLETED")
-            .jsonPath("$.otherIndex").isEqualTo("BLUE")
-            .jsonPath("$.otherIndexState").isEqualTo("ABSENT")
+          .uri("/probation-index/mark-complete")
+          .accept(MediaType.APPLICATION_JSON)
+          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.currentIndex").isEqualTo("GREEN")
+          .jsonPath("$.currentIndexState").isEqualTo("COMPLETED")
+          .jsonPath("$.otherIndex").isEqualTo("BLUE")
+          .jsonPath("$.otherIndexState").isEqualTo("ABSENT")
 
         await untilCallTo { getIndexCount("offender") } matches { it == 31L }
       }
@@ -213,25 +211,24 @@ class IndexResourceTest : IntegrationTestBase() {
         CommunityApiExtension.communityApi.stubOffenderNotFound("X00002")
 
         webTestClient.put()
-            .uri("/probation-index/build-index")
-            .accept(MediaType.APPLICATION_JSON)
-            .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
-            .exchange()
-            .expectStatus().isOk
+          .uri("/probation-index/build-index")
+          .accept(MediaType.APPLICATION_JSON)
+          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+          .exchange()
+          .expectStatus().isOk
 
         await untilCallTo { getIndexCount(GREEN) } matches { it == 2L }
 
         webTestClient.put()
-            .uri("/probation-index/mark-complete")
-            .accept(MediaType.APPLICATION_JSON)
-            .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
-            .exchange()
-            .expectStatus().isOk
+          .uri("/probation-index/mark-complete")
+          .accept(MediaType.APPLICATION_JSON)
+          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+          .exchange()
+          .expectStatus().isOk
 
         await untilCallTo { getIndexCount("offender") } matches { it == 2L }
         await untilCallTo { logAppender.list } matches { it hasLogMessageContaining "OffenderNotFoundError(crn=X00002)" }
       }
-
     }
   }
 
@@ -250,28 +247,28 @@ class IndexResourceTest : IntegrationTestBase() {
       assertThat(getIndexCount("offender")).isEqualTo(1)
 
       webTestClient.put()
-          .uri("/probation-index/build-index")
-          .accept(MediaType.APPLICATION_JSON)
-          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
-          .exchange()
-          .expectStatus().isOk
-          .expectBody()
-          .jsonPath("$.currentIndex").isEqualTo("GREEN")
-          .jsonPath("$.currentIndexState").isEqualTo("COMPLETED")
-          .jsonPath("$.otherIndex").isEqualTo("BLUE")
-          .jsonPath("$.otherIndexState").isEqualTo("BUILDING")
+        .uri("/probation-index/build-index")
+        .accept(MediaType.APPLICATION_JSON)
+        .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+        .exchange()
+        .expectStatus().isOk
+        .expectBody()
+        .jsonPath("$.currentIndex").isEqualTo("GREEN")
+        .jsonPath("$.currentIndexState").isEqualTo("COMPLETED")
+        .jsonPath("$.otherIndex").isEqualTo("BLUE")
+        .jsonPath("$.otherIndexState").isEqualTo("BUILDING")
 
       webTestClient.put()
-          .uri("/probation-index/cancel-index")
-          .accept(MediaType.APPLICATION_JSON)
-          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
-          .exchange()
-          .expectStatus().isOk
-          .expectBody()
-          .jsonPath("$.currentIndex").isEqualTo("GREEN")
-          .jsonPath("$.currentIndexState").isEqualTo("COMPLETED")
-          .jsonPath("$.otherIndex").isEqualTo("BLUE")
-          .jsonPath("$.otherIndexState").isEqualTo("CANCELLED")
+        .uri("/probation-index/cancel-index")
+        .accept(MediaType.APPLICATION_JSON)
+        .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+        .exchange()
+        .expectStatus().isOk
+        .expectBody()
+        .jsonPath("$.currentIndex").isEqualTo("GREEN")
+        .jsonPath("$.currentIndexState").isEqualTo("COMPLETED")
+        .jsonPath("$.otherIndex").isEqualTo("BLUE")
+        .jsonPath("$.otherIndexState").isEqualTo("CANCELLED")
 
       assertThat(getIndexCount("offender")).isEqualTo(1)
       await untilCallTo { indexQueueService.getNumberOfMessagesCurrentlyOnIndexQueue() } matches { it == 0 }
@@ -300,13 +297,13 @@ class IndexResourceTest : IntegrationTestBase() {
         assertThat(getIndexCount("offender")).isEqualTo(1)
 
         webTestClient.put()
-            .uri("/probation-index/index/offender/{crn}", "X99999")
-            .accept(MediaType.APPLICATION_JSON)
-            .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
-            .exchange()
-            .expectStatus().isOk
-            .expectBody()
-            .jsonPath("$.otherIds.crn").isEqualTo("X99999")
+          .uri("/probation-index/index/offender/{crn}", "X99999")
+          .accept(MediaType.APPLICATION_JSON)
+          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.otherIds.crn").isEqualTo("X99999")
 
         await untilCallTo { getIndexCount(GREEN) } matches { it == 2L }
         await untilCallTo { getIndexCount("offender") } matches { it == 2L }
@@ -323,14 +320,13 @@ class IndexResourceTest : IntegrationTestBase() {
       @Test
       internal fun `will update offender in elastic search`() {
         webTestClient.put()
-            .uri("/probation-index/index/offender/{crn}", "X99999")
-            .accept(MediaType.APPLICATION_JSON)
-            .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
-            .exchange()
-            .expectStatus().isOk
-            .expectBody()
-            .jsonPath("$.otherIds.crn").isEqualTo("X99999")
-
+          .uri("/probation-index/index/offender/{crn}", "X99999")
+          .accept(MediaType.APPLICATION_JSON)
+          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.otherIds.crn").isEqualTo("X99999")
 
         await untilCallTo { getIndexCount("offender") } matches { it == 2L }
         await untilCallTo { nomsNumberOf("X99999") } matches { it == "A9999BB" }
@@ -338,13 +334,13 @@ class IndexResourceTest : IntegrationTestBase() {
         CommunityApiExtension.communityApi.stubGetOffender(crn = "X99999", nomsNumber = "A0000BB")
 
         webTestClient.put()
-            .uri("/probation-index/index/offender/{crn}", "X99999")
-            .accept(MediaType.APPLICATION_JSON)
-            .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
-            .exchange()
-            .expectStatus().isOk
-            .expectBody()
-            .jsonPath("$.otherIds.crn").isEqualTo("X99999")
+          .uri("/probation-index/index/offender/{crn}", "X99999")
+          .accept(MediaType.APPLICATION_JSON)
+          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.otherIds.crn").isEqualTo("X99999")
 
         await untilCallTo { nomsNumberOf("X99999") } matches { it == "A0000BB" }
         await untilCallTo { getIndexCount("offender") } matches { it == 2L }
@@ -436,14 +432,20 @@ class IndexResourceTest : IntegrationTestBase() {
         fun setup() {
           initialiseIndexStatus()
           CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345", "X12346")
-          CommunityApiExtension.communityApi.stubGetOffender(crn = "X12345", offenderManagers = listOf(
+          CommunityApiExtension.communityApi.stubGetOffender(
+            crn = "X12345",
+            offenderManagers = listOf(
               OffenderManager(probationArea = ProbationArea(code = "N01"), active = true),
               OffenderManager(probationArea = ProbationArea(code = "N02"), active = false)
-          ))
-          CommunityApiExtension.communityApi.stubGetOffender(crn = "X12346", offenderManagers = listOf(
+            )
+          )
+          CommunityApiExtension.communityApi.stubGetOffender(
+            crn = "X12346",
+            offenderManagers = listOf(
               OffenderManager(probationArea = ProbationArea(code = "N01"), active = false),
               OffenderManager(probationArea = ProbationArea(code = "N02"), active = true)
-          ))
+            )
+          )
           buildAndSwitchIndex(GREEN, 2)
         }
 
@@ -464,14 +466,20 @@ class IndexResourceTest : IntegrationTestBase() {
         fun setup() {
           initialiseIndexStatus()
           CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345", "X12346")
-          CommunityApiExtension.communityApi.stubGetOffender(crn = "X12345", offenderAliases = listOf(
+          CommunityApiExtension.communityApi.stubGetOffender(
+            crn = "X12345",
+            offenderAliases = listOf(
               OffenderAlias(surname = "Smith", firstName = "Jane", gender = "FEMALE", dateOfBirth = "1965-07-19"),
               OffenderAlias(surname = "Kunis", firstName = "Ella", gender = "FEMALE", dateOfBirth = "1965-07-19")
-          ))
-          CommunityApiExtension.communityApi.stubGetOffender(crn = "X12346", offenderAliases = listOf(
+            )
+          )
+          CommunityApiExtension.communityApi.stubGetOffender(
+            crn = "X12346",
+            offenderAliases = listOf(
               OffenderAlias(surname = "Smith", firstName = "Ella", gender = "FEMALE", dateOfBirth = "1965-07-19"),
               OffenderAlias(surname = "Kunis", firstName = "Jane", gender = "FEMALE", dateOfBirth = "1965-07-19")
-          ))
+            )
+          )
           buildAndSwitchIndex(GREEN, 2)
         }
 
@@ -514,11 +522,11 @@ class IndexResourceTest : IntegrationTestBase() {
       @Test
       internal fun `will remove all message on index DLQ`() {
         webTestClient.put()
-            .uri("/probation-index/purge-index-dlq")
-            .accept(MediaType.APPLICATION_JSON)
-            .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
-            .exchange()
-            .expectStatus().isOk
+          .uri("/probation-index/purge-index-dlq")
+          .accept(MediaType.APPLICATION_JSON)
+          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+          .exchange()
+          .expectStatus().isOk
 
         await untilCallTo { indexQueueService.getNumberOfMessagesCurrentlyOnIndexDLQ() } matches { it == 0 }
       }
@@ -537,16 +545,15 @@ class IndexResourceTest : IntegrationTestBase() {
       @Test
       internal fun `will remove all message on event DLQ`() {
         webTestClient.put()
-            .uri("/probation-index/purge-event-dlq")
-            .accept(MediaType.APPLICATION_JSON)
-            .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
-            .exchange()
-            .expectStatus().isOk
+          .uri("/probation-index/purge-event-dlq")
+          .accept(MediaType.APPLICATION_JSON)
+          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+          .exchange()
+          .expectStatus().isOk
 
         await untilCallTo { getNumberOfMessagesCurrentlyOnEventDLQ() } matches { it == 0 }
       }
     }
-
   }
 
   @Nested
@@ -573,11 +580,11 @@ class IndexResourceTest : IntegrationTestBase() {
       internal fun `will move all message on event DLQ to event Queue`() {
 
         webTestClient.put()
-            .uri("/probation-index/transfer-event-dlq")
-            .accept(MediaType.APPLICATION_JSON)
-            .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
-            .exchange()
-            .expectStatus().isOk
+          .uri("/probation-index/transfer-event-dlq")
+          .accept(MediaType.APPLICATION_JSON)
+          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+          .exchange()
+          .expectStatus().isOk
 
         await untilCallTo { getNumberOfMessagesCurrentlyOnEventDLQ() } matches { it == 0 }
         await untilCallTo { getNumberOfMessagesCurrentlyOnEventQueue() } matches { it == 0 }
@@ -598,30 +605,30 @@ class IndexResourceTest : IntegrationTestBase() {
 
     @Test
     internal fun `will move all message on index DLQ to index Queue and process them if building`() {
-      indexAwsSqsDlqClient.sendMessage(indexDlqUrl,
-          """
+      indexAwsSqsDlqClient.sendMessage(
+        indexDlqUrl,
+        """
             {
               "type": "POPULATE_OFFENDER",
               "crn": "X12346"
             }
-          """.trimIndent()
+        """.trimIndent()
       )
       CommunityApiExtension.communityApi.stubGetOffender("X12346")
 
       await untilCallTo { indexQueueService.getNumberOfMessagesCurrentlyOnIndexDLQ() } matches { it == 1 }
 
       webTestClient.put()
-          .uri("/probation-index/transfer-index-dlq")
-          .accept(MediaType.APPLICATION_JSON)
-          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
-          .exchange()
-          .expectStatus().isOk
+        .uri("/probation-index/transfer-index-dlq")
+        .accept(MediaType.APPLICATION_JSON)
+        .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+        .exchange()
+        .expectStatus().isOk
 
       await untilCallTo { indexQueueService.getNumberOfMessagesCurrentlyOnIndexDLQ() } matches { it == 0 }
       await untilCallTo { indexQueueService.getNumberOfMessagesCurrentlyOnIndexQueue() } matches { it == 0 }
       await untilCallTo { getIndexCount(GREEN) } matches { it == 2L }
     }
-
   }
 
   @Nested
@@ -688,45 +695,45 @@ class IndexResourceTest : IntegrationTestBase() {
     private fun buildIndex(numberOfOffenders: Long) {
       CommunityApiExtension.communityApi.stubAllOffenderGets(10, numberOfOffenders = numberOfOffenders)
       webTestClient.put()
-          .uri("/probation-index/build-index")
-          .accept(MediaType.APPLICATION_JSON)
-          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
-          .exchange()
-          .expectStatus().isOk
+        .uri("/probation-index/build-index")
+        .accept(MediaType.APPLICATION_JSON)
+        .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+        .exchange()
+        .expectStatus().isOk
     }
 
     private fun markBuildComplete() =
-        webTestClient.put()
-            .uri("/probation-index/mark-complete")
-            .accept(MediaType.APPLICATION_JSON)
-            .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
-            .exchange()
-            .expectStatus().isOk
+      webTestClient.put()
+        .uri("/probation-index/mark-complete")
+        .accept(MediaType.APPLICATION_JSON)
+        .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+        .exchange()
+        .expectStatus().isOk
 
     private fun callHousekeeping() =
-        webTestClient.put()
-            .uri("/probation-index/queue-housekeeping")
-            .accept(MediaType.APPLICATION_JSON)
-            .exchange()
-            .expectStatus().isOk
+      webTestClient.put()
+        .uri("/probation-index/queue-housekeeping")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus().isOk
 
     private fun assertBuildStatusBuilding() =
       indexStatusService.getIndexStatus()
-          .also { assertThat(it.currentIndexState).isEqualTo(ABSENT) }
-          .also { assertThat(it.otherIndexState).isEqualTo(BUILDING) }
+        .also { assertThat(it.currentIndexState).isEqualTo(ABSENT) }
+        .also { assertThat(it.otherIndexState).isEqualTo(BUILDING) }
 
     private fun assertBuildStatusComplete() =
       indexStatusService.getIndexStatus()
-          .also { assertThat(it.currentIndexState).isEqualTo(COMPLETED) }
-          .also { assertThat(it.otherIndexState).isEqualTo(ABSENT) }
+        .also { assertThat(it.currentIndexState).isEqualTo(COMPLETED) }
+        .also { assertThat(it.otherIndexState).isEqualTo(ABSENT) }
 
     private fun cancelBuildAndWait() {
       webTestClient.put()
-          .uri("/probation-index/cancel-index")
-          .accept(MediaType.APPLICATION_JSON)
-          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
-          .exchange()
-          .expectStatus().isOk
+        .uri("/probation-index/cancel-index")
+        .accept(MediaType.APPLICATION_JSON)
+        .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+        .exchange()
+        .expectStatus().isOk
 
       await.atMost(Duration.ofSeconds(20)) untilCallTo { indexQueueService.getNumberOfMessagesCurrentlyOnIndexQueue() } matches { it == 0 }
     }
@@ -747,46 +754,47 @@ class IndexResourceTest : IntegrationTestBase() {
     @Test
     fun `will add good DLQ messages to the index`() {
       CommunityApiExtension.communityApi.stubGetOffender("X12346")
-      indexAwsSqsDlqClient.sendMessage(indexDlqUrl,
-          """
+      indexAwsSqsDlqClient.sendMessage(
+        indexDlqUrl,
+        """
             {
               "type": "POPULATE_OFFENDER",
               "crn": "X12346"
             }
-          """.trimIndent()
+        """.trimIndent()
       )
       await untilCallTo { indexQueueService.getNumberOfMessagesCurrentlyOnIndexDLQ() } matches { it == 1 }
 
       webTestClient.put()
-          .uri("/probation-index/queue-housekeeping")
-          .accept(MediaType.APPLICATION_JSON)
-          .exchange()
-          .expectStatus().isOk
+        .uri("/probation-index/queue-housekeeping")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus().isOk
 
       await untilCallTo { indexQueueService.getNumberOfMessagesCurrentlyOnIndexDLQ() } matches { it == 0 }
       await untilCallTo { indexQueueService.getNumberOfMessagesCurrentlyOnIndexQueue() } matches { it == 0 }
       await untilCallTo { getIndexCount(GREEN) } matches { it == 2L }
-
     }
 
     @Test
     fun `will only complete build after 2nd housekeeping call if there are good DLQ messages`() {
       CommunityApiExtension.communityApi.stubGetOffender("X12346")
-      indexAwsSqsDlqClient.sendMessage(indexDlqUrl,
-          """
+      indexAwsSqsDlqClient.sendMessage(
+        indexDlqUrl,
+        """
             {
               "type": "POPULATE_OFFENDER",
               "crn": "X12346"
             }
-          """.trimIndent()
+        """.trimIndent()
       )
       await untilCallTo { indexQueueService.getNumberOfMessagesCurrentlyOnIndexDLQ() } matches { it == 1 }
 
       webTestClient.put()
-          .uri("/probation-index/queue-housekeeping")
-          .accept(MediaType.APPLICATION_JSON)
-          .exchange()
-          .expectStatus().isOk
+        .uri("/probation-index/queue-housekeeping")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus().isOk
 
       await untilCallTo { indexQueueService.getNumberOfMessagesCurrentlyOnIndexDLQ() } matches { it == 0 }
       await untilCallTo { indexQueueService.getNumberOfMessagesCurrentlyOnIndexQueue() } matches { it == 0 }
@@ -794,13 +802,12 @@ class IndexResourceTest : IntegrationTestBase() {
       assertThat(indexStatusService.getIndexStatus().otherIndexState).isEqualTo(BUILDING)
 
       webTestClient.put()
-          .uri("/probation-index/queue-housekeeping")
-          .accept(MediaType.APPLICATION_JSON)
-          .exchange()
-          .expectStatus().isOk
+        .uri("/probation-index/queue-housekeeping")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus().isOk
       assertThat(indexStatusService.getIndexStatus().otherIndexState).isEqualTo(ABSENT)
       assertThat(indexStatusService.getIndexStatus().currentIndexState).isEqualTo(COMPLETED)
-
     }
   }
 
@@ -821,15 +828,14 @@ class IndexResourceTest : IntegrationTestBase() {
       await untilCallTo { getNumberOfMessagesCurrentlyOnEventDLQ() } matches { it == 1 }
 
       webTestClient.put()
-          .uri("/probation-index/queue-housekeeping")
-          .accept(MediaType.APPLICATION_JSON)
-          .exchange()
-          .expectStatus().isOk
+        .uri("/probation-index/queue-housekeeping")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus().isOk
 
       await untilCallTo { getNumberOfMessagesCurrentlyOnEventDLQ() } matches { it == 0 }
       await untilCallTo { getNumberOfMessagesCurrentlyOnEventQueue() } matches { it == 0 }
       await untilCallTo { getIndexCount(GREEN) } matches { it == 2L }
-
     }
 
     @Test
@@ -839,17 +845,16 @@ class IndexResourceTest : IntegrationTestBase() {
       await untilCallTo { getNumberOfMessagesCurrentlyOnEventDLQ() } matches { it == 1 }
 
       webTestClient.put()
-          .uri("/probation-index/queue-housekeeping")
-          .accept(MediaType.APPLICATION_JSON)
-          .exchange()
-          .expectStatus().isOk
+        .uri("/probation-index/queue-housekeeping")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus().isOk
 
       await untilCallTo { getNumberOfMessagesCurrentlyOnEventQueue() } matches { it == 0 }
       await untilCallTo { getNumberOfMessagesCurrentlyInFlight() } matches { it == 0 }
       await untilCallTo { getIndexCount(GREEN) } matches { it == 1L }
       // Unfortunately localstack doesn't put the message onto the DLQ when it fails - if they ever fix that then we can uncomment the next line
       // await untilCallTo { getNumberOfMessagesCurrentlyOnEventDLQ() } matches { it == 1 }
-
     }
 
     fun getNumberOfMessagesCurrentlyOnEventQueue(): Int {
@@ -866,7 +871,6 @@ class IndexResourceTest : IntegrationTestBase() {
       val queueAttributes = eventAwsSqsClient.getQueueAttributes(eventQueueUrl, listOf("ApproximateNumberOfMessagesNotVisible"))
       return queueAttributes.attributes["ApproximateNumberOfMessagesNotVisible"]?.toInt() ?: 0
     }
-
   }
 
   fun nomsNumberOf(crn: String): String? {
@@ -875,7 +879,8 @@ class IndexResourceTest : IntegrationTestBase() {
     return offenderDetail.otherIds.nomsNumber
   }
 
-  fun offenderChangedMessage(crn: String) = """
+  fun offenderChangedMessage(crn: String) =
+    """
     {
       "Type": "Notification",
       "MessageId": "20e13002-d1be-56e7-be8c-66cdd7e23341",
@@ -906,6 +911,5 @@ class IndexResourceTest : IntegrationTestBase() {
       }
     }
 
-  """.trimIndent()
+    """.trimIndent()
 }
-

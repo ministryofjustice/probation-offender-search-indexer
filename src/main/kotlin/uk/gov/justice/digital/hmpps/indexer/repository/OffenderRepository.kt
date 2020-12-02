@@ -37,9 +37,9 @@ class OffenderRepository(@Qualifier("elasticSearchClient") private val client: R
     log.info("creating index {}", index.indexName)
     client.indices().create(CreateIndexRequest(index.indexName), RequestOptions.DEFAULT)
     client.indices()
-        .putMapping(PutMappingRequest(index.indexName).source("/es/mapping.json".resourceAsString(), JSON), RequestOptions.DEFAULT)
+      .putMapping(PutMappingRequest(index.indexName).source("/es/mapping.json".resourceAsString(), JSON), RequestOptions.DEFAULT)
     client.ingest()
-        .putPipeline(PutPipelineRequest(pipelineId, "/es/pipeline.json".resourceAsByteReference(), JSON), RequestOptions.DEFAULT)
+      .putPipeline(PutPipelineRequest(pipelineId, "/es/pipeline.json".resourceAsByteReference(), JSON), RequestOptions.DEFAULT)
   }
 
   fun deleteIndex(index: SyncIndex) {
@@ -58,15 +58,15 @@ class OffenderRepository(@Qualifier("elasticSearchClient") private val client: R
   fun switchAliasIndex(index: SyncIndex) {
     val alias = client.indices().getAlias(GetAliasesRequest().aliases("offender"), RequestOptions.DEFAULT)
     client.indices()
-        .updateAliases(IndicesAliasesRequest().addAliasAction(AliasActions(ADD).index(index.indexName).alias("offender")), RequestOptions.DEFAULT)
+      .updateAliases(IndicesAliasesRequest().addAliasAction(AliasActions(ADD).index(index.indexName).alias("offender")), RequestOptions.DEFAULT)
 
     alias.aliases[index.otherIndex().indexName]?.forEach {
       client.indices()
-          .deleteAlias(DeleteAliasRequest(index.otherIndex().indexName, it.alias), RequestOptions.DEFAULT)
+        .deleteAlias(DeleteAliasRequest(index.otherIndex().indexName, it.alias), RequestOptions.DEFAULT)
     }
   }
 
-  fun offenderAliasIsPointingAt() : Set<String> {
+  fun offenderAliasIsPointingAt(): Set<String> {
     val alias = client.indices().getAlias(GetAliasesRequest().aliases("offender"), RequestOptions.DEFAULT)
     return alias.aliases.keys
   }
@@ -75,6 +75,6 @@ class OffenderRepository(@Qualifier("elasticSearchClient") private val client: R
 private fun String.resourceAsString() = OffenderRepository::class.java.getResource(this).readText()
 private fun String.resourceAsByteReference() = BytesArray(OffenderRepository::class.java.getResource(this).readBytes())
 private fun Offender.toIndexRequest(): IndexRequest = IndexRequest()
-    .setPipeline(pipelineId)
-    .source(this.json, JSON)
-    .id(this.crn)
+  .setPipeline(pipelineId)
+  .source(this.json, JSON)
+  .id(this.crn)

@@ -20,12 +20,12 @@ class JmsListenerConfig {
   }
 
   @Bean
-  fun jmsListenerContainerFactory(@Qualifier("eventAwsSqsClient") eventAwsSqsClient: AmazonSQS)  = defaultJmsListenerContainerFactory(eventAwsSqsClient)
+  fun jmsListenerContainerFactory(@Qualifier("eventAwsSqsClient") eventAwsSqsClient: AmazonSQS) = defaultJmsListenerContainerFactory(eventAwsSqsClient)
 
   @Bean
-  fun jmsIndexListenerContainerFactory(@Qualifier("indexAwsSqsClient") indexAwsSqsClient: AmazonSQS)  = defaultJmsListenerContainerFactory(indexAwsSqsClient)
+  fun jmsIndexListenerContainerFactory(@Qualifier("indexAwsSqsClient") indexAwsSqsClient: AmazonSQS) = defaultJmsListenerContainerFactory(indexAwsSqsClient)
 
-  private fun defaultJmsListenerContainerFactory(awsSqsClient: AmazonSQS): DefaultJmsListenerContainerFactory  {
+  private fun defaultJmsListenerContainerFactory(awsSqsClient: AmazonSQS): DefaultJmsListenerContainerFactory {
     val factory = DefaultJmsListenerContainerFactory()
     factory.setConnectionFactory(SQSConnectionFactory(ProviderConfiguration(), awsSqsClient))
     factory.setDestinationResolver(DynamicDestinationResolver())

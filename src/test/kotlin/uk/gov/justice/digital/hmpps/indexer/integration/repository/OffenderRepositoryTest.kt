@@ -35,7 +35,6 @@ internal class OffenderRepositoryTest : IntegrationTestBase() {
   @Autowired
   lateinit var offenderRepository: OffenderRepository
 
-
   @Nested
   inner class CreateIndex {
     @Nested
@@ -90,7 +89,7 @@ internal class OffenderRepositoryTest : IntegrationTestBase() {
       @BeforeEach
       internal fun setUp() {
         val mappings = highLevelClient.indices()
-            .getMapping(GetMappingsRequest().indices(BLUE.indexName), RequestOptions.DEFAULT)
+          .getMapping(GetMappingsRequest().indices(BLUE.indexName), RequestOptions.DEFAULT)
         mappingProperties = mappings.properties(BLUE.indexName)
       }
 
@@ -153,7 +152,6 @@ internal class OffenderRepositoryTest : IntegrationTestBase() {
       internal fun `will have a pipeline created`() {
         offenderRepository.createIndex(BLUE)
 
-
         val response = highLevelClient.ingest().getPipeline(GetPipelineRequest("pnc-pipeline"), RequestOptions.DEFAULT)
         assertThat(response.isFound).isTrue()
       }
@@ -167,7 +165,6 @@ internal class OffenderRepositoryTest : IntegrationTestBase() {
         assertThat(response.isFound).isTrue()
       }
     }
-
   }
 
   @Nested
@@ -331,7 +328,6 @@ internal class OffenderRepositoryTest : IntegrationTestBase() {
 
         assertThat(indexes).containsExactly(BLUE.indexName)
       }
-
     }
 
     @Nested

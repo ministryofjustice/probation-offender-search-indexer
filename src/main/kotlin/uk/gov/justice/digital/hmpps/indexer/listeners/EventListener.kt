@@ -8,11 +8,10 @@ import org.springframework.jms.annotation.JmsListener
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.indexer.service.IndexService
 
-
 @Service
 class EventListener(
-    @Qualifier("gson") private val gson: Gson,
-    private val indexService: IndexService
+  @Qualifier("gson") private val gson: Gson,
+  private val indexService: IndexService
 ) {
   companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
@@ -26,7 +25,6 @@ class EventListener(
       "OFFENDER_CHANGED" -> indexService.updateOffender(gson.fromJson(message, OffenderChangedEvent::class.java).crn)
       else -> log.error("We received a message of event type {} which I really wasn't expecting", eventType)
     }
-
   }
 }
 

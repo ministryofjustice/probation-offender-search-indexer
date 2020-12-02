@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.indexer.health
 
-
 import com.amazonaws.services.sqs.AmazonSQS
 import com.amazonaws.services.sqs.model.GetQueueAttributesRequest
 import com.amazonaws.services.sqs.model.QueueAttributeName.ApproximateNumberOfMessages
@@ -13,16 +12,14 @@ import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.GREEN
 import uk.gov.justice.digital.hmpps.indexer.repository.OffenderRepository
 import uk.gov.justice.digital.hmpps.indexer.service.IndexService
 import uk.gov.justice.digital.hmpps.indexer.service.IndexStatusService
-import java.util.NoSuchElementException
-
 
 @Component
 class IndexInfo(
-    private val indexStatusService: IndexStatusService,
-    private val indexService: IndexService,
-    private val offenderRepository: OffenderRepository,
-    @Value("\${index.sqs.queue.name}") private val indexQueueName: String,
-    private val indexAwsSqsClient: AmazonSQS
+  private val indexStatusService: IndexStatusService,
+  private val indexService: IndexService,
+  private val offenderRepository: OffenderRepository,
+  @Value("\${index.sqs.queue.name}") private val indexQueueName: String,
+  private val indexAwsSqsClient: AmazonSQS
 ) : InfoContributor {
 
   override fun contribute(builder: Info.Builder) {
@@ -31,13 +28,16 @@ class IndexInfo(
     } catch (e: Exception) {
       builder.withDetail("index-status", "No status exists yet (${e.message})")
     }
-    builder.withDetail("index-size", mapOf(
+    builder.withDetail(
+      "index-size",
+      mapOf(
         GREEN to indexService.getIndexCount(GREEN),
         BLUE to indexService.getIndexCount(BLUE)
-    ))
+      )
+    )
     try {
       builder.withDetail("offender-alias", offenderRepository.offenderAliasIsPointingAt().joinToString())
-    } catch(e: Exception) {
+    } catch (e: Exception) {
       builder.withDetail("offender-alias", "Elasticsearch is not available yet ")
     }
     builder.withDetail("index-queue-backlog", safeQueueCount())
@@ -47,7 +47,7 @@ class IndexInfo(
     return try {
       val url = indexAwsSqsClient.getQueueUrl(indexQueueName)
       val queueAttributes = indexAwsSqsClient.getQueueAttributes(GetQueueAttributesRequest(url.queueUrl).withAttributeNames(ApproximateNumberOfMessages))
-          .attributes
+        .attributes
 
       queueAttributes["ApproximateNumberOfMessages"] ?: "unknown"
     } catch (ex: Exception) {

@@ -8,9 +8,9 @@ class SwaggerValidatorTest : IntegrationTestBase() {
   @Test
   fun `open api docs are available`() {
     webTestClient.get()
-        .uri("/swagger-ui/index.html")
-        .accept(MediaType.APPLICATION_JSON)
-        .exchange()
-        .expectStatus().isOk
+      .uri("/swagger-ui/index.html")
+      .accept(MediaType.APPLICATION_JSON)
+      .exchange()
+      .expectStatus().isOk
   }
 }

@@ -6,11 +6,13 @@ import org.springframework.boot.autoconfigure.data.elasticsearch.ReactiveElastic
 import org.springframework.boot.runApplication
 
 @SpringBootApplication(
-    exclude = [ReactiveElasticsearchRestClientAutoConfiguration::class,
-        ReactiveElasticsearchRepositoriesAutoConfiguration::class]
+  exclude = [
+    ReactiveElasticsearchRestClientAutoConfiguration::class,
+    ReactiveElasticsearchRepositoriesAutoConfiguration::class
+  ]
 )
 class ProbationOffenderSearchIndexer
 
 fun main(args: Array<String>) {
-    runApplication<ProbationOffenderSearchIndexer>(*args)
+  runApplication<ProbationOffenderSearchIndexer>(*args)
 }

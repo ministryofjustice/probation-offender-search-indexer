@@ -26,19 +26,19 @@ class ClientTrackingTelemetryModule : WebTelemetryModule, TelemetryModule {
   }
 
   private fun findUserAndClient(req: ServletRequest): Pair<String?, String?> =
-      (req as HttpServletRequest).getHeader(HttpHeaders.AUTHORIZATION)
-          .takeIf { it.startsWith("Bearer ") }
-          ?.let { getClaimsFromJWT(it) }
-          ?.let { it.getClaim("user_name") as String? to it.getClaim("client_id") as String? }
-          ?: null to null
+    (req as HttpServletRequest).getHeader(HttpHeaders.AUTHORIZATION)
+      .takeIf { it.startsWith("Bearer ") }
+      ?.let { getClaimsFromJWT(it) }
+      ?.let { it.getClaim("user_name") as String? to it.getClaim("client_id") as String? }
+      ?: null to null
 
   private fun getClaimsFromJWT(token: String): JWTClaimsSet? =
-      try {
-        SignedJWT.parse(token.replace("Bearer ", ""))
-      } catch (e: ParseException) {
-        log.warn("problem decoding jwt public key for application insights", e)
-        null
-      }?.jwtClaimsSet
+    try {
+      SignedJWT.parse(token.replace("Bearer ", ""))
+    } catch (e: ParseException) {
+      log.warn("problem decoding jwt public key for application insights", e)
+      null
+    }?.jwtClaimsSet
 
   override fun onEndRequest(req: ServletRequest, res: ServletResponse) {}
   override fun initialize(configuration: TelemetryConfiguration) {}

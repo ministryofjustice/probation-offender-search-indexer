@@ -20,11 +20,11 @@ data class IndexQueueStatus(val messagesOnQueue: Int, val messagesOnDlq: Int, va
 
 @Service
 class IndexQueueService(
-    private val indexAwsSqsClient: AmazonSQS,
-    private val indexAwsSqsDlqClient: AmazonSQS,
-    @Value("\${index.sqs.queue.name}") private val indexQueueName: String,
-    @Value("\${index.sqs.dlq.name}") private val indexDlqName: String,
-    private val gson: Gson
+  private val indexAwsSqsClient: AmazonSQS,
+  private val indexAwsSqsDlqClient: AmazonSQS,
+  @Value("\${index.sqs.queue.name}") private val indexQueueName: String,
+  @Value("\${index.sqs.dlq.name}") private val indexDlqName: String,
+  private val gson: Gson
 ) {
 
   companion object {
@@ -64,9 +64,9 @@ class IndexQueueService(
   }
 
   fun getIndexQueueStatus(): IndexQueueStatus =
-      IndexQueueStatus(
-          messagesOnQueue = getNumberOfMessagesCurrentlyOnIndexQueue(),
-          messagesInFlight = getNumberOfMessagesCurrentlyInFlight(),
-          messagesOnDlq = getNumberOfMessagesCurrentlyOnIndexDLQ()
-      )
+    IndexQueueStatus(
+      messagesOnQueue = getNumberOfMessagesCurrentlyOnIndexQueue(),
+      messagesInFlight = getNumberOfMessagesCurrentlyInFlight(),
+      messagesOnDlq = getNumberOfMessagesCurrentlyOnIndexDLQ()
+    )
 }
