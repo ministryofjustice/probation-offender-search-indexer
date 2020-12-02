@@ -52,7 +52,11 @@ class OffenderRepository(@Qualifier("elasticSearchClient") private val client: R
   }
 
   fun doesIndexExist(index: SyncIndex): Boolean {
-    return client.indices().exists(GetIndexRequest(index.indexName), RequestOptions.DEFAULT)
+    return doesIndexExist(index.indexName)
+  }
+
+  fun doesIndexExist(index: String): Boolean {
+    return client.indices().exists(GetIndexRequest(index), RequestOptions.DEFAULT)
   }
 
   fun switchAliasIndex(index: SyncIndex) {

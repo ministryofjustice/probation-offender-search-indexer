@@ -172,6 +172,7 @@ abstract class IntegrationTestBase {
         .exchange()
         .expectStatus().isOk
 
+    await untilCallTo { offenderRespository.doesIndexExist("offender") } matches { it == true }
     await untilCallTo { getIndexCount("offender") } matches { it == expectedCount }
   }
 
