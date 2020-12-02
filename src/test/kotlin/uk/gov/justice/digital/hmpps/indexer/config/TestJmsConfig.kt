@@ -13,26 +13,34 @@ import org.springframework.jms.annotation.EnableJms
 @EnableJms
 class TestJmsConfig {
   @Bean("eventQueueUrl")
-  fun eventQueueUrl(@Qualifier("eventAwsSqsClient") eventAwsSqsClient: AmazonSQS,
-                    @Value("\${event.sqs.queue.name}") eventQueueName: String,
-                    @Value("\${event.sqs.dlq.name}") eventDlqQueueName: String): String {
+  fun eventQueueUrl(
+    @Qualifier("eventAwsSqsClient") eventAwsSqsClient: AmazonSQS,
+    @Value("\${event.sqs.queue.name}") eventQueueName: String,
+    @Value("\${event.sqs.dlq.name}") eventDlqQueueName: String
+  ): String {
     return queueUrl(eventAwsSqsClient, eventQueueName, eventDlqQueueName)
   }
 
   @Bean("indexQueueUrl")
-  fun indexQueueUrl(@Qualifier("indexAwsSqsClient") indexAwsSqsClient: AmazonSQS,
-                    @Value("\${index.sqs.queue.name}") indexQueueName: String,
-                    @Value("\${index.sqs.dlq.name}") indexDlqQueueName: String): String {
+  fun indexQueueUrl(
+    @Qualifier("indexAwsSqsClient") indexAwsSqsClient: AmazonSQS,
+    @Value("\${index.sqs.queue.name}") indexQueueName: String,
+    @Value("\${index.sqs.dlq.name}") indexDlqQueueName: String
+  ): String {
     return queueUrl(indexAwsSqsClient, indexQueueName, indexDlqQueueName)
   }
 
   @Bean("indexDlqUrl")
-  fun indexDlqUrl(@Qualifier("indexAwsSqsClient") indexAwsSqsClient: AmazonSQS,
-                  @Value("\${index.sqs.dlq.name}") indexDlqQueueName: String) : String = indexAwsSqsClient.getQueueUrl(indexDlqQueueName).queueUrl
+  fun indexDlqUrl(
+    @Qualifier("indexAwsSqsClient") indexAwsSqsClient: AmazonSQS,
+    @Value("\${index.sqs.dlq.name}") indexDlqQueueName: String
+  ): String = indexAwsSqsClient.getQueueUrl(indexDlqQueueName).queueUrl
 
   @Bean("eventDlqUrl")
-  fun eventDlqUrl(@Qualifier("eventAwsSqsClient") eventAwsSqsClient: AmazonSQS,
-                  @Value("\${event.sqs.dlq.name}") eventDlqQueueName: String) : String = eventAwsSqsClient.getQueueUrl(eventDlqQueueName).queueUrl
+  fun eventDlqUrl(
+    @Qualifier("eventAwsSqsClient") eventAwsSqsClient: AmazonSQS,
+    @Value("\${event.sqs.dlq.name}") eventDlqQueueName: String
+  ): String = eventAwsSqsClient.getQueueUrl(eventDlqQueueName).queueUrl
 
   private fun queueUrl(awsSqsClient: AmazonSQS, queueName: String, dlqName: String): String {
     val queueUrl = awsSqsClient.getQueueUrl(queueName).queueUrl
@@ -41,10 +49,14 @@ class TestJmsConfig {
     val dlqArn = awsSqsClient.getQueueAttributes(dlqUrl, listOf(QueueAttributeName.QueueArn.toString()))
 
     // the queue should already be created by the setup script - but should reset set the redrive policy
-    awsSqsClient.createQueue(CreateQueueRequest(queueName).withAttributes(
-        mapOf(QueueAttributeName.RedrivePolicy.toString() to
-            """{"deadLetterTargetArn":"${dlqArn.attributes["QueueArn"]}","maxReceiveCount":"5"}""")
-    ))
+    awsSqsClient.createQueue(
+      CreateQueueRequest(queueName).withAttributes(
+        mapOf(
+          QueueAttributeName.RedrivePolicy.toString() to
+"""{"deadLetterTargetArn":"${dlqArn.attributes["QueueArn"]}","maxReceiveCount":"5"}"""
+        )
+      )
+    )
 
     return queueUrl
   }

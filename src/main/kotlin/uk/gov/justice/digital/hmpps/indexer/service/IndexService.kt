@@ -18,12 +18,12 @@ import kotlin.reflect.KClass
 
 @Service
 class IndexService(
-    private val indexStatusService: IndexStatusService,
-    private val offenderSynchroniserService: OffenderSynchroniserService,
-    private val indexQueueService: IndexQueueService,
-    private val queueAdminService: QueueAdminService,
-    private val elasticSearchClient: RestHighLevelClient,
-    private val telemetryClient: TelemetryClient
+  private val indexStatusService: IndexStatusService,
+  private val offenderSynchroniserService: OffenderSynchroniserService,
+  private val indexQueueService: IndexQueueService,
+  private val queueAdminService: QueueAdminService,
+  private val elasticSearchClient: RestHighLevelClient,
+  private val telemetryClient: TelemetryClient
 ) {
 
   companion object {
@@ -33,10 +33,10 @@ class IndexService(
   fun prepareIndexForRebuild(): Either<Error, IndexStatus> {
     val indexQueueStatus = indexQueueService.getIndexQueueStatus()
     return indexStatusService.initialiseIndexWhenRequired().getIndexStatus()
-        .also { logIndexStatuses(it) }
-        .failIf(IndexStatus::isBuilding) { BuildAlreadyInProgressError(it) }
-        .failIf({ indexQueueStatus.active }) { ActiveMessagesExistError(it.otherIndex, indexQueueStatus, "build index") }
-        .map { doPrepareIndexForRebuild(it) }
+      .also { logIndexStatuses(it) }
+      .failIf(IndexStatus::isBuilding) { BuildAlreadyInProgressError(it) }
+      .failIf({ indexQueueStatus.active }) { ActiveMessagesExistError(it.otherIndex, indexQueueStatus, "build index") }
+      .map { doPrepareIndexForRebuild(it) }
   }
 
   private fun doPrepareIndexForRebuild(indexStatus: IndexStatus): IndexStatus {
@@ -44,15 +44,20 @@ class IndexService(
     offenderSynchroniserService.checkExistsAndReset(indexStatus.otherIndex)
     indexQueueService.sendPopulateIndexMessage(indexStatus.otherIndex)
     return indexStatusService.getIndexStatus()
-        .also { logIndexStatuses(it) }
-        .also { telemetryClient.trackEvent(TelemetryEvents.BUILDING_INDEX.name, mapOf("index" to indexStatus.otherIndex.name), null) }
+      .also { logIndexStatuses(it) }
+      .also { telemetryClient.trackEvent(TelemetryEvents.BUILDING_INDEX.name, mapOf("index" to indexStatus.otherIndex.name), null) }
   }
 
   private fun logIndexStatuses(indexStatus: IndexStatus) {
-    log.info("Current index status is {}.  Index counts {}={} and {}={}.  Queue counts: Queue={} and DLQ={}",
-        indexStatus,
-        indexStatus.currentIndex, getIndexCount(indexStatus.currentIndex), indexStatus.otherIndex, getIndexCount(indexStatus.otherIndex),
-        indexQueueService.getNumberOfMessagesCurrentlyOnIndexQueue(), indexQueueService.getNumberOfMessagesCurrentlyOnIndexDLQ()
+    log.info(
+      "Current index status is {}.  Index counts {}={} and {}={}.  Queue counts: Queue={} and DLQ={}",
+      indexStatus,
+      indexStatus.currentIndex,
+      getIndexCount(indexStatus.currentIndex),
+      indexStatus.otherIndex,
+      getIndexCount(indexStatus.otherIndex),
+      indexQueueService.getNumberOfMessagesCurrentlyOnIndexQueue(),
+      indexQueueService.getNumberOfMessagesCurrentlyOnIndexDLQ()
     )
   }
 
@@ -60,65 +65,66 @@ class IndexService(
     val indexQueueStatus = indexQueueService.getIndexQueueStatus()
     val indexStatus = indexStatusService.getIndexStatus()
     return indexStatus
-        .failIf(IndexStatus::isNotBuilding) { BuildNotInProgressError(it) }
-        .failIf({ indexQueueStatus.active }) { ActiveMessagesExistError(it.otherIndex, indexQueueStatus, "mark complete") }
-        .also { logIndexStatuses(indexStatus) }
-        .map { doMarkIndexingComplete() }
+      .failIf(IndexStatus::isNotBuilding) { BuildNotInProgressError(it) }
+      .failIf({ indexQueueStatus.active }) { ActiveMessagesExistError(it.otherIndex, indexQueueStatus, "mark complete") }
+      .also { logIndexStatuses(indexStatus) }
+      .map { doMarkIndexingComplete() }
   }
 
   private fun doMarkIndexingComplete(): IndexStatus =
     indexStatusService.markBuildCompleteAndSwitchIndex()
-        .let { newStatus ->
-          offenderSynchroniserService.switchAliasIndex(newStatus.currentIndex)
-          return indexStatusService.getIndexStatus()
-              .also { latestStatus -> logIndexStatuses(latestStatus) }
-              .also { telemetryClient.trackEvent(TelemetryEvents.COMPLETED_BUILDING_INDEX.name, mapOf("index" to it.currentIndex.name), null) }
-        }
+      .let { newStatus ->
+        offenderSynchroniserService.switchAliasIndex(newStatus.currentIndex)
+        return indexStatusService.getIndexStatus()
+          .also { latestStatus -> logIndexStatuses(latestStatus) }
+          .also { telemetryClient.trackEvent(TelemetryEvents.COMPLETED_BUILDING_INDEX.name, mapOf("index" to it.currentIndex.name), null) }
+      }
 
   fun cancelIndexing(): Either<Error, IndexStatus> =
-      indexStatusService.getIndexStatus()
-          .also { logIndexStatuses(it) }
-          .failIf(IndexStatus::isNotBuilding) { BuildNotInProgressError(it) }
-          .map { doCancelIndexing() }
+    indexStatusService.getIndexStatus()
+      .also { logIndexStatuses(it) }
+      .failIf(IndexStatus::isNotBuilding) { BuildNotInProgressError(it) }
+      .map { doCancelIndexing() }
 
   private fun doCancelIndexing(): IndexStatus {
     indexStatusService.markBuildCancelled()
     queueAdminService.clearAllIndexQueueMessages()
     return indexStatusService.getIndexStatus()
-        .also { logIndexStatuses(it) }
-        .also { telemetryClient.trackEvent(TelemetryEvents.CANCELLED_BUILDING_INDEX.name, mapOf("index" to it.otherIndex.name), null) }
+      .also { logIndexStatuses(it) }
+      .also { telemetryClient.trackEvent(TelemetryEvents.CANCELLED_BUILDING_INDEX.name, mapOf("index" to it.otherIndex.name), null) }
   }
 
   fun updateOffender(crn: String): Either<Error, String> =
-      indexStatusService.getIndexStatus()
-          .failIf(IndexStatus::activeIndexesEmpty) {
-            log.info("Ignoring update of offender {} as no indexes were active", crn)
-            NoActiveIndexesError(it)
-          }
-          .flatMap { doUpdateOffender(it, crn) }
+    indexStatusService.getIndexStatus()
+      .failIf(IndexStatus::activeIndexesEmpty) {
+        log.info("Ignoring update of offender {} as no indexes were active", crn)
+        NoActiveIndexesError(it)
+      }
+      .flatMap { doUpdateOffender(it, crn) }
 
   private fun doUpdateOffender(indexStatus: IndexStatus, crn: String) =
-      with(indexStatus.activeIndexes()) {
-        log.info("Updating offender {} on indexes {}", crn, this)
-        offenderSynchroniserService.synchroniseOffender(crn, *this.toTypedArray())
-      }
+    with(indexStatus.activeIndexes()) {
+      log.info("Updating offender {} on indexes {}", crn, this)
+      offenderSynchroniserService.synchroniseOffender(crn, *this.toTypedArray())
+    }
 
   fun populateIndex(index: SyncIndex): Either<Error, Int> =
     executeAndTrackTimeMillis(TelemetryEvents.BUILD_INDEX_MSG.name) {
       indexStatusService.getIndexStatus()
-          .also { logIndexStatuses(it) }
-          .failIf(IndexStatus::isNotBuilding) { BuildNotInProgressError(it) }
-          .failIf({ it.currentIndex.otherIndex() != index }) { WrongIndexRequestedError(it) }
-          .map { doPopulateIndex() }
+        .also { logIndexStatuses(it) }
+        .failIf(IndexStatus::isNotBuilding) { BuildNotInProgressError(it) }
+        .failIf({ it.currentIndex.otherIndex() != index }) { WrongIndexRequestedError(it) }
+        .map { doPopulateIndex() }
     }
 
   private inline fun <R> executeAndTrackTimeMillis(trackEventName: String, properties: Map<String, String> = mapOf(), block: () -> R): R {
     val start = System.currentTimeMillis()
     val result = block()
     telemetryClient.trackEvent(
-        trackEventName,
-        mutableMapOf("messageTimeMs" to (System.currentTimeMillis() - start).toString()).plus(properties),
-        null)
+      trackEventName,
+      mutableMapOf("messageTimeMs" to (System.currentTimeMillis() - start).toString()).plus(properties),
+      null
+    )
     return result
   }
   private fun doPopulateIndex(): Int {
@@ -128,23 +134,24 @@ class IndexService(
   }
 
   fun populateIndexWithOffenderPage(offenderPage: OffenderPage): Either<Error, Unit> =
-      executeAndTrackTimeMillis(TelemetryEvents.BUILD_PAGE_MSG.name, mapOf("offenderPage" to offenderPage.page.toString())) {
-        indexStatusService.getIndexStatus()
-            .failIf(IndexStatus::isNotBuilding) { BuildNotInProgressError(it) }
-            .flatMap {
-              offenderSynchroniserService.getAllOffenderIdentifiersInPage(offenderPage)
-                  .forEachIndexed { index, offenderIdentifier ->
-                    if (index == 0 || index.toLong() == offenderPage.pageSize-1) {
-                      telemetryClient.trackEvent(TelemetryEvents.BUILD_PAGE_BOUNDARY.name, mutableMapOf("page" to offenderPage.page.toString(), "IndexOnPage" to index.toString(), "crn" to offenderIdentifier.crn), null)
-                    }
-                    indexQueueService.sendPopulateOffenderMessage(offenderIdentifier.crn) }.right()
-            }
-      }
+    executeAndTrackTimeMillis(TelemetryEvents.BUILD_PAGE_MSG.name, mapOf("offenderPage" to offenderPage.page.toString())) {
+      indexStatusService.getIndexStatus()
+        .failIf(IndexStatus::isNotBuilding) { BuildNotInProgressError(it) }
+        .flatMap {
+          offenderSynchroniserService.getAllOffenderIdentifiersInPage(offenderPage)
+            .forEachIndexed { index, offenderIdentifier ->
+              if (index == 0 || index.toLong() == offenderPage.pageSize - 1) {
+                telemetryClient.trackEvent(TelemetryEvents.BUILD_PAGE_BOUNDARY.name, mutableMapOf("page" to offenderPage.page.toString(), "IndexOnPage" to index.toString(), "crn" to offenderIdentifier.crn), null)
+              }
+              indexQueueService.sendPopulateOffenderMessage(offenderIdentifier.crn)
+            }.right()
+        }
+    }
 
   fun populateIndexWithOffender(crn: String): Either<Error, String> =
-      indexStatusService.getIndexStatus()
-          .failIf(IndexStatus::isNotBuilding) { BuildNotInProgressError(it) }
-          .flatMap { offenderSynchroniserService.synchroniseOffender(crn, it.currentIndex.otherIndex()) }
+    indexStatusService.getIndexStatus()
+      .failIf(IndexStatus::isNotBuilding) { BuildNotInProgressError(it) }
+      .flatMap { offenderSynchroniserService.synchroniseOffender(crn, it.currentIndex.otherIndex()) }
 
   fun getIndexCount(index: SyncIndex): Long {
     val request = CountRequest(index.indexName)
@@ -156,25 +163,24 @@ class IndexService(
   }
 
   private inline fun IndexStatus.failIf(
-      check: (IndexStatus) -> Boolean,
-      onFail: (IndexStatus) -> Error
+    check: (IndexStatus) -> Boolean,
+    onFail: (IndexStatus) -> Error
   ): Either<Error, IndexStatus> =
-      when (check(this)) {
-        false -> this.right()
-        true -> onFail(this).left()
-      }
+    when (check(this)) {
+      false -> this.right()
+      true -> onFail(this).left()
+    }
 
   private inline fun Either<Error, IndexStatus>.failIf(
-      crossinline check: (IndexStatus) -> Boolean,
-      crossinline onFail: (IndexStatus) -> Error
+    crossinline check: (IndexStatus) -> Boolean,
+    crossinline onFail: (IndexStatus) -> Error
   ): Either<Error, IndexStatus> =
-      when (this.isLeft()) {
-        true -> this
-        false -> this.flatMap {
-          it.failIf(check, onFail)
-        }
+    when (this.isLeft()) {
+      true -> this
+      false -> this.flatMap {
+        it.failIf(check, onFail)
       }
-
+    }
 }
 
 enum class UpdateOffenderError(val errorClass: KClass<out Error>) {

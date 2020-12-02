@@ -91,8 +91,8 @@ class OffenderUpdateMessageTest : IntegrationTestBase() {
       await untilCallTo { indexServiceLogAppender.list } matches { it hasLogMessageContaining "Ignoring update of offender" }
 
       assertThatThrownBy { searchByCrn("X123456") }
-          .isInstanceOf(ElasticsearchStatusException::class.java)
-          .hasMessageContaining("no such index")
+        .isInstanceOf(ElasticsearchStatusException::class.java)
+        .hasMessageContaining("no such index")
       CommunityApiExtension.communityApi.verifyNotGetOffender("X123456")
     }
   }
@@ -144,5 +144,4 @@ class OffenderUpdateMessageTest : IntegrationTestBase() {
       assertThat(responseBlue.hits.asList()).isEmpty()
     }
   }
-
 }

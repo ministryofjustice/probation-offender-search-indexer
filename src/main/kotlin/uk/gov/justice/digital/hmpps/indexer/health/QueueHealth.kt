@@ -36,10 +36,11 @@ enum class QueueAttributes(val awsName: String, val healthName: String) {
 }
 
 abstract class QueueHealth(
-    private val awsSqsClient: AmazonSQS,
-    private val awsSqsDlqClient: AmazonSQS,
-    private val queueName: String,
-    private val dlqName: String) : HealthIndicator {
+  private val awsSqsClient: AmazonSQS,
+  private val awsSqsDlqClient: AmazonSQS,
+  private val queueName: String,
+  private val dlqName: String
+) : HealthIndicator {
 
   companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
@@ -54,8 +55,8 @@ abstract class QueueHealth(
       return Builder().down().withException(e).build()
     }
     val details = mutableMapOf<String, Any?>(
-        MESSAGES_ON_QUEUE.healthName to queueAttributes.attributes[MESSAGES_ON_QUEUE.awsName]?.toInt(),
-        MESSAGES_IN_FLIGHT.healthName to queueAttributes.attributes[MESSAGES_IN_FLIGHT.awsName]?.toInt()
+      MESSAGES_ON_QUEUE.healthName to queueAttributes.attributes[MESSAGES_ON_QUEUE.awsName]?.toInt(),
+      MESSAGES_IN_FLIGHT.healthName to queueAttributes.attributes[MESSAGES_IN_FLIGHT.awsName]?.toInt()
     )
 
     val health = Builder().up().withDetails(details).addDlqHealth(queueAttributes).build()
@@ -81,24 +82,27 @@ abstract class QueueHealth(
     }
 
     return withDetail("dlqStatus", DlqStatus.UP.description)
-        .withDetail(MESSAGES_ON_DLQ.healthName, dlqAttributes.attributes[MESSAGES_ON_DLQ.awsName]?.toInt())
+      .withDetail(MESSAGES_ON_DLQ.healthName, dlqAttributes.attributes[MESSAGES_ON_DLQ.awsName]?.toInt())
   }
 
   private fun getQueueAttributesRequest(url: GetQueueUrlResult) =
-      GetQueueAttributesRequest(url.queueUrl).withAttributeNames(QueueAttributeName.All)
-
+    GetQueueAttributesRequest(url.queueUrl).withAttributeNames(QueueAttributeName.All)
 }
 
 @Component
 class EventQueueHealth
-constructor(eventAwsSqsClient: AmazonSQS,
-            eventAwsSqsDlqClient: AmazonSQS,
-            @Value("\${event.sqs.queue.name}") private val eventQueueName: String,
-            @Value("\${event.sqs.dlq.name}") private val eventDlqName: String) : QueueHealth(eventAwsSqsClient, eventAwsSqsDlqClient, eventQueueName, eventDlqName)
+constructor(
+  eventAwsSqsClient: AmazonSQS,
+  eventAwsSqsDlqClient: AmazonSQS,
+  @Value("\${event.sqs.queue.name}") private val eventQueueName: String,
+  @Value("\${event.sqs.dlq.name}") private val eventDlqName: String
+) : QueueHealth(eventAwsSqsClient, eventAwsSqsDlqClient, eventQueueName, eventDlqName)
 
 @Component
 class IndexQueueHealth
-constructor(indexAwsSqsClient: AmazonSQS,
-            indexAwsSqsDlqClient: AmazonSQS,
-            @Value("\${index.sqs.queue.name}") private val indexQueueName: String,
-            @Value("\${index.sqs.dlq.name}") private val indexDlqName: String) : QueueHealth(indexAwsSqsClient, indexAwsSqsDlqClient, indexQueueName, indexDlqName)
+constructor(
+  indexAwsSqsClient: AmazonSQS,
+  indexAwsSqsDlqClient: AmazonSQS,
+  @Value("\${index.sqs.queue.name}") private val indexQueueName: String,
+  @Value("\${index.sqs.dlq.name}") private val indexDlqName: String
+) : QueueHealth(indexAwsSqsClient, indexAwsSqsDlqClient, indexQueueName, indexDlqName)

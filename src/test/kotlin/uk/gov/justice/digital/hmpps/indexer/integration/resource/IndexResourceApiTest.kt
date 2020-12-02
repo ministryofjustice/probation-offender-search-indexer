@@ -37,31 +37,36 @@ class IndexResourceApiTest : IntegrationTestBase() {
   @TestInstance(PER_CLASS)
   inner class SecureEndpoints {
     private fun secureEndpoints() =
-        listOf("/probation-index/build-index", "/probation-index/mark-complete", "/probation-index/cancel-index",
-            "/probation-index/index/offender/SOME_CRN", "/probation-index/purge-index-dlq", "/probation-index/transfer-event-dlq",
-            "/probation-index/transfer-index-dlq")
+      listOf(
+        "/probation-index/build-index",
+        "/probation-index/mark-complete",
+        "/probation-index/cancel-index",
+        "/probation-index/index/offender/SOME_CRN",
+        "/probation-index/purge-index-dlq",
+        "/probation-index/transfer-event-dlq",
+        "/probation-index/transfer-index-dlq"
+      )
 
     @ParameterizedTest
     @MethodSource("secureEndpoints")
     internal fun `requires a valid authentication token`(uri: String) {
       webTestClient.put()
-          .uri(uri)
-          .accept(MediaType.APPLICATION_JSON)
-          .exchange()
-          .expectStatus().isUnauthorized
+        .uri(uri)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus().isUnauthorized
     }
 
     @ParameterizedTest
     @MethodSource("secureEndpoints")
     internal fun `requires the correct role`(uri: String) {
       webTestClient.put()
-          .uri(uri)
-          .headers(setAuthorisation(roles = listOf()))
-          .accept(MediaType.APPLICATION_JSON)
-          .exchange()
-          .expectStatus().isForbidden
+        .uri(uri)
+        .headers(setAuthorisation(roles = listOf()))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus().isForbidden
     }
-
   }
 
   @Nested
@@ -69,18 +74,17 @@ class IndexResourceApiTest : IntegrationTestBase() {
     @Test
     fun `Request build index is successful and calls service`() {
       doReturn(IndexStatus(currentIndex = GREEN, otherIndexState = BUILDING).right()).whenever(indexService)
-          .prepareIndexForRebuild()
-
+        .prepareIndexForRebuild()
 
       webTestClient.put()
-          .uri("/probation-index/build-index")
-          .accept(MediaType.APPLICATION_JSON)
-          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
-          .exchange()
-          .expectStatus().isOk
-          .expectBody()
-          .jsonPath("$.otherIndex").isEqualTo("BLUE")
-          .jsonPath("$.otherIndexState").isEqualTo("BUILDING")
+        .uri("/probation-index/build-index")
+        .accept(MediaType.APPLICATION_JSON)
+        .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+        .exchange()
+        .expectStatus().isOk
+        .expectBody()
+        .jsonPath("$.otherIndex").isEqualTo("BLUE")
+        .jsonPath("$.otherIndexState").isEqualTo("BUILDING")
 
       verify(indexService).prepareIndexForRebuild()
     }
@@ -91,20 +95,19 @@ class IndexResourceApiTest : IntegrationTestBase() {
       doReturn(BuildAlreadyInProgressError(expectedIndexStatus).left()).whenever(indexService).prepareIndexForRebuild()
 
       webTestClient.put()
-          .uri("/probation-index/build-index")
-          .accept(MediaType.APPLICATION_JSON)
-          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
-          .exchange()
-          .expectStatus().isEqualTo(409)
-          .expectBody()
-          .jsonPath("$.message").value<String> { message ->
-            assertThat(message).contains(expectedIndexStatus.otherIndex.name)
-            assertThat(message).contains(expectedIndexStatus.otherIndexState.name)
-          }
+        .uri("/probation-index/build-index")
+        .accept(MediaType.APPLICATION_JSON)
+        .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+        .exchange()
+        .expectStatus().isEqualTo(409)
+        .expectBody()
+        .jsonPath("$.message").value<String> { message ->
+          assertThat(message).contains(expectedIndexStatus.otherIndex.name)
+          assertThat(message).contains(expectedIndexStatus.otherIndexState.name)
+        }
 
       verify(indexService).prepareIndexForRebuild()
     }
-
   }
 
   @Nested
@@ -114,11 +117,11 @@ class IndexResourceApiTest : IntegrationTestBase() {
       doReturn(anIndexStatus().right()).whenever(indexService).markIndexingComplete()
 
       webTestClient.put()
-          .uri("/probation-index/mark-complete")
-          .accept(MediaType.APPLICATION_JSON)
-          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
-          .exchange()
-          .expectStatus().isOk
+        .uri("/probation-index/mark-complete")
+        .accept(MediaType.APPLICATION_JSON)
+        .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+        .exchange()
+        .expectStatus().isOk
 
       verify(indexService).markIndexingComplete()
     }
@@ -129,20 +132,19 @@ class IndexResourceApiTest : IntegrationTestBase() {
       doReturn(BuildNotInProgressError(expectedIndexStatus).left()).whenever(indexService).markIndexingComplete()
 
       webTestClient.put()
-          .uri("/probation-index/mark-complete")
-          .accept(MediaType.APPLICATION_JSON)
-          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
-          .exchange()
-          .expectStatus().isEqualTo(409)
-          .expectBody()
-          .jsonPath("$.message").value<String> { message ->
-            assertThat(message).contains(expectedIndexStatus.otherIndex.name)
-            assertThat(message).contains(expectedIndexStatus.otherIndexState.name)
-          }
+        .uri("/probation-index/mark-complete")
+        .accept(MediaType.APPLICATION_JSON)
+        .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+        .exchange()
+        .expectStatus().isEqualTo(409)
+        .expectBody()
+        .jsonPath("$.message").value<String> { message ->
+          assertThat(message).contains(expectedIndexStatus.otherIndex.name)
+          assertThat(message).contains(expectedIndexStatus.otherIndexState.name)
+        }
 
       verify(indexService).markIndexingComplete()
     }
-
   }
 
   @Nested
@@ -152,11 +154,11 @@ class IndexResourceApiTest : IntegrationTestBase() {
       doReturn(anIndexStatus().right()).whenever(indexService).cancelIndexing()
 
       webTestClient.put()
-          .uri("/probation-index/cancel-index")
-          .accept(MediaType.APPLICATION_JSON)
-          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
-          .exchange()
-          .expectStatus().isOk
+        .uri("/probation-index/cancel-index")
+        .accept(MediaType.APPLICATION_JSON)
+        .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+        .exchange()
+        .expectStatus().isOk
 
       verify(indexService).cancelIndexing()
     }
@@ -167,16 +169,16 @@ class IndexResourceApiTest : IntegrationTestBase() {
       doReturn(BuildNotInProgressError(expectedIndexStatus).left()).whenever(indexService).cancelIndexing()
 
       webTestClient.put()
-          .uri("/probation-index/cancel-index")
-          .accept(MediaType.APPLICATION_JSON)
-          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
-          .exchange()
-          .expectStatus().isEqualTo(409)
-          .expectBody()
-          .jsonPath("$.message").value<String> { message ->
-            assertThat(message).contains(expectedIndexStatus.otherIndex.name)
-            assertThat(message).contains(expectedIndexStatus.otherIndexState.name)
-          }
+        .uri("/probation-index/cancel-index")
+        .accept(MediaType.APPLICATION_JSON)
+        .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+        .exchange()
+        .expectStatus().isEqualTo(409)
+        .expectBody()
+        .jsonPath("$.message").value<String> { message ->
+          assertThat(message).contains(expectedIndexStatus.otherIndex.name)
+          assertThat(message).contains(expectedIndexStatus.otherIndexState.name)
+        }
 
       verify(indexService).cancelIndexing()
     }
@@ -189,11 +191,11 @@ class IndexResourceApiTest : IntegrationTestBase() {
       doReturn("{}".right()).whenever(indexService).updateOffender("SOME_CRN")
 
       webTestClient.put()
-          .uri("/probation-index/index/offender/SOME_CRN")
-          .accept(MediaType.APPLICATION_JSON)
-          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
-          .exchange()
-          .expectStatus().isOk
+        .uri("/probation-index/index/offender/SOME_CRN")
+        .accept(MediaType.APPLICATION_JSON)
+        .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+        .exchange()
+        .expectStatus().isOk
 
       verify(indexService).updateOffender("SOME_CRN")
     }
@@ -204,11 +206,11 @@ class IndexResourceApiTest : IntegrationTestBase() {
       doReturn(NoActiveIndexesError(expectedIndexStatus).left()).whenever(indexService).updateOffender("SOME_CRN")
 
       webTestClient.put()
-          .uri("/probation-index/index/offender/SOME_CRN")
-          .accept(MediaType.APPLICATION_JSON)
-          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
-          .exchange()
-          .expectStatus().isEqualTo(409)
+        .uri("/probation-index/index/offender/SOME_CRN")
+        .accept(MediaType.APPLICATION_JSON)
+        .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+        .exchange()
+        .expectStatus().isEqualTo(409)
 
       verify(indexService).updateOffender("SOME_CRN")
     }
@@ -218,16 +220,15 @@ class IndexResourceApiTest : IntegrationTestBase() {
       doReturn(OffenderNotFoundError("SOME_CRN").left()).whenever(indexService).updateOffender("SOME_CRN")
 
       webTestClient.put()
-          .uri("/probation-index/index/offender/SOME_CRN")
-          .accept(MediaType.APPLICATION_JSON)
-          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
-          .exchange()
-          .expectStatus().isEqualTo(404)
+        .uri("/probation-index/index/offender/SOME_CRN")
+        .accept(MediaType.APPLICATION_JSON)
+        .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+        .exchange()
+        .expectStatus().isEqualTo(404)
 
       verify(indexService).updateOffender("SOME_CRN")
     }
   }
-
 
   @Nested
   inner class IndexHouseKeeping {
@@ -240,24 +241,22 @@ class IndexResourceApiTest : IntegrationTestBase() {
     @Test
     fun `endpoint is not secured`() {
       webTestClient.put()
-          .uri("/probation-index/queue-housekeeping")
-          .accept(MediaType.APPLICATION_JSON)
-          .exchange()
-          .expectStatus().isOk
+        .uri("/probation-index/queue-housekeeping")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus().isOk
     }
 
     @Test
     fun `attempts to mark the build as complete`() {
       webTestClient.put()
-          .uri("/probation-index/queue-housekeeping")
-          .accept(MediaType.APPLICATION_JSON)
-          .exchange()
+        .uri("/probation-index/queue-housekeeping")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
 
       verify(indexService).markIndexingComplete()
     }
   }
-
 }
-
 
 fun anIndexStatus() = IndexStatus.newIndex()

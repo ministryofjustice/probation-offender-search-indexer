@@ -19,7 +19,6 @@ import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex.GREEN
 import uk.gov.justice.digital.hmpps.indexer.service.BuildNotInProgressError
 import uk.gov.justice.digital.hmpps.indexer.service.IndexService
 import uk.gov.justice.digital.hmpps.indexer.service.OffenderPage
-import javax.jms.Message
 
 internal class IndexListenerTest {
   val indexService = mock<IndexService>()
@@ -31,12 +30,15 @@ internal class IndexListenerTest {
     internal fun `will call service with index name`() {
       whenever(indexService.populateIndex(GREEN)).thenReturn(1.right())
 
-      listener.processIndexRequest("""
+      listener.processIndexRequest(
+        """
       {
         "type": "POPULATE_INDEX",
         "index": "GREEN"
       }
-      """.trimIndent(), mock())
+        """.trimIndent(),
+        mock()
+      )
 
       verify(indexService).populateIndex(GREEN)
     }
@@ -46,12 +48,15 @@ internal class IndexListenerTest {
       val logAppender = findLogAppender(IndexListener::class.java)
       whenever(indexService.populateIndex(GREEN)).thenReturn(BuildNotInProgressError(IndexStatus.newIndex()).left())
 
-      listener.processIndexRequest("""
+      listener.processIndexRequest(
+        """
       {
         "type": "POPULATE_INDEX",
         "index": "GREEN"
       }
-      """.trimIndent(), mock())
+        """.trimIndent(),
+        mock()
+      )
 
       assertThat(logAppender.list).anyMatch { it.message.contains("failed with error") }
     }
@@ -63,7 +68,8 @@ internal class IndexListenerTest {
     internal fun `will call service with page details`() {
       whenever(indexService.populateIndexWithOffenderPage(any())).thenReturn(Unit.right())
 
-      listener.processIndexRequest("""
+      listener.processIndexRequest(
+        """
       {
         "type": "POPULATE_OFFENDER_PAGE",
         "offenderPage": {
@@ -71,11 +77,12 @@ internal class IndexListenerTest {
           "pageSize": 1000
         }
       }
-      """.trimIndent(), mock())
+        """.trimIndent(),
+        mock()
+      )
 
       verify(indexService).populateIndexWithOffenderPage(OffenderPage(1, 1000))
     }
-
   }
 
   @Nested
@@ -84,12 +91,15 @@ internal class IndexListenerTest {
     internal fun `will call service with crn to populate`() {
       whenever(indexService.populateIndexWithOffender(any())).thenReturn("{}".right())
 
-      listener.processIndexRequest("""
+      listener.processIndexRequest(
+        """
       {
         "type": "POPULATE_OFFENDER",
         "crn": "X12345"
       }
-      """.trimIndent(), mock())
+        """.trimIndent(),
+        mock()
+      )
 
       verify(indexService).populateIndexWithOffender("X12345")
     }
@@ -102,7 +112,7 @@ internal class IndexListenerTest {
       val logAppender = findLogAppender(IndexListener::class.java)
 
       assertThatThrownBy { listener.processIndexRequest("this is bad json", mock()) }
-          .isInstanceOf(JsonSyntaxException::class.java)
+        .isInstanceOf(JsonSyntaxException::class.java)
 
       assertThat(logAppender.list).anyMatch { it.message.contains("Failed to process message") && it.level == Level.ERROR }
     }
@@ -112,12 +122,15 @@ internal class IndexListenerTest {
       val logAppender = findLogAppender(IndexListener::class.java)
 
       assertThatThrownBy {
-        listener.processIndexRequest("""
+        listener.processIndexRequest(
+          """
             {
               "type": "THIS_IS_AN_UNEXPECTED_MESSAGE_TYPE",
               "crn": "X12345"
             }
-            """.trimIndent(), mock())
+          """.trimIndent(),
+          mock()
+        )
       }.isInstanceOf(IllegalArgumentException::class.java)
 
       assertThat(logAppender.list).anyMatch { it.message.contains("Unknown request type for message") && it.level == Level.ERROR }

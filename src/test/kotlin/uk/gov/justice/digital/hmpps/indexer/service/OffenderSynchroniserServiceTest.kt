@@ -106,7 +106,6 @@ internal class OffenderSynchroniserServiceTest {
       internal fun `will create the index`() {
         verify(offenderRepository).createIndex(GREEN)
       }
-
     }
   }
 
@@ -118,9 +117,9 @@ internal class OffenderSynchroniserServiceTest {
 
       val chunks = service.splitAllOffendersIntoChunks()
       assertThat(chunks).containsExactly(
-          OffenderPage(0, 10),
-          OffenderPage(1, 10),
-          OffenderPage(2, 10)
+        OffenderPage(0, 10),
+        OffenderPage(1, 10),
+        OffenderPage(2, 10)
       )
     }
 
@@ -130,25 +129,25 @@ internal class OffenderSynchroniserServiceTest {
 
       var chunks = service.splitAllOffendersIntoChunks()
       assertThat(chunks).containsExactly(
-          OffenderPage(0, 10),
-          OffenderPage(1, 10),
-          OffenderPage(2, 10),
-          OffenderPage(3, 10)
+        OffenderPage(0, 10),
+        OffenderPage(1, 10),
+        OffenderPage(2, 10),
+        OffenderPage(3, 10)
       )
 
       whenever(communityApi.getCountAllOffenders()).thenReturn(OffendersPage(29, 1, listOf(OffenderIdentifier("X12345"))))
 
       chunks = service.splitAllOffendersIntoChunks()
       assertThat(chunks).containsExactly(
-          OffenderPage(0, 10),
-          OffenderPage(1, 10),
-          OffenderPage(2, 10)
+        OffenderPage(0, 10),
+        OffenderPage(1, 10),
+        OffenderPage(2, 10)
       )
     }
 
     @Test
     internal fun `will create a large number of pages for a large number of offenders`() {
-      val service = OffenderSynchroniserService(communityApi, offenderRepository, telemetryClient,1000)
+      val service = OffenderSynchroniserService(communityApi, offenderRepository, telemetryClient, 1000)
 
       whenever(communityApi.getCountAllOffenders()).thenReturn(OffendersPage(2_000_001, 1, listOf(OffenderIdentifier("X12345"))))
 
@@ -191,16 +190,18 @@ internal class OffenderSynchroniserServiceTest {
   inner class GetAllOffenderIdentifiersInPage {
     @BeforeEach
     internal fun setUp() {
-      whenever(communityApi.getPageOfOffenders(any(), any())).thenReturn(OffendersPage(
+      whenever(communityApi.getPageOfOffenders(any(), any())).thenReturn(
+        OffendersPage(
           30,
           1,
           listOf(
-              OffenderIdentifier("X12345"),
-              OffenderIdentifier("X12346"),
-              OffenderIdentifier("X12347"),
-              OffenderIdentifier("X12348")
-          )))
-
+            OffenderIdentifier("X12345"),
+            OffenderIdentifier("X12346"),
+            OffenderIdentifier("X12347"),
+            OffenderIdentifier("X12348")
+          )
+        )
+      )
     }
 
     @Test
@@ -214,12 +215,11 @@ internal class OffenderSynchroniserServiceTest {
       val offenders = service.getAllOffenderIdentifiersInPage(OffenderPage(3, 1000))
 
       assertThat(offenders).containsExactly(
-          OffenderIdentifier("X12345"),
-          OffenderIdentifier("X12346"),
-          OffenderIdentifier("X12347"),
-          OffenderIdentifier("X12348")
+        OffenderIdentifier("X12345"),
+        OffenderIdentifier("X12346"),
+        OffenderIdentifier("X12347"),
+        OffenderIdentifier("X12348")
       )
     }
   }
 }
-

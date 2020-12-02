@@ -5,7 +5,6 @@ import com.microsoft.applicationinsights.TelemetryClient
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.eq
 import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.never
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.verifyZeroInteractions
@@ -73,7 +72,7 @@ class IndexServiceTest {
     @Test
     fun `A request is made to mark the index build is in progress`() {
       whenever(indexStatusService.getIndexStatus())
-          .thenReturn(IndexStatus(currentIndex = GREEN, otherIndexState = ABSENT))
+        .thenReturn(IndexStatus(currentIndex = GREEN, otherIndexState = ABSENT))
 
       indexService.prepareIndexForRebuild()
 
@@ -83,7 +82,7 @@ class IndexServiceTest {
     @Test
     fun `A request is made to reset the other index`() {
       whenever(indexStatusService.getIndexStatus())
-          .thenReturn(IndexStatus(currentIndex = GREEN, otherIndexState = ABSENT))
+        .thenReturn(IndexStatus(currentIndex = GREEN, otherIndexState = ABSENT))
 
       indexService.prepareIndexForRebuild()
 
@@ -93,7 +92,7 @@ class IndexServiceTest {
     @Test
     fun `A request is made to build other index`() {
       whenever(indexStatusService.getIndexStatus())
-          .thenReturn(IndexStatus(currentIndex = GREEN, otherIndexState = ABSENT))
+        .thenReturn(IndexStatus(currentIndex = GREEN, otherIndexState = ABSENT))
 
       indexService.prepareIndexForRebuild()
 
@@ -103,7 +102,7 @@ class IndexServiceTest {
     @Test
     fun `A telemetry event is sent`() {
       whenever(indexStatusService.getIndexStatus())
-          .thenReturn(IndexStatus(currentIndex = GREEN, otherIndexState = ABSENT))
+        .thenReturn(IndexStatus(currentIndex = GREEN, otherIndexState = ABSENT))
 
       indexService.prepareIndexForRebuild()
 
@@ -114,15 +113,14 @@ class IndexServiceTest {
     fun `The updated index is returned`() {
       val expectedIndexStatus = IndexStatus(currentIndex = GREEN, otherIndexState = BUILDING)
       whenever(indexStatusService.getIndexStatus())
-          .thenReturn(IndexStatus(currentIndex = GREEN, otherIndexState = ABSENT))
-          .thenReturn(expectedIndexStatus)
+        .thenReturn(IndexStatus(currentIndex = GREEN, otherIndexState = ABSENT))
+        .thenReturn(expectedIndexStatus)
 
       val result = indexService.prepareIndexForRebuild()
 
       verify(indexStatusService, times(2)).getIndexStatus()
       result shouldBeRight expectedIndexStatus
     }
-
   }
 
   @Nested
@@ -159,8 +157,8 @@ class IndexServiceTest {
     @Test
     fun `A request is made to mark the index state as complete`() {
       whenever(indexStatusService.getIndexStatus())
-          .thenReturn(IndexStatus(currentIndex = GREEN, otherIndexState = BUILDING))
-          .thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
+        .thenReturn(IndexStatus(currentIndex = GREEN, otherIndexState = BUILDING))
+        .thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
       whenever(indexStatusService.markBuildCompleteAndSwitchIndex()).thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
 
       indexService.markIndexingComplete()
@@ -171,8 +169,8 @@ class IndexServiceTest {
     @Test
     fun `A request is made to switch alias`() {
       whenever(indexStatusService.getIndexStatus())
-          .thenReturn(IndexStatus(currentIndex = GREEN, otherIndexState = BUILDING))
-          .thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
+        .thenReturn(IndexStatus(currentIndex = GREEN, otherIndexState = BUILDING))
+        .thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
       whenever(indexStatusService.markBuildCompleteAndSwitchIndex()).thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
 
       indexService.markIndexingComplete()
@@ -183,8 +181,8 @@ class IndexServiceTest {
     @Test
     fun `A telemetry event is sent`() {
       whenever(indexStatusService.getIndexStatus())
-          .thenReturn(IndexStatus(currentIndex = GREEN, otherIndexState = BUILDING))
-          .thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
+        .thenReturn(IndexStatus(currentIndex = GREEN, otherIndexState = BUILDING))
+        .thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
       whenever(indexStatusService.markBuildCompleteAndSwitchIndex()).thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
 
       indexService.markIndexingComplete()
@@ -195,8 +193,8 @@ class IndexServiceTest {
     @Test
     fun `Once current index marked as complete, the 'other' index is current`() {
       whenever(indexStatusService.getIndexStatus())
-          .thenReturn(IndexStatus(currentIndex = GREEN, otherIndexState = BUILDING))
-          .thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
+        .thenReturn(IndexStatus(currentIndex = GREEN, otherIndexState = BUILDING))
+        .thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
       whenever(indexStatusService.markBuildCompleteAndSwitchIndex()).thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
 
       val result = indexService.markIndexingComplete()
@@ -254,15 +252,14 @@ class IndexServiceTest {
     fun `Once current index marked as cancelled, the 'other' index is current`() {
       val expectedIndexStatus = IndexStatus(currentIndex = GREEN, otherIndexState = CANCELLED)
       whenever(indexStatusService.getIndexStatus())
-          .thenReturn(IndexStatus(currentIndex = GREEN, otherIndexState = BUILDING))
-          .thenReturn(expectedIndexStatus)
+        .thenReturn(IndexStatus(currentIndex = GREEN, otherIndexState = BUILDING))
+        .thenReturn(expectedIndexStatus)
 
       val result = indexService.cancelIndexing()
 
       verify(indexStatusService, times(2)).getIndexStatus()
       result shouldBeRight expectedIndexStatus
     }
-
   }
 
   @Nested
@@ -311,11 +308,13 @@ class IndexServiceTest {
     internal fun `will return the number of chunks sent for processing`() {
       val indexStatus = IndexStatus(currentIndex = GREEN, currentIndexState = COMPLETED, otherIndexState = BUILDING)
       whenever(indexStatusService.getIndexStatus()).thenReturn(indexStatus)
-      whenever(offenderSynchroniserService.splitAllOffendersIntoChunks()).thenReturn(listOf(
+      whenever(offenderSynchroniserService.splitAllOffendersIntoChunks()).thenReturn(
+        listOf(
           OffenderPage(1, 1000),
           OffenderPage(2, 1000),
           OffenderPage(3, 1000)
-      ))
+        )
+      )
 
       val result = indexService.populateIndex(BLUE)
 
@@ -326,11 +325,13 @@ class IndexServiceTest {
     internal fun `For each chunk should send a process chunk message`() {
       val indexStatus = IndexStatus(currentIndex = GREEN, currentIndexState = COMPLETED, otherIndexState = BUILDING)
       whenever(indexStatusService.getIndexStatus()).thenReturn(indexStatus)
-      whenever(offenderSynchroniserService.splitAllOffendersIntoChunks()).thenReturn(listOf(
+      whenever(offenderSynchroniserService.splitAllOffendersIntoChunks()).thenReturn(
+        listOf(
           OffenderPage(1, 1000),
           OffenderPage(2, 1000),
           OffenderPage(3, 1000)
-      ))
+        )
+      )
 
       indexService.populateIndex(BLUE)
 
@@ -346,7 +347,7 @@ class IndexServiceTest {
     internal fun setUp() {
       whenever(indexStatusService.getIndexStatus()).thenReturn(IndexStatus(currentIndex = GREEN, currentIndexState = COMPLETED, otherIndexState = BUILDING))
       whenever(offenderSynchroniserService.getAllOffenderIdentifiersInPage(any()))
-          .thenReturn(listOf(OffenderIdentifier(crn = "X12345"), OffenderIdentifier(crn = "A12345")))
+        .thenReturn(listOf(OffenderIdentifier(crn = "X12345"), OffenderIdentifier(crn = "A12345")))
     }
 
     @Test
@@ -370,9 +371,11 @@ class IndexServiceTest {
     @BeforeEach
     internal fun setUp() {
       whenever(offenderSynchroniserService.synchroniseOffender(any(), any()))
-          .thenReturn("""{
+        .thenReturn(
+          """{
             | "offenderId": 99
-            |}""".trimMargin().right())
+            |}""".trimMargin().right()
+        )
     }
 
     @Test
@@ -406,9 +409,7 @@ class IndexServiceTest {
 
       verify(offenderSynchroniserService).synchroniseOffender("X12345", BLUE)
     }
-
   }
-
 
   @Nested
   inner class CountIndex {

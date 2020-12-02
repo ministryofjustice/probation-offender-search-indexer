@@ -18,35 +18,41 @@ class JmsAwsConfig {
   }
 
   @Bean("eventAwsSqsClient")
-  fun eventAwsSqsClient(@Value("\${event.sqs.aws.access.key.id}") accessKey: String,
-                   @Value("\${event.sqs.aws.secret.access.key}") secretKey: String,
-                   @Value("\${event.sqs.endpoint.region}") region: String): AmazonSQS =
-      amazonSQS(accessKey, secretKey, region)
+  fun eventAwsSqsClient(
+    @Value("\${event.sqs.aws.access.key.id}") accessKey: String,
+    @Value("\${event.sqs.aws.secret.access.key}") secretKey: String,
+    @Value("\${event.sqs.endpoint.region}") region: String
+  ): AmazonSQS =
+    amazonSQS(accessKey, secretKey, region)
 
   @Bean
-  fun eventAwsSqsDlqClient(@Value("\${event.sqs.aws.dlq.access.key.id}") accessKey: String,
-                      @Value("\${event.sqs.aws.dlq.secret.access.key}") secretKey: String,
-                      @Value("\${event.sqs.endpoint.region}") region: String): AmazonSQS =
-      amazonSQS(accessKey, secretKey, region)
-
+  fun eventAwsSqsDlqClient(
+    @Value("\${event.sqs.aws.dlq.access.key.id}") accessKey: String,
+    @Value("\${event.sqs.aws.dlq.secret.access.key}") secretKey: String,
+    @Value("\${event.sqs.endpoint.region}") region: String
+  ): AmazonSQS =
+    amazonSQS(accessKey, secretKey, region)
 
   @Bean("indexAwsSqsClient")
-  fun indexAwsSqsClient(@Value("\${index.sqs.aws.access.key.id}") accessKey: String,
-                        @Value("\${index.sqs.aws.secret.access.key}") secretKey: String,
-                        @Value("\${index.sqs.endpoint.region}") region: String): AmazonSQS =
-      amazonSQS(accessKey, secretKey, region)
+  fun indexAwsSqsClient(
+    @Value("\${index.sqs.aws.access.key.id}") accessKey: String,
+    @Value("\${index.sqs.aws.secret.access.key}") secretKey: String,
+    @Value("\${index.sqs.endpoint.region}") region: String
+  ): AmazonSQS =
+    amazonSQS(accessKey, secretKey, region)
 
   @Bean
-  fun indexAwsSqsDlqClient(@Value("\${index.sqs.aws.dlq.access.key.id}") accessKey: String,
-                           @Value("\${index.sqs.aws.dlq.secret.access.key}") secretKey: String,
-                           @Value("\${index.sqs.endpoint.region}") region: String): AmazonSQS =
-      amazonSQS(accessKey, secretKey, region)
+  fun indexAwsSqsDlqClient(
+    @Value("\${index.sqs.aws.dlq.access.key.id}") accessKey: String,
+    @Value("\${index.sqs.aws.dlq.secret.access.key}") secretKey: String,
+    @Value("\${index.sqs.endpoint.region}") region: String
+  ): AmazonSQS =
+    amazonSQS(accessKey, secretKey, region)
 
   private fun amazonSQS(accessKey: String, secretKey: String, region: String): AmazonSQS {
     return AmazonSQSClientBuilder.standard()
-        .withCredentials(AWSStaticCredentialsProvider(BasicAWSCredentials(accessKey, secretKey)))
-        .withRegion(region)
-        .build()
+      .withCredentials(AWSStaticCredentialsProvider(BasicAWSCredentials(accessKey, secretKey)))
+      .withRegion(region)
+      .build()
   }
-
 }

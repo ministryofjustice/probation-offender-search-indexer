@@ -8,7 +8,6 @@ import org.springframework.data.elasticsearch.client.ClientConfiguration
 import org.springframework.data.elasticsearch.client.RestClients
 import org.springframework.data.elasticsearch.config.AbstractElasticsearchConfiguration
 
-
 @Configuration
 class ElasticSearchConfiguration : AbstractElasticsearchConfiguration() {
 
@@ -23,4 +22,3 @@ class ElasticSearchConfiguration : AbstractElasticsearchConfiguration() {
     return RestClients.create(ClientConfiguration.builder().connectedTo("$host:$port").build()).rest()
   }
 }
-

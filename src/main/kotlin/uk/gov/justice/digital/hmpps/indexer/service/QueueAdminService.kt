@@ -13,17 +13,18 @@ import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.indexer.config.TelemetryEvents
 
 @Service
-class QueueAdminService(private val indexAwsSqsClient: AmazonSQS,
-                        private val indexAwsSqsDlqClient: AmazonSQS,
-                        private val eventAwsSqsClient: AmazonSQS,
-                        private val eventAwsSqsDlqClient: AmazonSQS,
-                        private val indexQueueService: IndexQueueService,
-                        private val telemetryClient: TelemetryClient,
-                        @Value("\${index.sqs.queue.name}") private val indexQueueName: String,
-                        @Value("\${index.sqs.dlq.name}") private val indexDlqName: String,
-                        @Value("\${event.sqs.queue.name}") private val eventQueueName: String,
-                        @Value("\${event.sqs.dlq.name}") private val eventDlqName: String,
-                        private val gson: Gson
+class QueueAdminService(
+  private val indexAwsSqsClient: AmazonSQS,
+  private val indexAwsSqsDlqClient: AmazonSQS,
+  private val eventAwsSqsClient: AmazonSQS,
+  private val eventAwsSqsDlqClient: AmazonSQS,
+  private val indexQueueService: IndexQueueService,
+  private val telemetryClient: TelemetryClient,
+  @Value("\${index.sqs.queue.name}") private val indexQueueName: String,
+  @Value("\${index.sqs.dlq.name}") private val indexDlqName: String,
+  @Value("\${event.sqs.queue.name}") private val eventQueueName: String,
+  @Value("\${event.sqs.dlq.name}") private val eventDlqName: String,
+  private val gson: Gson
 ) {
 
   companion object {
@@ -37,22 +38,22 @@ class QueueAdminService(private val indexAwsSqsClient: AmazonSQS,
 
   fun clearAllIndexQueueMessages() {
     indexQueueService.getNumberOfMessagesCurrentlyOnIndexQueue()
-        .takeIf { it > 0 }
-        ?.run {
-          indexAwsSqsClient.purgeQueue(PurgeQueueRequest(indexQueueUrl))
-          log.info("Clear all messages on index queue")
-          telemetryClient.trackEvent(TelemetryEvents.PURGED_INDEX_QUEUE.name, mapOf("messages-on-queue" to this.toString()), null)
-        }
+      .takeIf { it > 0 }
+      ?.run {
+        indexAwsSqsClient.purgeQueue(PurgeQueueRequest(indexQueueUrl))
+        log.info("Clear all messages on index queue")
+        telemetryClient.trackEvent(TelemetryEvents.PURGED_INDEX_QUEUE.name, mapOf("messages-on-queue" to this.toString()), null)
+      }
   }
 
   fun clearAllDlqMessagesForIndex() {
     indexQueueService.getNumberOfMessagesCurrentlyOnIndexDLQ()
-        .takeIf { it > 0 }
-        ?.run {
-          indexAwsSqsDlqClient.purgeQueue(PurgeQueueRequest(indexDlqUrl))
-          log.info("Clear all messages on index dead letter queue")
-          telemetryClient.trackEvent(TelemetryEvents.PURGED_INDEX_DLQ.name, mapOf("messages-on-queue" to this.toString()), null)
-        }
+      .takeIf { it > 0 }
+      ?.run {
+        indexAwsSqsDlqClient.purgeQueue(PurgeQueueRequest(indexDlqUrl))
+        log.info("Clear all messages on index dead letter queue")
+        telemetryClient.trackEvent(TelemetryEvents.PURGED_INDEX_DLQ.name, mapOf("messages-on-queue" to this.toString()), null)
+      }
   }
 
   fun clearAllDlqMessagesForEvent() {
@@ -61,33 +62,32 @@ class QueueAdminService(private val indexAwsSqsClient: AmazonSQS,
   }
 
   fun transferEventMessages() =
-      repeat(getEventDlqMessageCount()) {
-        eventAwsSqsDlqClient.receiveMessage(ReceiveMessageRequest(eventDlqUrl).withMaxNumberOfMessages(1)).messages
-            .forEach { msg ->
-              eventAwsSqsClient.sendMessage(eventQueueUrl, msg.body)
-              eventAwsSqsDlqClient.deleteMessage(DeleteMessageRequest(eventDlqUrl, msg.receiptHandle))
-            }
-      }
+    repeat(getEventDlqMessageCount()) {
+      eventAwsSqsDlqClient.receiveMessage(ReceiveMessageRequest(eventDlqUrl).withMaxNumberOfMessages(1)).messages
+        .forEach { msg ->
+          eventAwsSqsClient.sendMessage(eventQueueUrl, msg.body)
+          eventAwsSqsDlqClient.deleteMessage(DeleteMessageRequest(eventDlqUrl, msg.receiptHandle))
+        }
+    }
 
   private fun getEventDlqMessageCount() =
-      eventAwsSqsDlqClient.getQueueAttributes(eventDlqUrl, listOf("ApproximateNumberOfMessages"))
-          .attributes["ApproximateNumberOfMessages"]
-          ?.toInt() ?: 0
+    eventAwsSqsDlqClient.getQueueAttributes(eventDlqUrl, listOf("ApproximateNumberOfMessages"))
+      .attributes["ApproximateNumberOfMessages"]
+      ?.toInt() ?: 0
 
   fun transferIndexMessages() {
     indexQueueService.getNumberOfMessagesCurrentlyOnIndexDLQ()
-        .takeIf { it > 0 }
-        ?.also { total ->
-          repeat(total) {
-            indexAwsSqsDlqClient.receiveMessage(ReceiveMessageRequest(indexDlqUrl).withMaxNumberOfMessages(1)).messages
-                .forEach { msg ->
-                  indexAwsSqsClient.sendMessage(indexQueueUrl, msg.body)
-                  indexAwsSqsDlqClient.deleteMessage(DeleteMessageRequest(indexDlqUrl, msg.receiptHandle))
-                }
-          }
-        }?.also { total ->
-          telemetryClient.trackEvent(TelemetryEvents.TRANSFERRED_INDEX_DLQ.name, mapOf("messages-on-queue" to total.toString()), null)
+      .takeIf { it > 0 }
+      ?.also { total ->
+        repeat(total) {
+          indexAwsSqsDlqClient.receiveMessage(ReceiveMessageRequest(indexDlqUrl).withMaxNumberOfMessages(1)).messages
+            .forEach { msg ->
+              indexAwsSqsClient.sendMessage(indexQueueUrl, msg.body)
+              indexAwsSqsDlqClient.deleteMessage(DeleteMessageRequest(indexDlqUrl, msg.receiptHandle))
+            }
         }
+      }?.also { total ->
+        telemetryClient.trackEvent(TelemetryEvents.TRANSFERRED_INDEX_DLQ.name, mapOf("messages-on-queue" to total.toString()), null)
+      }
   }
-
 }

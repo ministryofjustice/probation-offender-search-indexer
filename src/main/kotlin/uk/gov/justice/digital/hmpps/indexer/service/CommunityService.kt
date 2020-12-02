@@ -11,7 +11,6 @@ import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import reactor.core.publisher.Mono
 
-
 @Service
 class CommunityService(@Qualifier("communityApiWebClient") private val webClient: WebClient) {
   companion object {
@@ -19,15 +18,15 @@ class CommunityService(@Qualifier("communityApiWebClient") private val webClient
   }
 
   fun getOffender(crn: String): Either<OffenderError, Offender> =
-      webClient.get()
-          .uri("/secure/offenders/crn/{crn}/all", crn)
-          .retrieve()
-          .bodyToMono(String::class.java)
-          .onErrorResume(::emptyIfNotFound)
-          .block()
-          ?.let { Offender(it).right() }
-          ?: OffenderNotFoundError(crn).left()
-              .also { log.error("Offender with crn {} not found", crn) }
+    webClient.get()
+      .uri("/secure/offenders/crn/{crn}/all", crn)
+      .retrieve()
+      .bodyToMono(String::class.java)
+      .onErrorResume(::emptyIfNotFound)
+      .block()
+      ?.let { Offender(it).right() }
+      ?: OffenderNotFoundError(crn).left()
+        .also { log.error("Offender with crn {} not found", crn) }
 
   private fun emptyIfNotFound(exception: Throwable): Mono<out String> {
     return if (exception is WebClientResponseException.NotFound) Mono.empty() else Mono.error(exception)
@@ -35,18 +34,18 @@ class CommunityService(@Qualifier("communityApiWebClient") private val webClient
 
   fun getCountAllOffenders(): OffendersPage {
     return webClient.get()
-        .uri("/secure/offenders/primaryIdentifiers?includeDeleted=true&size=1")
-        .retrieve()
-        .bodyToMono(OffendersPage::class.java)
-        .block()!!
+      .uri("/secure/offenders/primaryIdentifiers?includeDeleted=true&size=1")
+      .retrieve()
+      .bodyToMono(OffendersPage::class.java)
+      .block()!!
   }
 
   fun getPageOfOffenders(page: Long, pageSize: Long): OffendersPage {
     return webClient.get()
-        .uri("/secure/offenders/primaryIdentifiers?includeDeleted=true&page={page}&size={pageSize}", page, pageSize)
-        .retrieve()
-        .bodyToMono(OffendersPage::class.java)
-        .block()!!
+      .uri("/secure/offenders/primaryIdentifiers?includeDeleted=true&page={page}&size={pageSize}", page, pageSize)
+      .retrieve()
+      .bodyToMono(OffendersPage::class.java)
+      .block()!!
   }
 }
 

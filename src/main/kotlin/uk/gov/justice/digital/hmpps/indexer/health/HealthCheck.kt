@@ -10,18 +10,17 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.core.publisher.Mono
 import java.time.Duration
 
-
 abstract class HealthCheck(private val webClient: WebClient, private val timeout: Duration) : HealthIndicator {
 
   override fun health(): Health? {
     return webClient.get()
-        .uri("/health/ping")
-        .retrieve()
-        .toEntity(String::class.java)
-        .flatMap { Mono.just(Health.up().withDetail("HttpStatus", it?.statusCode).build()) }
-        .onErrorResume(WebClientResponseException::class.java) { Mono.just(Health.down(it).withDetail("body", it.responseBodyAsString).withDetail("HttpStatus", it.statusCode).build()) }
-        .onErrorResume(Exception::class.java) { Mono.just(Health.down(it).build()) }
-        .block(timeout)
+      .uri("/health/ping")
+      .retrieve()
+      .toEntity(String::class.java)
+      .flatMap { Mono.just(Health.up().withDetail("HttpStatus", it?.statusCode).build()) }
+      .onErrorResume(WebClientResponseException::class.java) { Mono.just(Health.down(it).withDetail("body", it.responseBodyAsString).withDetail("HttpStatus", it.statusCode).build()) }
+      .onErrorResume(Exception::class.java) { Mono.just(Health.down(it).build()) }
+      .block(timeout)
   }
 }
 
@@ -32,4 +31,3 @@ constructor(@Qualifier("communityApiHealthWebClient") webClient: WebClient, @Val
 @Component
 class OAuthApiHealth
 constructor(@Qualifier("oauthApiHealthWebClient") webClient: WebClient, @Value("\${api.health-timeout:2s}") timeout: Duration) : HealthCheck(webClient, timeout)
-

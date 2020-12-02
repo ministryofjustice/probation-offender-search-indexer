@@ -18,7 +18,7 @@ import uk.gov.justice.digital.hmpps.indexer.model.IndexState
 import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
 import uk.gov.justice.digital.hmpps.indexer.repository.IndexStatusRepository
-import java.util.*
+import java.util.Optional
 
 class IndexStatusServiceTest {
 
@@ -59,7 +59,6 @@ class IndexStatusServiceTest {
       verify(indexStatusRepository).findById(INDEX_STATUS_ID)
       assertThat(actualIndexStatus).isEqualTo(existingIndexStatus)
     }
-
   }
 
   @Nested
@@ -86,11 +85,13 @@ class IndexStatusServiceTest {
 
       val newIndexStatus = indexStatusService.markBuildInProgress()
 
-      verify(indexStatusRepository).save<IndexStatus>(check { savedIndexStatus ->
-        assertThat(savedIndexStatus.otherIndex).isEqualTo(SyncIndex.BLUE)
-        assertThat(savedIndexStatus.otherIndexStartBuildTime).isNotNull()
-        assertThat(savedIndexStatus.otherIndexState).isEqualTo(IndexState.BUILDING)
-      })
+      verify(indexStatusRepository).save<IndexStatus>(
+        check { savedIndexStatus ->
+          assertThat(savedIndexStatus.otherIndex).isEqualTo(SyncIndex.BLUE)
+          assertThat(savedIndexStatus.otherIndexStartBuildTime).isNotNull()
+          assertThat(savedIndexStatus.otherIndexState).isEqualTo(IndexState.BUILDING)
+        }
+      )
 
       assertThat(newIndexStatus).isNotNull
     }
@@ -119,11 +120,13 @@ class IndexStatusServiceTest {
 
       val newIndexStatus = indexStatusService.markBuildCompleteAndSwitchIndex()
 
-      verify(indexStatusRepository).save<IndexStatus>(check { savedIndexStatus ->
-        assertThat(savedIndexStatus.currentIndex).isEqualTo(SyncIndex.GREEN)
-        assertThat(savedIndexStatus.currentIndex).isNotNull()
-        assertThat(savedIndexStatus.currentIndexState).isEqualTo(IndexState.COMPLETED)
-      })
+      verify(indexStatusRepository).save<IndexStatus>(
+        check { savedIndexStatus ->
+          assertThat(savedIndexStatus.currentIndex).isEqualTo(SyncIndex.GREEN)
+          assertThat(savedIndexStatus.currentIndex).isNotNull()
+          assertThat(savedIndexStatus.currentIndexState).isEqualTo(IndexState.COMPLETED)
+        }
+      )
 
       assertThat(newIndexStatus).isNotNull
     }
@@ -151,11 +154,13 @@ class IndexStatusServiceTest {
 
       val newIndexStatus = indexStatusService.markBuildCancelled()
 
-      verify(indexStatusRepository).save<IndexStatus>(check { savedIndexStatus ->
-        assertThat(savedIndexStatus.otherIndex).isEqualTo(SyncIndex.GREEN)
-        assertThat(savedIndexStatus.otherIndexEndBuildTime).isNotNull()
-        assertThat(savedIndexStatus.otherIndexState).isEqualTo(IndexState.CANCELLED)
-      })
+      verify(indexStatusRepository).save<IndexStatus>(
+        check { savedIndexStatus ->
+          assertThat(savedIndexStatus.otherIndex).isEqualTo(SyncIndex.GREEN)
+          assertThat(savedIndexStatus.otherIndexEndBuildTime).isNotNull()
+          assertThat(savedIndexStatus.otherIndexState).isEqualTo(IndexState.CANCELLED)
+        }
+      )
 
       assertThat(newIndexStatus).isNotNull
     }

@@ -38,17 +38,17 @@ internal class QueueAdminServiceTest {
     whenever(eventAwsSqsClient.getQueueUrl("event-queue")).thenReturn(GetQueueUrlResult().withQueueUrl("arn:eu-west-1:event-queue"))
     whenever(eventAwsSqsDlqClient.getQueueUrl("event-dlq")).thenReturn(GetQueueUrlResult().withQueueUrl("arn:eu-west-1:event-dlq"))
     queueAdminService = QueueAdminService(
-        indexAwsSqsClient = indexAwsSqsClient,
-        indexAwsSqsDlqClient = indexAwsSqsDlqClient,
-        eventAwsSqsClient = eventAwsSqsClient,
-        eventAwsSqsDlqClient = eventAwsSqsDlqClient,
-        indexQueueService = indexQueueService,
-        telemetryClient = telemetryClient,
-        indexQueueName = "index-queue",
-        indexDlqName = "index-dlq",
-        eventQueueName = "event-queue",
-        eventDlqName = "event-dlq",
-        gson = Gson()
+      indexAwsSqsClient = indexAwsSqsClient,
+      indexAwsSqsDlqClient = indexAwsSqsDlqClient,
+      eventAwsSqsClient = eventAwsSqsClient,
+      eventAwsSqsDlqClient = eventAwsSqsDlqClient,
+      indexQueueService = indexQueueService,
+      telemetryClient = telemetryClient,
+      indexQueueName = "index-queue",
+      indexDlqName = "index-dlq",
+      eventQueueName = "event-queue",
+      eventDlqName = "event-dlq",
+      gson = Gson()
     )
   }
 
@@ -60,9 +60,11 @@ internal class QueueAdminServiceTest {
       whenever(indexQueueService.getNumberOfMessagesCurrentlyOnIndexQueue()).thenReturn(1)
 
       queueAdminService.clearAllIndexQueueMessages()
-      verify(indexAwsSqsClient).purgeQueue(check {
-        assertThat(it.queueUrl).isEqualTo("arn:eu-west-1:index-queue")
-      })
+      verify(indexAwsSqsClient).purgeQueue(
+        check {
+          assertThat(it.queueUrl).isEqualTo("arn:eu-west-1:index-queue")
+        }
+      )
     }
 
     @Test
@@ -94,9 +96,11 @@ internal class QueueAdminServiceTest {
       whenever(indexQueueService.getNumberOfMessagesCurrentlyOnIndexDLQ()).thenReturn(1)
 
       queueAdminService.clearAllDlqMessagesForIndex()
-      verify(indexAwsSqsDlqClient).purgeQueue(check {
-        assertThat(it.queueUrl).isEqualTo("arn:eu-west-1:index-dlq")
-      })
+      verify(indexAwsSqsDlqClient).purgeQueue(
+        check {
+          assertThat(it.queueUrl).isEqualTo("arn:eu-west-1:index-dlq")
+        }
+      )
     }
 
     @Test
@@ -127,9 +131,11 @@ internal class QueueAdminServiceTest {
       whenever(eventAwsSqsDlqClient.getQueueUrl("event-dlq")).thenReturn(GetQueueUrlResult().withQueueUrl("arn:eu-west-1:event-dlq"))
 
       queueAdminService.clearAllDlqMessagesForEvent()
-      verify(eventAwsSqsDlqClient).purgeQueue(check {
-        assertThat(it.queueUrl).isEqualTo("arn:eu-west-1:event-dlq")
-      })
+      verify(eventAwsSqsDlqClient).purgeQueue(
+        check {
+          assertThat(it.queueUrl).isEqualTo("arn:eu-west-1:event-dlq")
+        }
+      )
     }
   }
 
@@ -143,35 +149,39 @@ internal class QueueAdminServiceTest {
     internal fun `will read single message from event dlq`() {
       stubDlqMessageCount(1)
       whenever(eventAwsSqsDlqClient.receiveMessage(any<ReceiveMessageRequest>()))
-          .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(offenderChangedMessage("X1"))))
+        .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(offenderChangedMessage("X1"))))
 
       queueAdminService.transferEventMessages()
 
-      verify(eventAwsSqsDlqClient).receiveMessage(check<ReceiveMessageRequest> {
-        assertThat(it.queueUrl).isEqualTo(eventDlqUrl)
-      })
+      verify(eventAwsSqsDlqClient).receiveMessage(
+        check<ReceiveMessageRequest> {
+          assertThat(it.queueUrl).isEqualTo(eventDlqUrl)
+        }
+      )
     }
 
     @Test
     internal fun `will read multiple messages from dlq`() {
       stubDlqMessageCount(3)
       whenever(eventAwsSqsDlqClient.receiveMessage(any<ReceiveMessageRequest>()))
-          .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(offenderChangedMessage("X1"))))
-          .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(offenderChangedMessage("X2"))))
-          .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(offenderChangedMessage("X3"))))
+        .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(offenderChangedMessage("X1"))))
+        .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(offenderChangedMessage("X2"))))
+        .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(offenderChangedMessage("X3"))))
 
       queueAdminService.transferEventMessages()
 
-      verify(eventAwsSqsDlqClient, times(3)).receiveMessage(check<ReceiveMessageRequest> {
-        assertThat(it.queueUrl).isEqualTo(eventDlqUrl)
-      })
+      verify(eventAwsSqsDlqClient, times(3)).receiveMessage(
+        check<ReceiveMessageRequest> {
+          assertThat(it.queueUrl).isEqualTo(eventDlqUrl)
+        }
+      )
     }
 
     @Test
     internal fun `will send single message to the event queue`() {
       stubDlqMessageCount(1)
       whenever(eventAwsSqsDlqClient.receiveMessage(any<ReceiveMessageRequest>()))
-          .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(offenderChangedMessage("X1"))))
+        .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(offenderChangedMessage("X1"))))
 
       queueAdminService.transferEventMessages()
 
@@ -182,9 +192,9 @@ internal class QueueAdminServiceTest {
     internal fun `will send multiple messages to the event queue`() {
       stubDlqMessageCount(3)
       whenever(eventAwsSqsDlqClient.receiveMessage(any<ReceiveMessageRequest>()))
-          .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(offenderChangedMessage("X1"))))
-          .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(offenderChangedMessage("X2"))))
-          .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(offenderChangedMessage("X3"))))
+        .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(offenderChangedMessage("X1"))))
+        .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(offenderChangedMessage("X2"))))
+        .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(offenderChangedMessage("X3"))))
 
       queueAdminService.transferEventMessages()
 
@@ -194,8 +204,8 @@ internal class QueueAdminServiceTest {
     }
 
     private fun stubDlqMessageCount(count: Int) =
-        whenever(eventAwsSqsDlqClient.getQueueAttributes(eventDlqUrl, listOf("ApproximateNumberOfMessages")))
-            .thenReturn(GetQueueAttributesResult().withAttributes(mutableMapOf("ApproximateNumberOfMessages" to count.toString())))
+      whenever(eventAwsSqsDlqClient.getQueueAttributes(eventDlqUrl, listOf("ApproximateNumberOfMessages")))
+        .thenReturn(GetQueueAttributesResult().withAttributes(mutableMapOf("ApproximateNumberOfMessages" to count.toString())))
   }
 
   @Nested
@@ -208,35 +218,39 @@ internal class QueueAdminServiceTest {
     internal fun `will read single message from index dlq`() {
       stubDlqMessageCount(1)
       whenever(indexAwsSqsDlqClient.receiveMessage(any<ReceiveMessageRequest>()))
-          .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(populateOffenderMessage("X1"))))
+        .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(populateOffenderMessage("X1"))))
 
       queueAdminService.transferIndexMessages()
 
-      verify(indexAwsSqsDlqClient).receiveMessage(check<ReceiveMessageRequest> {
-        assertThat(it.queueUrl).isEqualTo(indexDlqUrl)
-      })
+      verify(indexAwsSqsDlqClient).receiveMessage(
+        check<ReceiveMessageRequest> {
+          assertThat(it.queueUrl).isEqualTo(indexDlqUrl)
+        }
+      )
     }
 
     @Test
     internal fun `will read multiple messages from dlq`() {
       stubDlqMessageCount(3)
       whenever(indexAwsSqsDlqClient.receiveMessage(any<ReceiveMessageRequest>()))
-          .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(populateOffenderMessage("X1"))))
-          .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(populateOffenderMessage("X2"))))
-          .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(populateOffenderMessage("X3"))))
+        .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(populateOffenderMessage("X1"))))
+        .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(populateOffenderMessage("X2"))))
+        .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(populateOffenderMessage("X3"))))
 
       queueAdminService.transferIndexMessages()
 
-      verify(indexAwsSqsDlqClient, times(3)).receiveMessage(check<ReceiveMessageRequest> {
-        assertThat(it.queueUrl).isEqualTo(indexDlqUrl)
-      })
+      verify(indexAwsSqsDlqClient, times(3)).receiveMessage(
+        check<ReceiveMessageRequest> {
+          assertThat(it.queueUrl).isEqualTo(indexDlqUrl)
+        }
+      )
     }
 
     @Test
     internal fun `will send single message to the index queue`() {
       stubDlqMessageCount(1)
       whenever(indexAwsSqsDlqClient.receiveMessage(any<ReceiveMessageRequest>()))
-          .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(populateOffenderMessage("X1"))))
+        .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(populateOffenderMessage("X1"))))
 
       queueAdminService.transferIndexMessages()
 
@@ -247,9 +261,9 @@ internal class QueueAdminServiceTest {
     internal fun `will send multiple messages to the index queue`() {
       stubDlqMessageCount(3)
       whenever(indexAwsSqsDlqClient.receiveMessage(any<ReceiveMessageRequest>()))
-          .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(populateOffenderMessage("X1"))))
-          .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(populateOffenderMessage("X2"))))
-          .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(populateOffenderMessage("X3"))))
+        .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(populateOffenderMessage("X1"))))
+        .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(populateOffenderMessage("X2"))))
+        .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(populateOffenderMessage("X3"))))
 
       queueAdminService.transferIndexMessages()
 
@@ -262,7 +276,7 @@ internal class QueueAdminServiceTest {
     internal fun `will send a telemetry event`() {
       stubDlqMessageCount(1)
       whenever(indexAwsSqsDlqClient.receiveMessage(any<ReceiveMessageRequest>()))
-          .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(populateOffenderMessage("X1"))))
+        .thenReturn(ReceiveMessageResult().withMessages(Message().withBody(populateOffenderMessage("X1"))))
 
       queueAdminService.transferIndexMessages()
 
@@ -279,11 +293,12 @@ internal class QueueAdminServiceTest {
     }
 
     private fun stubDlqMessageCount(count: Int) =
-        whenever(indexQueueService.getNumberOfMessagesCurrentlyOnIndexDLQ()).thenReturn(count)
+      whenever(indexQueueService.getNumberOfMessagesCurrentlyOnIndexDLQ()).thenReturn(count)
   }
 }
 
-fun offenderChangedMessage(crn: String) = """
+fun offenderChangedMessage(crn: String) =
+  """
     {
       "Type": "Notification",
       "MessageId": "20e13002-d1be-56e7-be8c-66cdd7e23341",
@@ -316,7 +331,8 @@ fun offenderChangedMessage(crn: String) = """
 
   """.trimIndent()
 
-fun populateOffenderMessage(crn: String) = """
+fun populateOffenderMessage(crn: String) =
+  """
   {
     "type":"POPULATE_OFFENDER",
     "crn":"$crn"

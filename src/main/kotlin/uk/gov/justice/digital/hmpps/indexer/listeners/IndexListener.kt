@@ -16,8 +16,8 @@ import java.lang.IllegalArgumentException
 
 @Service
 class IndexListener(
-    @Qualifier("gson") private val gson: com.google.gson.Gson,
-    private val indexService: IndexService
+  @Qualifier("gson") private val gson: com.google.gson.Gson,
+  private val indexService: IndexService
 
 ) {
   companion object {
@@ -25,10 +25,10 @@ class IndexListener(
   }
 
   @JmsListener(destination = "\${index.sqs.queue.name}", containerFactory = "jmsIndexListenerContainerFactory")
-  fun processIndexRequest(requestJson: String?, msg : javax.jms.Message) {
+  fun processIndexRequest(requestJson: String?, msg: javax.jms.Message) {
     val indexRequest = try {
       gson.fromJson(requestJson, IndexMessageRequest::class.java)
-    } catch(e: Exception) {
+    } catch (e: Exception) {
       log.error("Failed to process message {}", requestJson, e)
       throw e
     }
@@ -38,23 +38,21 @@ class IndexListener(
       POPULATE_OFFENDER -> indexService.populateIndexWithOffender(indexRequest.crn!!)
       else -> {
         "Unknown request type for message $requestJson"
-            .let {
-              log.error(it)
-              throw IllegalArgumentException(it)
-            }
+          .let {
+            log.error(it)
+            throw IllegalArgumentException(it)
+          }
       }
     }
-        .getOrHandle {  log.error("Message {} failed with error {}", indexRequest, it) }
+      .getOrHandle { log.error("Message {} failed with error {}", indexRequest, it) }
   }
 }
 
-
-
 data class IndexMessageRequest(
-    val type: IndexRequestType?,
-    val index: SyncIndex? = null,
-    val offenderPage: OffenderPage? = null,
-    val crn: String? = null
+  val type: IndexRequestType?,
+  val index: SyncIndex? = null,
+  val offenderPage: OffenderPage? = null,
+  val crn: String? = null
 )
 
 enum class IndexRequestType {

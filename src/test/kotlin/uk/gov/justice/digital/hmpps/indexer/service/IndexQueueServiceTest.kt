@@ -31,14 +31,13 @@ internal class IndexQueueServiceTest {
     whenever(indexAwsSqsClient.getQueueUrl("index-queue")).thenReturn(GetQueueUrlResult().withQueueUrl("arn:eu-west-1:index-queue"))
     whenever(indexAwsSqsDlqClient.getQueueUrl("index-dlq")).thenReturn(GetQueueUrlResult().withQueueUrl("arn:eu-west-1:index-dlq"))
     indexQueueService = IndexQueueService(
-        indexAwsSqsClient = indexAwsSqsClient,
-        indexAwsSqsDlqClient = indexAwsSqsDlqClient,
-        indexQueueName = "index-queue",
-        indexDlqName = "index-dlq",
-        gson = Gson()
+      indexAwsSqsClient = indexAwsSqsClient,
+      indexAwsSqsDlqClient = indexAwsSqsDlqClient,
+      indexQueueName = "index-queue",
+      indexDlqName = "index-dlq",
+      gson = Gson()
     )
   }
-
 
   @Nested
   inner class SendIndexRequestMessage {
@@ -50,20 +49,26 @@ internal class IndexQueueServiceTest {
 
     @Test
     fun `will send message with index name`() {
-      verify(indexAwsSqsClient).sendMessage(check {
-        assertThatJson(it.messageBody).isEqualTo("""{
+      verify(indexAwsSqsClient).sendMessage(
+        check {
+          assertThatJson(it.messageBody).isEqualTo(
+            """{
           "type": "POPULATE_INDEX",
           "index": "GREEN"
           }
-        """.trimIndent())
-      })
+            """.trimIndent()
+          )
+        }
+      )
     }
 
     @Test
     fun `will send message to index queue`() {
-      verify(indexAwsSqsClient).sendMessage(check {
-        assertThat(it.queueUrl).isEqualTo("arn:eu-west-1:index-queue")
-      })
+      verify(indexAwsSqsClient).sendMessage(
+        check {
+          assertThat(it.queueUrl).isEqualTo("arn:eu-west-1:index-queue")
+        }
+      )
     }
   }
 
@@ -77,23 +82,29 @@ internal class IndexQueueServiceTest {
 
     @Test
     fun `will send message with index name`() {
-      verify(indexAwsSqsClient).sendMessage(check {
-        assertThatJson(it.messageBody).isEqualTo("""{
+      verify(indexAwsSqsClient).sendMessage(
+        check {
+          assertThatJson(it.messageBody).isEqualTo(
+            """{
           "type": "POPULATE_OFFENDER_PAGE",
           "offenderPage": {
             "page": 1,
             "pageSize": 1000
           }
         }
-        """.trimIndent())
-      })
+            """.trimIndent()
+          )
+        }
+      )
     }
 
     @Test
     fun `will send message to index queue`() {
-      verify(indexAwsSqsClient).sendMessage(check {
-        assertThat(it.queueUrl).isEqualTo("arn:eu-west-1:index-queue")
-      })
+      verify(indexAwsSqsClient).sendMessage(
+        check {
+          assertThat(it.queueUrl).isEqualTo("arn:eu-west-1:index-queue")
+        }
+      )
     }
   }
 
@@ -107,21 +118,27 @@ internal class IndexQueueServiceTest {
 
     @Test
     fun `will send message with crn`() {
-      verify(indexAwsSqsClient).sendMessage(check {
-        assertThatJson(it.messageBody).isEqualTo("""
+      verify(indexAwsSqsClient).sendMessage(
+        check {
+          assertThatJson(it.messageBody).isEqualTo(
+            """
         {
           "type":"POPULATE_OFFENDER",
           "crn":"X12345"
         }
-        """.trimIndent())
-      })
+            """.trimIndent()
+          )
+        }
+      )
     }
 
     @Test
     fun `will send message to index queue`() {
-      verify(indexAwsSqsClient).sendMessage(check {
-        assertThat(it.queueUrl).isEqualTo("arn:eu-west-1:index-queue")
-      })
+      verify(indexAwsSqsClient).sendMessage(
+        check {
+          assertThat(it.queueUrl).isEqualTo("arn:eu-west-1:index-queue")
+        }
+      )
     }
   }
 
@@ -129,15 +146,15 @@ internal class IndexQueueServiceTest {
   @TestInstance(TestInstance.Lifecycle.PER_CLASS)
   inner class IndexQueueStatusActive {
     fun activeTestSource() = listOf(
-        Arguments.of(0, 0, 0, false),
-        Arguments.of(1, 0, 0, true),
-        Arguments.of(0, 1, 0, true),
-        Arguments.of(0, 0, 1, true),
-        Arguments.of(0, 1, 1, true),
-        Arguments.of(1, 1, 0, true),
-        Arguments.of(0, 1, 1, true),
-        Arguments.of(1, 0, 1, true),
-        Arguments.of(1, 1, 1, true)
+      Arguments.of(0, 0, 0, false),
+      Arguments.of(1, 0, 0, true),
+      Arguments.of(0, 1, 0, true),
+      Arguments.of(0, 0, 1, true),
+      Arguments.of(0, 1, 1, true),
+      Arguments.of(1, 1, 0, true),
+      Arguments.of(0, 1, 1, true),
+      Arguments.of(1, 0, 1, true),
+      Arguments.of(1, 1, 1, true)
     )
 
     @ParameterizedTest

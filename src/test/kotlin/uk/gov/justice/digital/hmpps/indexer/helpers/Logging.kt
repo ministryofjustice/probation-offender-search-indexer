@@ -14,4 +14,4 @@ fun <T> findLogAppender(javaClass: Class<in T>): ListAppender<ILoggingEvent> {
 }
 
 infix fun List<ILoggingEvent>?.hasLogMessageContaining(partialMessage: String) =
-    this?.find { logEvent -> logEvent.formattedMessage.contains(partialMessage) } != null
+  this?.find { logEvent -> logEvent.formattedMessage.contains(partialMessage) } != null

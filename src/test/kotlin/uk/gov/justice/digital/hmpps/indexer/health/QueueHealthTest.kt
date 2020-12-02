@@ -20,7 +20,6 @@ import uk.gov.justice.digital.hmpps.indexer.health.QueueAttributes.MESSAGES_ON_D
 import uk.gov.justice.digital.hmpps.indexer.health.QueueAttributes.MESSAGES_ON_QUEUE
 import uk.gov.justice.digital.hmpps.indexer.health.QueueHealth
 
-
 class QueueHealthTest {
 
   private val someQueueName = "some queue name"
@@ -39,7 +38,7 @@ class QueueHealthTest {
 
   @Nested
   inner class EventQueue {
-    
+
     @Test
     fun `health - queue found - UP`() {
       mockHealthyQueue()
@@ -140,7 +139,6 @@ class QueueHealthTest {
       assertThat(health.details["dlqStatus"]).isEqualTo(DlqStatus.NOT_AVAILABLE.description)
     }
   }
-
 
   @Nested
   inner class IndexQueue {
@@ -245,7 +243,6 @@ class QueueHealthTest {
       assertThat(health.details["dlqStatus"]).isEqualTo(DlqStatus.NOT_AVAILABLE.description)
     }
   }
-  
 
   private fun mockHealthyQueue() {
     whenever(eventAmazonSqs.getQueueUrl(someQueueName)).thenReturn(someGetQueueUrlResult())
@@ -261,18 +258,23 @@ class QueueHealthTest {
   private fun someGetQueueAttributesRequest() = GetQueueAttributesRequest(someQueueUrl).withAttributeNames(listOf(QueueAttributeName.All.toString()))
   private fun someGetQueueUrlResult(): GetQueueUrlResult = GetQueueUrlResult().withQueueUrl(someQueueUrl)
   private fun someGetQueueAttributesResultWithoutDLQ() = GetQueueAttributesResult().withAttributes(
-      mapOf(MESSAGES_ON_QUEUE.awsName to someMessagesOnQueueCount.toString(),
-          MESSAGES_IN_FLIGHT.awsName to someMessagesInFlightCount.toString()))
+    mapOf(
+      MESSAGES_ON_QUEUE.awsName to someMessagesOnQueueCount.toString(),
+      MESSAGES_IN_FLIGHT.awsName to someMessagesInFlightCount.toString()
+    )
+  )
 
   private fun someGetQueueAttributesResultWithDLQ() = GetQueueAttributesResult().withAttributes(
-      mapOf(MESSAGES_ON_QUEUE.awsName to someMessagesOnQueueCount.toString(),
-          MESSAGES_IN_FLIGHT.awsName to someMessagesInFlightCount.toString(),
-          QueueAttributeName.RedrivePolicy.toString() to "any redrive policy"))
+    mapOf(
+      MESSAGES_ON_QUEUE.awsName to someMessagesOnQueueCount.toString(),
+      MESSAGES_IN_FLIGHT.awsName to someMessagesInFlightCount.toString(),
+      QueueAttributeName.RedrivePolicy.toString() to "any redrive policy"
+    )
+  )
 
   private fun someGetQueueAttributesRequestForDLQ() = GetQueueAttributesRequest(someDLQUrl).withAttributeNames(listOf(QueueAttributeName.All.toString()))
   private fun someGetQueueUrlResultForDLQ(): GetQueueUrlResult = GetQueueUrlResult().withQueueUrl(someDLQUrl)
   private fun someGetQueueAttributesResultForDLQ() = GetQueueAttributesResult().withAttributes(
-      mapOf(MESSAGES_ON_QUEUE.awsName to someMessagesOnDLQCount.toString()))
-
+    mapOf(MESSAGES_ON_QUEUE.awsName to someMessagesOnDLQCount.toString())
+  )
 }
-
