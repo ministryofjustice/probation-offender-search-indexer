@@ -1,6 +1,3 @@
-spring:
-  profiles:
-    include: localstack, stdout
 aws:
   provider: testcontainers-localstack
 
