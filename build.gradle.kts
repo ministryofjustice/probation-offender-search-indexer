@@ -17,14 +17,14 @@ dependencies {
 
   implementation("org.springframework:spring-jms")
   implementation("com.amazonaws:amazon-sqs-java-messaging-lib:1.0.8")
-  implementation("com.amazonaws:aws-java-sdk-elasticsearch:1.11.934")
+  implementation("com.amazonaws:aws-java-sdk-elasticsearch:1.11.918")
 
   implementation("com.google.code.gson:gson:2.8.6")
   implementation("io.arrow-kt:arrow-core:0.11.0")
 
-  implementation("org.springdoc:springdoc-openapi-ui:1.5.2")
-  implementation("org.springdoc:springdoc-openapi-data-rest:1.5.2")
-  implementation("org.springdoc:springdoc-openapi-kotlin:1.5.2")
+  implementation("org.springdoc:springdoc-openapi-ui:1.5.1")
+  implementation("org.springdoc:springdoc-openapi-data-rest:1.5.1")
+  implementation("org.springdoc:springdoc-openapi-kotlin:1.5.1")
 
   testImplementation("com.github.tomakehurst:wiremock-standalone:2.27.2")
   testImplementation("org.testcontainers:localstack:1.15.1")
@@ -35,5 +35,5 @@ dependencies {
   testImplementation("io.jsonwebtoken:jjwt:0.9.1")
   testImplementation("net.javacrumbs.json-unit:json-unit-assertj:2.22.0")
   testImplementation("io.swagger.parser.v3:swagger-parser-v2-converter:2.0.24")
-  testImplementation("org.mockito:mockito-inline:3.7.0")
+  testImplementation("org.mockito:mockito-inline:3.6.28")
 }
