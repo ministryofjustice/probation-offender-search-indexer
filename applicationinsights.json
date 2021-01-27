@@ -1,0 +1,13 @@
+{
+  "role": {
+    "name": "probation-offender-search-indexer"
+  },
+  "customDimensions": {
+    "service.version": "${BUILD_NUMBER}"
+  },
+  "selfDiagnostics": {
+    "destination": "console",
+    "level": "INFO"
+  }
+}
+

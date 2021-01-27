@@ -1,28 +1,41 @@
 package uk.gov.justice.digital.hmpps.indexer.config
 
-import com.microsoft.applicationinsights.TelemetryConfiguration
-import com.microsoft.applicationinsights.extensibility.TelemetryModule
-import com.microsoft.applicationinsights.web.extensibility.modules.WebTelemetryModule
 import com.microsoft.applicationinsights.web.internal.ThreadContext
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
-import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpHeaders
+import org.springframework.web.servlet.HandlerInterceptor
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 import java.text.ParseException
 import javax.servlet.ServletRequest
-import javax.servlet.ServletResponse
 import javax.servlet.http.HttpServletRequest
+import javax.servlet.http.HttpServletResponse
 
 @Configuration
-class ClientTrackingTelemetryModule : WebTelemetryModule, TelemetryModule {
+@ConditionalOnExpression("T(org.apache.commons.lang3.StringUtils).isNotBlank('\${applicationinsights.connection.string:}')")
+class ClientTrackingConfiguration(private val clientTrackingInterceptor: ClientTrackingInterceptor) : WebMvcConfigurer {
+  override fun addInterceptors(registry: InterceptorRegistry) {
+    log.info("Adding application insights client tracking interceptor")
+    registry.addInterceptor(clientTrackingInterceptor).addPathPatterns("/**")
+  }
 
-  override fun onBeginRequest(req: ServletRequest, res: ServletResponse) {
+  companion object {
+    private val log = LoggerFactory.getLogger(this::class.java)
+  }
+}
+
+@Configuration
+class ClientTrackingInterceptor : HandlerInterceptor {
+  override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
     val properties = ThreadContext.getRequestTelemetryContext().httpRequestTelemetry.properties
-    val (user, clientId) = findUserAndClient(req)
+    val (user, clientId) = findUserAndClient(request)
     user?.let { properties["username"] = user }
     clientId?.let { properties["clientId"] = clientId }
+    return true
   }
 
   private fun findUserAndClient(req: ServletRequest): Pair<String?, String?> =
@@ -40,10 +53,7 @@ class ClientTrackingTelemetryModule : WebTelemetryModule, TelemetryModule {
       null
     }?.jwtClaimsSet
 
-  override fun onEndRequest(req: ServletRequest, res: ServletResponse) {}
-  override fun initialize(configuration: TelemetryConfiguration) {}
-
   companion object {
-    val log: Logger = LoggerFactory.getLogger(ClientTrackingTelemetryModule::class.java)
+    val log = LoggerFactory.getLogger(ClientTrackingConfiguration::class.java)
   }
 }
