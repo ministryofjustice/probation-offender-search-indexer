@@ -9,7 +9,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.ConfigFileApplicationContextInitializer
+import org.springframework.boot.test.context.ConfigDataApplicationContextInitializer
 import org.springframework.context.annotation.Import
 import org.springframework.http.HttpHeaders
 import org.springframework.mock.web.MockHttpServletRequest
@@ -20,14 +20,14 @@ import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.indexer.helpers.JwtAuthHelper
 import uk.gov.justice.digital.hmpps.indexer.helpers.findLogAppender
 
-@Import(JwtAuthHelper::class, ClientTrackingTelemetryModule::class, JwtConfig::class)
-@ContextConfiguration(initializers = [ConfigFileApplicationContextInitializer::class])
+@Import(JwtAuthHelper::class, JwtConfig::class, ClientTrackingInterceptor::class, ClientTrackingConfiguration::class)
+@ContextConfiguration(initializers = [ConfigDataApplicationContextInitializer::class])
 @ActiveProfiles("test")
 @ExtendWith(SpringExtension::class)
-class ClientTrackingTelemetryModuleTest {
+class ClientTrackingConfigurationTest {
   @Suppress("SpringJavaInjectionPointsAutowiringInspection")
   @Autowired
-  private lateinit var clientTrackingTelemetryModule: ClientTrackingTelemetryModule
+  private lateinit var clientTrackingInterceptor: ClientTrackingInterceptor
 
   @Suppress("SpringJavaInjectionPointsAutowiringInspection")
   @Autowired
@@ -44,43 +44,36 @@ class ClientTrackingTelemetryModuleTest {
   }
 
   @Test
-  fun `should add clientId and userName to insight telemetry`() {
+  fun shouldAddClientIdAndUserNameToInsightTelemetry() {
     val token = jwtAuthHelper.createJwt("bob")
     val req = MockHttpServletRequest()
     req.addHeader(HttpHeaders.AUTHORIZATION, "Bearer $token")
     val res = MockHttpServletResponse()
-
-    clientTrackingTelemetryModule.onBeginRequest(req, res)
-
+    clientTrackingInterceptor.preHandle(req, res, "null")
     val insightTelemetry = ThreadContext.getRequestTelemetryContext().httpRequestTelemetry.properties
-    assertThat(insightTelemetry).hasSize(2)
-    assertThat(insightTelemetry["username"]).isEqualTo("bob")
-    assertThat(insightTelemetry["clientId"]).isEqualTo("prisoner-offender-search-client")
+    assertThat(insightTelemetry).containsExactlyInAnyOrderEntriesOf(mapOf("username" to "bob", "clientId" to "prisoner-offender-search-client"))
   }
 
   @Test
-  fun `should add only clientId if username null to insight telemetry`() {
+  fun shouldAddOnlyClientIdIfUsernameNullToInsightTelemetry() {
     val token = jwtAuthHelper.createJwt(null)
     val req = MockHttpServletRequest()
     req.addHeader(HttpHeaders.AUTHORIZATION, "Bearer $token")
     val res = MockHttpServletResponse()
-
-    clientTrackingTelemetryModule.onBeginRequest(req, res)
-
+    clientTrackingInterceptor.preHandle(req, res, "null")
     val insightTelemetry = ThreadContext.getRequestTelemetryContext().httpRequestTelemetry.properties
-    assertThat(insightTelemetry).hasSize(1)
-    assertThat(insightTelemetry["clientId"]).isEqualTo("prisoner-offender-search-client")
+    assertThat(insightTelemetry).containsExactlyInAnyOrderEntriesOf(mapOf("clientId" to "prisoner-offender-search-client"))
   }
 
   @Test
-  fun `should allow bad JwtToken and log a warning, but cannot send clientId or username to insigh telemetry`() {
+  fun `should allow bad JwtToken and log a warning, but cannot send clientId or username to insight telemetry`() {
     val token = "This is not a valid token"
     val req = MockHttpServletRequest()
     req.addHeader(HttpHeaders.AUTHORIZATION, "Bearer $token")
     val res = MockHttpServletResponse()
-    val logAppender = findLogAppender(ClientTrackingTelemetryModule::class.java)
+    val logAppender = findLogAppender(ClientTrackingConfiguration::class.java)
 
-    clientTrackingTelemetryModule.onBeginRequest(req, res)
+    clientTrackingInterceptor.preHandle(req, res, "null")
 
     // The lack of an exception here shows that a bad token does not prevent Telemetry
     val insightTelemetry = ThreadContext.getRequestTelemetryContext().httpRequestTelemetry.properties
