@@ -40,7 +40,7 @@ class ClientTrackingInterceptor : HandlerInterceptor {
 
   private fun findUserAndClient(req: ServletRequest): Pair<String?, String?> =
     (req as HttpServletRequest).getHeader(HttpHeaders.AUTHORIZATION)
-      .takeIf { it.startsWith("Bearer ") }
+      ?.takeIf { it.startsWith("Bearer ") }
       ?.let { getClaimsFromJWT(it) }
       ?.let { it.getClaim("user_name") as String? to it.getClaim("client_id") as String? }
       ?: null to null
@@ -54,6 +54,6 @@ class ClientTrackingInterceptor : HandlerInterceptor {
     }?.jwtClaimsSet
 
   companion object {
-    val log = LoggerFactory.getLogger(ClientTrackingConfiguration::class.java)
+    private val log = LoggerFactory.getLogger(this::class.java)
   }
 }
