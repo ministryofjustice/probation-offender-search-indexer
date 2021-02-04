@@ -119,6 +119,6 @@ env:
     value: "http"
 
   - name: ELASTICSEARCH_HOST
-    value: "{{ .Values.env.ES_PROXY_HOST }}"
+    value: "es-proxy"
 
 {{- end -}}
