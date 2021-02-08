@@ -88,6 +88,15 @@ class CommunityApiMockServer : WireMockServer(WIREMOCK_PORT) {
       )
     )
 
+  fun stubMappaNotFound(crn: String): StubMapping =
+    stubFor(
+      get("/secure/offenders/crn/$crn/risk/mappa").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(404)
+      )
+    )
+
   fun verifyGetOffender(crn: String = "X123456") =
     verify(
       getRequestedFor(urlEqualTo("/secure/offenders/crn/$crn/all"))
@@ -106,6 +115,7 @@ class CommunityApiMockServer : WireMockServer(WIREMOCK_PORT) {
     stubPageOfOffenders(pageSize, *crns)
     crns.forEach {
       stubGetOffender(it)
+      stubMappaNotFound(it)
     }
   }
 

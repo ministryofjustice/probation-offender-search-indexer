@@ -24,7 +24,7 @@ class OffenderSynchroniserService(
   }
 
   internal fun synchroniseOffender(crn: String, vararg indexes: SyncIndex): Either<OffenderError, String> =
-    communityService.getOffender(crn)
+    communityService.getOffenderSearchDetails(crn)
       .flatMap {
         indexes.map { index -> offenderRepository.save(it, index) }
         it.json.right()
