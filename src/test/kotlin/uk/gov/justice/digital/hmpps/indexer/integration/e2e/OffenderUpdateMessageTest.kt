@@ -172,13 +172,10 @@ class OffenderUpdateMessageTest : IntegrationTestBase() {
 
     @Test
     fun `New offender with MAPPA - MAPPA details are returned`() {
-      communityApi.stubGetOffender("X123456")
-      communityApi.stubGetMappaDetails("X123456", notes = "Created")
-      await untilCallTo { getNumberOfMessagesCurrentlyOnEventQueue() } matches { it == 0 }
+      `Given Elasticearch holds an offender`(withMappa = true)
 
-      eventAwsSqsClient.sendMessage(eventQueueUrl, "/messages/offenderChanged.json".readResourceAsText())
-
-      await until { checkDocumentUpdated("mappa.notes", "Created") }
+      // Then the MAPPA details are returned from a search
+      await untilCallTo { indexService.getIndexCount(SyncIndex.GREEN) } matches { it == 1L }
       val result = searchByCrn("X123456").hits.asList()[0].sourceAsString
       assertThatJson(result).node("mappa.level").isEqualTo(1)
       assertThatJson(result).node("mappa.startDate").isEqualTo("2021-02-08")
@@ -187,19 +184,9 @@ class OffenderUpdateMessageTest : IntegrationTestBase() {
 
     @Test
     fun `Existing offender with MAPPA - updated MAPPA details are returned`() {
-      // Given there is a saved offender with MAPPA details
-      communityApi.stubGetOffender("X123456")
-      communityApi.stubGetMappaDetails("X123456")
-      await untilCallTo { getNumberOfMessagesCurrentlyOnEventQueue() } matches { it == 0 }
-      eventAwsSqsClient.sendMessage(eventQueueUrl, "/messages/offenderChanged.json".readResourceAsText())
-      await untilCallTo { indexService.getIndexCount(SyncIndex.GREEN) } matches { it == 1L }
+      `Given Elasticearch holds an offender`(withMappa = true)
 
-      // When I change the MAPPA details
-      communityApi.resetAll()
-      communityApi.stubGetOffender("X123456")
-      communityApi.stubGetMappaDetails(crn = "X123456", level = 2, teamCode = "NEWTEAM", notes = "Updated")
-      await untilCallTo { getNumberOfMessagesCurrentlyOnEventQueue() } matches { it == 0 }
-      eventAwsSqsClient.sendMessage(eventQueueUrl, "/messages/offenderChanged.json".readResourceAsText())
+      `When I update the offender`(withMappa = true)
 
       // Then the MAPPA details are returned from a search
       await until { checkDocumentUpdated("mappa.notes", "Updated") }
@@ -210,40 +197,19 @@ class OffenderUpdateMessageTest : IntegrationTestBase() {
 
     @Test
     fun `Existing offender with MAPPA - MAPPA is removed`() {
-      // Given there is a saved offender with MAPPA details
-      communityApi.stubGetOffender("X123456")
-      communityApi.stubGetMappaDetails("X123456")
-      await untilCallTo { getNumberOfMessagesCurrentlyOnEventQueue() } matches { it == 0 }
-      eventAwsSqsClient.sendMessage(eventQueueUrl, "/messages/offenderChanged.json".readResourceAsText())
-      await untilCallTo { indexService.getIndexCount(SyncIndex.GREEN) } matches { it == 1L }
+      `Given Elasticearch holds an offender`(withMappa = true)
 
-      // When I save the offender again without MAPPA details
-      communityApi.resetAll()
-      communityApi.stubGetOffender("X123456")
-      communityApi.stubMappaNotFound("X123456")
-      await untilCallTo { getNumberOfMessagesCurrentlyOnEventQueue() } matches { it == 0 }
-      eventAwsSqsClient.sendMessage(eventQueueUrl, "/messages/offenderChanged.json".readResourceAsText())
+      `When I update the offender`(withMappa = false)
 
       // Then the mappa details will be removed from Elasticsearch
       await until { checkDocumentUpdated("mappa", null) }
     }
 
-
     @Test
     fun `Existing offender without MAPPA - new MAPPA details are returned`() {
-      // Given there is a saved offender without MAPPA details
-      communityApi.stubGetOffender("X123456")
-      communityApi.stubMappaNotFound("X123456")
-      await untilCallTo { getNumberOfMessagesCurrentlyOnEventQueue() } matches { it == 0 }
-      eventAwsSqsClient.sendMessage(eventQueueUrl, "/messages/offenderChanged.json".readResourceAsText())
-      await untilCallTo { indexService.getIndexCount(SyncIndex.GREEN) } matches { it == 1L }
+      `Given Elasticearch holds an offender`(withMappa = false)
 
-      // When I save the offender again with MAPPA details
-      communityApi.resetAll()
-      communityApi.stubGetOffender("X123456")
-      communityApi.stubGetMappaDetails("X123456", level = 2, teamCode = "NEWTEAM", notes = "Updated")
-      await untilCallTo { getNumberOfMessagesCurrentlyOnEventQueue() } matches { it == 0 }
-      eventAwsSqsClient.sendMessage(eventQueueUrl, "/messages/offenderChanged.json".readResourceAsText())
+      `When I update the offender`(withMappa = true)
 
       // Then the MAPPA details are returned from a search
       await until { checkDocumentUpdated("mappa.notes", "Updated") }
@@ -252,5 +218,28 @@ class OffenderUpdateMessageTest : IntegrationTestBase() {
       assertThatJson(result).node("mappa.team.code").isEqualTo("NEWTEAM")
     }
 
+    private fun `Given Elasticearch holds an offender`(withMappa: Boolean) {
+      communityApi.stubGetOffender("X123456")
+      if (withMappa) {
+        communityApi.stubGetMappaDetails("X123456")
+      } else {
+        communityApi.stubMappaNotFound("X123456")
+      }
+      await untilCallTo { getNumberOfMessagesCurrentlyOnEventQueue() } matches { it == 0 }
+      eventAwsSqsClient.sendMessage(eventQueueUrl, "/messages/offenderChanged.json".readResourceAsText())
+      await untilCallTo { indexService.getIndexCount(SyncIndex.GREEN) } matches { it == 1L }
+    }
+
+    private fun `When I update the offender`(withMappa: Boolean) {
+      communityApi.resetAll()
+      communityApi.stubGetOffender("X123456")
+      if (withMappa) {
+        communityApi.stubGetMappaDetails("X123456", level = 2, teamCode = "NEWTEAM", notes = "Updated")
+      } else {
+        communityApi.stubMappaNotFound("X123456")
+      }
+      await untilCallTo { getNumberOfMessagesCurrentlyOnEventQueue() } matches { it == 0 }
+      eventAwsSqsClient.sendMessage(eventQueueUrl, "/messages/offenderChanged.json".readResourceAsText())
+    }
   }
 }
