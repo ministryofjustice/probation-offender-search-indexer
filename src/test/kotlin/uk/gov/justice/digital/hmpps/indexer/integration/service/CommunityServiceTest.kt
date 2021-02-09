@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.indexer.integration.service
 
 import arrow.core.right
+import arrow.core.some
 import com.github.tomakehurst.wiremock.client.WireMock
 import io.kotest.assertions.arrow.either.shouldBeLeft
 import io.kotest.assertions.arrow.either.shouldBeRight
@@ -106,21 +107,7 @@ internal class CommunityServiceTest : IntegrationTestBase() {
         WireMock.get(WireMock.anyUrl()).willReturn(
           WireMock.aResponse()
             .withHeader("Content-Type", "application/json")
-            .withBody(
-              """{
-                    "level": 1,
-                    "levelDescription": "MAPPA Level 1",
-                    "category": 2,
-                    "categoryDescription": "MAPPA Category 2",
-                    "startDate": "2021-02-08",
-                    "reviewDate": "2021-05-08",
-                    "team": {"code": "N02AAM", "description": "OMIC OMU A"},
-                    "officer": {"code:": "N02AAMU", "forenames": "Unallocated", "surname": "Staff"},
-                    "probationArea": {"code": "N02", "description": "NPS London"},
-                    "notes": "Registered level 1 cat 2"
-                  }
-               """.trimIndent()
-            )
+            .withBody(someMappaDetailsJson())
             .withStatus(HttpURLConnection.HTTP_OK)
         )
       )
@@ -196,21 +183,7 @@ internal class CommunityServiceTest : IntegrationTestBase() {
         WireMock.get(WireMock.urlEqualTo("/secure/offenders/crn/X12345/risk/mappa")).willReturn(
           WireMock.aResponse()
             .withHeader("Content-Type", "application/json")
-            .withBody(
-              """{
-                    "level": 1,
-                    "levelDescription": "MAPPA Level 1",
-                    "category": 2,
-                    "categoryDescription": "MAPPA Category 2",
-                    "startDate": "2021-02-08",
-                    "reviewDate": "2021-05-08",
-                    "team": {"code": "N02AAM", "description": "OMIC OMU A"},
-                    "officer": {"code:": "N02AAMU", "forenames": "Unallocated", "surname": "Staff"},
-                    "probationArea": {"code": "N02", "description": "NPS London"},
-                    "notes": "Registered level 1 cat 2"
-                  }
-               """.trimIndent()
-            )
+            .withBody(someMappaDetailsJson())
             .withStatus(HttpURLConnection.HTTP_OK)
         )
       )
@@ -495,4 +468,19 @@ internal class CommunityServiceTest : IntegrationTestBase() {
       assertThat(offenders.content).hasSize(10)
     }
   }
+
+  private fun someMappaDetailsJson(): String =
+    """{
+         "level": 1,
+         "levelDescription": "MAPPA Level 1",
+         "category": 2,
+         "categoryDescription": "MAPPA Category 2",
+         "startDate": "2021-02-08",
+         "reviewDate": "2021-05-08",
+         "team": {"code": "N02AAM", "description": "OMIC OMU A"},
+         "officer": {"code:": "N02AAMU", "forenames": "Unallocated", "surname": "Staff"},
+         "probationArea": {"code": "N02", "description": "NPS London"},
+         "notes": "Registered level 1 cat 2"
+       }
+    """.trimIndent()
 }
