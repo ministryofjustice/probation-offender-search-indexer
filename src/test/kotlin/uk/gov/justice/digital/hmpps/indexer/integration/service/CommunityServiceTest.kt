@@ -115,7 +115,7 @@ internal class CommunityServiceTest : IntegrationTestBase() {
                     "startDate": "2021-02-08",
                     "reviewDate": "2021-05-08",
                     "team": {"code": "N02AAM", "description": "OMIC OMU A"},
-                    "officer": {"code:": "N02AAMU", "forenames": "Unallocated", "surname"; "Staff"},
+                    "officer": {"code:": "N02AAMU", "forenames": "Unallocated", "surname": "Staff"},
                     "probationArea": {"code": "N02", "description": "NPS London"},
                     "notes": "Registered level 1 cat 2"
                   }
