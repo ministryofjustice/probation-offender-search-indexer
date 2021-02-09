@@ -66,7 +66,7 @@ class CommunityService(@Qualifier("communityApiWebClient") private val webClient
 }
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-data class Offender(private val offenderJson: String, private val offenderMappaJson: String?) {
+data class Offender(private val offenderJson: String, private val offenderMappaJson: String? = null) {
   private val detail: OffenderDetail = jacksonObjectMapper().readValue(offenderJson, OffenderDetail::class.java)
   val json = mergeJson(offenderJson, offenderMappaJson)
   val offenderId: Long
@@ -79,7 +79,7 @@ data class Offender(private val offenderJson: String, private val offenderMappaJ
     }
 }
 
-private fun mergeJson(offenderJson: String, offenderMappaJson: String?): String {
+private fun mergeJson(offenderJson: String, offenderMappaJson: String? = null): String {
   val offenderMappaMap: MutableMap<String, Any?>? = offenderMappaJson?.let { jacksonObjectMapper().readValue(offenderMappaJson) }
   val offenderMap: MutableMap<String, Any?> = offenderJson.let { jacksonObjectMapper().readValue(offenderJson) }
   return (offenderMap + ("mappa" to offenderMappaMap)).let { jacksonObjectMapper().writeValueAsString(it) }
