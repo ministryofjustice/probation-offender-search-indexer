@@ -4,11 +4,14 @@ import arrow.core.right
 import com.github.tomakehurst.wiremock.client.WireMock
 import io.kotest.assertions.arrow.either.shouldBeLeft
 import io.kotest.assertions.arrow.either.shouldBeRight
+import net.javacrumbs.jsonunit.assertj.assertThatJson
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.indexer.integration.IntegrationTestBase
 import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.CommunityApiExtension
 import uk.gov.justice.digital.hmpps.indexer.service.CommunityService
@@ -73,7 +76,156 @@ internal class CommunityServiceTest : IntegrationTestBase() {
       val offender = service.getOffender("X12345").right()
 
       offender shouldBeRight {
-        it.map { offender -> assertThat(offender.json).contains(""""crn": "X12345"""") }
+        it.map { offenderJson -> assertThat(offenderJson).contains(""""crn": "X12345"""") }
+      }
+    }
+
+    @Test
+    fun `a 404 not found is an expected error`() {
+      CommunityApiExtension.communityApi.stubFor(
+        WireMock.get(WireMock.anyUrl()).willReturn(
+          WireMock.aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withBody("{\"error\": \"not found\"}")
+            .withStatus(HttpURLConnection.HTTP_NOT_FOUND)
+        )
+      )
+
+      val result = service.getOffender("X12345")
+
+      result shouldBeLeft OffenderNotFoundError("X12345")
+    }
+  }
+
+  @Nested
+  inner class GetOffenderMappa {
+
+    @Test
+    fun `will get offender MAPPA using the crn `() {
+      CommunityApiExtension.communityApi.stubFor(
+        WireMock.get(WireMock.anyUrl()).willReturn(
+          WireMock.aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withBody(someMappaDetailsJson())
+            .withStatus(HttpURLConnection.HTTP_OK)
+        )
+      )
+
+      val offenderMappaDetail = service.getOffenderMappa("X12345")
+
+      CommunityApiExtension.communityApi.verify(
+        WireMock.getRequestedFor(WireMock.urlEqualTo("/secure/offenders/crn/X12345/risk/mappa"))
+          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE"))
+      )
+      assertThat(offenderMappaDetail).isNotNull
+      assertThat(offenderMappaDetail).isNotEmpty
+    }
+
+    @Test
+    fun `will return null if not found`() {
+      CommunityApiExtension.communityApi.stubFor(
+        WireMock.get(WireMock.anyUrl()).willReturn(
+          WireMock.aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpURLConnection.HTTP_NOT_FOUND)
+        )
+      )
+
+      val offenderMappaDetail = service.getOffenderMappa("X12345")
+
+      CommunityApiExtension.communityApi.verify(
+        WireMock.getRequestedFor(WireMock.urlEqualTo("/secure/offenders/crn/X12345/risk/mappa"))
+          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE"))
+      )
+      assertThat(offenderMappaDetail).isNull()
+    }
+
+    @Test
+    fun `will throw any other exception`() {
+      CommunityApiExtension.communityApi.stubFor(
+        WireMock.get(WireMock.anyUrl()).willReturn(
+          WireMock.aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpURLConnection.HTTP_BAD_REQUEST)
+        )
+      )
+
+      assertThatThrownBy { service.getOffenderMappa("X12345") }.isInstanceOf(WebClientResponseException::class.java)
+
+      CommunityApiExtension.communityApi.verify(
+        WireMock.getRequestedFor(WireMock.urlEqualTo("/secure/offenders/crn/X12345/risk/mappa"))
+          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE"))
+      )
+    }
+  }
+
+  @Nested
+  inner class GetOffenderSearchDetails {
+    @Test
+    fun `can retrieve both offender details and mappa`() {
+      CommunityApiExtension.communityApi.stubFor(
+        WireMock.get(WireMock.urlEqualTo("/secure/offenders/crn/X12345/all")).willReturn(
+          WireMock.aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withBody(
+              """{
+            "offenderId": 99,
+            "otherIds": {
+              "crn": "X12345"
+            }
+          }"""
+            )
+            .withStatus(HttpURLConnection.HTTP_OK)
+        )
+      )
+      CommunityApiExtension.communityApi.stubFor(
+        WireMock.get(WireMock.urlEqualTo("/secure/offenders/crn/X12345/risk/mappa")).willReturn(
+          WireMock.aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withBody(someMappaDetailsJson())
+            .withStatus(HttpURLConnection.HTTP_OK)
+        )
+      )
+      val result = service.getOffenderSearchDetails("X12345")
+
+      result shouldBeRight {
+        assertThatJson(it.json).node("offenderId").isEqualTo(99)
+        assertThatJson(it.json).node("otherIds.crn").isEqualTo("X12345")
+        assertThatJson(it.json).node("mappa.level").isEqualTo(1)
+        assertThatJson(it.json).node("mappa.team.code").isEqualTo("N02AAM")
+      }
+    }
+
+    @Test
+    fun `can retrieve offender details without mappa`() {
+      CommunityApiExtension.communityApi.stubFor(
+        WireMock.get(WireMock.urlEqualTo("/secure/offenders/crn/X12345/all")).willReturn(
+          WireMock.aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withBody(
+              """{
+            "offenderId": 99,
+            "otherIds": {
+              "crn": "X12345"
+            }
+          }"""
+            )
+            .withStatus(HttpURLConnection.HTTP_OK)
+        )
+      )
+      CommunityApiExtension.communityApi.stubFor(
+        WireMock.get(WireMock.urlEqualTo("/secure/offenders/crn/X12345/risk/mappa")).willReturn(
+          WireMock.aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpURLConnection.HTTP_NOT_FOUND)
+        )
+      )
+      val result = service.getOffenderSearchDetails("X12345")
+
+      result shouldBeRight {
+        assertThatJson(it.json).node("offenderId").isEqualTo(99)
+        assertThatJson(it.json).node("otherIds.crn").isEqualTo("X12345")
+        assertThatJson(it.json).node("mappa").isNull()
       }
     }
 
@@ -95,27 +247,9 @@ internal class CommunityServiceTest : IntegrationTestBase() {
         )
       )
 
-      val offender = service.getOffender("X12345")
+      val offender = service.getOffenderSearchDetails("X12345")
 
-      offender shouldBeRight {
-        assertThat(it.crn).isEqualTo("X12345")
-      }
-    }
-
-    @Test
-    fun `a 404 not found is an expected error`() {
-      CommunityApiExtension.communityApi.stubFor(
-        WireMock.get(WireMock.anyUrl()).willReturn(
-          WireMock.aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withBody("{\"error\": \"not found\"}")
-            .withStatus(HttpURLConnection.HTTP_NOT_FOUND)
-        )
-      )
-
-      val result = service.getOffender("X12345")
-
-      result shouldBeLeft OffenderNotFoundError("X12345")
+      offender shouldBeRight { assertThat(it.crn).isEqualTo("X12345") }
     }
   }
 
@@ -332,4 +466,19 @@ internal class CommunityServiceTest : IntegrationTestBase() {
       assertThat(offenders.content).hasSize(10)
     }
   }
+
+  private fun someMappaDetailsJson(): String =
+    """{
+         "level": 1,
+         "levelDescription": "MAPPA Level 1",
+         "category": 2,
+         "categoryDescription": "MAPPA Category 2",
+         "startDate": "2021-02-08",
+         "reviewDate": "2021-05-08",
+         "team": {"code": "N02AAM", "description": "OMIC OMU A"},
+         "officer": {"code:": "N02AAMU", "forenames": "Unallocated", "surname": "Staff"},
+         "probationArea": {"code": "N02", "description": "NPS London"},
+         "notes": "Registered level 1 cat 2"
+       }
+    """.trimIndent()
 }

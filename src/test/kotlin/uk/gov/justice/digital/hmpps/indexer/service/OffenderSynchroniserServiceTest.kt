@@ -30,14 +30,15 @@ internal class OffenderSynchroniserServiceTest {
 
     @BeforeEach
     internal fun setUp() {
-      whenever(communityApi.getOffender(any())).thenReturn(Offender("{}").right())
+      whenever(communityApi.getOffenderSearchDetails(any()))
+        .thenReturn(Offender("""{"offenderId": 99, "otherIds": {"crn": "X12345"}}""").right())
     }
 
     @Test
     fun `should retrieve offender`() {
       service.synchroniseOffender("X12345", GREEN)
 
-      verify(communityApi).getOffender("X12345")
+      verify(communityApi).getOffenderSearchDetails("X12345")
     }
 
     @Test

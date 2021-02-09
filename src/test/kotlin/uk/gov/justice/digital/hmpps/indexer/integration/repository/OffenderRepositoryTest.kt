@@ -184,7 +184,9 @@ internal class OffenderRepositoryTest : IntegrationTestBase() {
 
       val json = highLevelClient.get(GetRequest(BLUE.indexName).id("X12345"), RequestOptions.DEFAULT).sourceAsString
 
-      assertThatJson(json).isEqualTo("""{"offenderId":99,"otherIds":{"crn":"X12345"}}""")
+      assertThatJson(json).node("offenderId").isEqualTo(99)
+      assertThatJson(json).node("otherIds.crn").isEqualTo("X12345")
+      assertThatJson(json).node("mappa").isNull()
       val offenderDetail = gson.fromJson(json, OffenderDetail::class.java)
       assertThat(offenderDetail.otherIds.crn).isEqualTo("X12345")
     }

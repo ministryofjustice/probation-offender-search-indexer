@@ -88,6 +88,30 @@ class CommunityApiMockServer : WireMockServer(WIREMOCK_PORT) {
       )
     )
 
+  fun stubGetMappaDetails(
+    crn: String = "X123456",
+    level: Int = 1,
+    teamCode: String = "N02AAM",
+    notes: String = "Mappa Details"
+  ): StubMapping =
+    stubFor(
+      get("/secure/offenders/crn/$crn/risk/mappa").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withBody(aMappaDetails(level, teamCode, notes))
+          .withStatus(200)
+      )
+    )
+
+  fun stubMappaNotFound(crn: String): StubMapping =
+    stubFor(
+      get("/secure/offenders/crn/$crn/risk/mappa").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(404)
+      )
+    )
+
   fun verifyGetOffender(crn: String = "X123456") =
     verify(
       getRequestedFor(urlEqualTo("/secure/offenders/crn/$crn/all"))
@@ -106,6 +130,7 @@ class CommunityApiMockServer : WireMockServer(WIREMOCK_PORT) {
     stubPageOfOffenders(pageSize, *crns)
     crns.forEach {
       stubGetOffender(it)
+      stubMappaNotFound(it)
     }
   }
 
@@ -241,6 +266,25 @@ class CommunityApiMockServer : WireMockServer(WIREMOCK_PORT) {
     """.trimIndent()
       .replace("\"pncNumber\": \"null\",", "")
       .replace("\"croNumber\": \"null\",", "")
+
+  private fun aMappaDetails(
+    level: Int = 1,
+    teamCode: String = "N02AAM",
+    notes: String = "Mappa Details"
+  ): String =
+    """{
+         "level": $level,
+         "levelDescription": "MAPPA Level $level",
+         "category": 2,
+         "categoryDescription": "MAPPA Category 2",
+         "startDate": "2021-02-08",
+         "reviewDate": "2021-05-08",
+         "team": {"code": "$teamCode", "description": "OMIC OMU A"},
+         "officer": {"code:": "N02AAMU", "forenames": "Unallocated", "surname": "Staff"},
+         "probationArea": {"code": "N02", "description": "NPS London"},
+         "notes": "$notes"
+       }
+    """.trimIndent()
 
   private fun stubAllOffenders(count: Long) {
     CommunityApiExtension.communityApi.stubFor(
