@@ -1,7 +1,6 @@
 package uk.gov.justice.digital.hmpps.indexer.integration.service
 
 import arrow.core.right
-import arrow.core.some
 import com.github.tomakehurst.wiremock.client.WireMock
 import io.kotest.assertions.arrow.either.shouldBeLeft
 import io.kotest.assertions.arrow.either.shouldBeRight
@@ -228,7 +227,6 @@ internal class CommunityServiceTest : IntegrationTestBase() {
         assertThatJson(it.json).node("otherIds.crn").isEqualTo("X12345")
         assertThatJson(it.json).node("mappa").isNull()
       }
-
     }
 
     @Test
