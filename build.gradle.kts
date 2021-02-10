@@ -1,10 +1,15 @@
 plugins {
   id("uk.gov.justice.hmpps.gradle-spring-boot") version "3.1.0"
   kotlin("plugin.spring") version "1.4.30"
+  id("org.unbroken-dome.test-sets") version "3.0.1"
 }
 
 dependencyCheck {
   suppressionFiles.add("elasticsearch-suppressions.xml")
+}
+
+testSets {
+  "testSmoke"()
 }
 
 dependencies {
@@ -36,4 +41,5 @@ dependencies {
   testImplementation("net.javacrumbs.json-unit:json-unit-assertj:2.23.0")
   testImplementation("io.swagger.parser.v3:swagger-parser-v2-converter:2.0.24")
   testImplementation("org.mockito:mockito-inline:3.7.7")
+  testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactive:1.4.2")
 }
