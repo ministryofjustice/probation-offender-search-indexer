@@ -50,5 +50,7 @@ class SmokeTest {
   }
 
   data class TestStatus(val description: String, val progress: TestProgress)
-  enum class TestProgress { SUCCESS; }
+
+  @Suppress("unused")
+  enum class TestProgress { INCOMPLETE, COMPLETE, SUCCESS, FAIL; }
 }
