@@ -117,19 +117,7 @@ workflows:
             - build_docker
       - smoke-test:
           requires:
-            - validate
-      - request-preprod-approval:
-          type: approval
-          requires:
             - deploy_dev
-      - hmpps/deploy_env:
-          name: deploy_staging
-          env: "staging"
-          context:
-            - hmpps-common-vars
-            - probation-offender-search-indexer-staging
-          requires:
-            - request-preprod-approval
       - hmpps/deploy_env:
           name: deploy_preprod
           env: "preprod"
@@ -137,11 +125,19 @@ workflows:
             - hmpps-common-vars
             - probation-offender-search-indexer-preprod
           requires:
-            - request-preprod-approval
+            - smoke-test
+      - hmpps/deploy_env:
+          name: deploy_staging
+          env: "staging"
+          context:
+            - hmpps-common-vars
+            - probation-offender-search-indexer-staging
+          requires:
+            - deploy_preprod
       - request-prod-approval:
           type: approval
           requires:
-            - deploy_preprod
+            - deploy_staging
       - hmpps/deploy_env:
           name: deploy_prod
           env: "prod"

@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisontoprobation.smoketest
+package uk.gov.justice.digital.hmpps.indexer.smoketest
 
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty

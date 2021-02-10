@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisontoprobation.smoketest
+package uk.gov.justice.digital.hmpps.indexer.smoketest
 
 import kotlinx.coroutines.reactive.awaitLast
 import kotlinx.coroutines.runBlocking
@@ -11,7 +11,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.core.publisher.Signal
-import uk.gov.justice.digital.hmpps.prisontoprobation.smoketest.SmokeTest.TestProgress.SUCCESS
+import uk.gov.justice.digital.hmpps.indexer.smoketest.SmokeTest.TestProgress.SUCCESS
 import java.time.Duration
 
 @SpringBootTest(classes = [SmokeTestConfiguration::class])
@@ -26,7 +26,7 @@ class SmokeTest {
   private lateinit var smokeTestWebClient: WebClient
 
   @Test
-  internal fun `Will reindex an offender that is changed in Delius`() {
+  internal fun `Will re-index an offender that is changed in Delius`() {
     val results = runBlocking {
       withTimeout(Duration.ofMinutes(5).toMillis()) {
         waitForResults()
@@ -50,5 +50,5 @@ class SmokeTest {
   }
 
   data class TestStatus(val description: String, val progress: TestProgress)
-  enum class TestProgress { INCOMPLETE, COMPLETE, SUCCESS, FAIL; }
+  enum class TestProgress { SUCCESS; }
 }
