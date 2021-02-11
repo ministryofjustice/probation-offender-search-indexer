@@ -257,7 +257,6 @@ class OffenderUpdateMessageTest : IntegrationTestBase() {
         DELETE -> eventAwsSqsClient.sendMessage(eventQueueUrl, "/messages/offenderRegistrationDeleted.json".readResourceAsText())
       }
     }
-
   }
 
   private enum class MappaRegistrationType { REGISTER, DEREGISTER, DELETE }
