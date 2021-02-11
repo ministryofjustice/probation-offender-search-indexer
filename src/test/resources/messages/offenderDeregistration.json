@@ -1,0 +1,18 @@
+{
+  "Type" : "Notification",
+  "MessageId" : "b116e509-3f13-5cf9-b714-bd972fdb3439",
+  "TopicArn" : "arn:aws:sns:eu-west-2:754256621582:cloud-platform-Digital-Prison-Services-453cac1179377186788c5fcd12525870",
+  "Message" : "{\"offenderId\":490001467,\"crn\":\"X123456\",\"sourceId\":2500154556,\"eventDatetime\":\"2021-02-10T16:49:10\"}",
+  "Timestamp" : "2021-02-10T16:49:12.388Z",
+  "SignatureVersion" : "1",
+  "Signature" : "uBci76xrBX7LU6TxzXg6X+bWb3NH3WkXPCzq3YGwkGQswdVjT4A4gmM3bjIE4ivsje2GnzeYYV17i3M/hIoiej0B4R+Lj5liCNVnLHkPG0wmSaxB3KXA+TZWxzb+/OIbV61ceoaFQZNXyvirpHnRWf7F6nv6Mp/br64bUX806zAaOzYEzy1/HHoo8h6SVX9uBOLKU+nEs1tNl0nj57WGD307T5N4gqEuvIjyxx9aHVxaoK3RQwbVqvcUxc9Wnc6nd0kpFlJ7qoa+49UQl7MgaFhT9goeHp6yPR1+1LXACC1aBg+gEK07FCXdJhHIS/hVEXMspMbHR1olGMICXx+2lg==",
+  "SigningCertURL" : "https://sns.eu-west-2.amazonaws.com/SimpleNotificationService-010a507c1833636cd94bdb98bd93083a.pem",
+  "UnsubscribeURL" : "https://sns.eu-west-2.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:eu-west-2:754256621582:cloud-platform-Digital-Prison-Services-453cac1179377186788c5fcd12525870:02881ac2-da5b-4446-a193-bd105cde6076",
+  "MessageAttributes" : {
+    "eventType" : {"Type":"String","Value":"OFFENDER_REGISTRATION_DEREGISTERED"},
+    "source" : {"Type":"String","Value":"delius"},
+    "id" : {"Type":"String","Value":"8b87905e-c08d-295f-9743-63a9ad033155"},
+    "contentType" : {"Type":"String","Value":"text/plain;charset=UTF-8"},
+    "timestamp" : {"Type":"Number.java.lang.Long","Value":"1612975752381"}
+  }
+}

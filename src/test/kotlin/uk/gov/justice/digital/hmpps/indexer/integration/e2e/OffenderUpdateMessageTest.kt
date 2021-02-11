@@ -15,6 +15,9 @@ import org.slf4j.LoggerFactory
 import uk.gov.justice.digital.hmpps.indexer.helpers.findLogAppender
 import uk.gov.justice.digital.hmpps.indexer.helpers.hasLogMessageContaining
 import uk.gov.justice.digital.hmpps.indexer.integration.IntegrationTestBase
+import uk.gov.justice.digital.hmpps.indexer.integration.e2e.OffenderUpdateMessageTest.MappaRegistrationType.DELETE
+import uk.gov.justice.digital.hmpps.indexer.integration.e2e.OffenderUpdateMessageTest.MappaRegistrationType.DEREGISTER
+import uk.gov.justice.digital.hmpps.indexer.integration.e2e.OffenderUpdateMessageTest.MappaRegistrationType.REGISTER
 import uk.gov.justice.digital.hmpps.indexer.integration.readResourceAsText
 import uk.gov.justice.digital.hmpps.indexer.integration.wiremock.CommunityApiExtension.Companion.communityApi
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
@@ -186,20 +189,30 @@ class OffenderUpdateMessageTest : IntegrationTestBase() {
     fun `Existing offender with MAPPA - updated MAPPA details are returned`() {
       `Given Elasticearch holds an offender`(withMappa = true)
 
-      `When I update the offender`(withMappa = true)
+      `When I update the offender`(withMappaRegistrationType = REGISTER)
 
       // Then the MAPPA details are returned from a search
-      await until { checkDocumentUpdated("mappa.notes", "Updated") }
+      await until { checkDocumentUpdated("mappa.notes", "Notes for updated MAPPA details") }
       val result = searchByCrn("X123456").hits.asList()[0].sourceAsString
       assertThatJson(result).node("mappa.level").isEqualTo(2)
       assertThatJson(result).node("mappa.team.code").isEqualTo("NEWTEAM")
     }
 
     @Test
-    fun `Existing offender with MAPPA - MAPPA is removed`() {
+    fun `Existing offender with MAPPA - MAPPA is removed after deregister`() {
       `Given Elasticearch holds an offender`(withMappa = true)
 
-      `When I update the offender`(withMappa = false)
+      `When I update the offender`(withMappaRegistrationType = DEREGISTER)
+
+      // Then the mappa details will be removed from Elasticsearch
+      await until { checkDocumentUpdated("mappa", null) }
+    }
+
+    @Test
+    fun `Existing offender with MAPPA - MAPPA is removed after delete`() {
+      `Given Elasticearch holds an offender`(withMappa = true)
+
+      `When I update the offender`(withMappaRegistrationType = DELETE)
 
       // Then the mappa details will be removed from Elasticsearch
       await until { checkDocumentUpdated("mappa", null) }
@@ -209,10 +222,10 @@ class OffenderUpdateMessageTest : IntegrationTestBase() {
     fun `Existing offender without MAPPA - new MAPPA details are returned`() {
       `Given Elasticearch holds an offender`(withMappa = false)
 
-      `When I update the offender`(withMappa = true)
+      `When I update the offender`(withMappaRegistrationType = REGISTER)
 
       // Then the MAPPA details are returned from a search
-      await until { checkDocumentUpdated("mappa.notes", "Updated") }
+      await until { checkDocumentUpdated("mappa.notes", "Notes for updated MAPPA details") }
       val result = searchByCrn("X123456").hits.asList()[0].sourceAsString
       assertThatJson(result).node("mappa.level").isEqualTo(2)
       assertThatJson(result).node("mappa.team.code").isEqualTo("NEWTEAM")
@@ -230,16 +243,21 @@ class OffenderUpdateMessageTest : IntegrationTestBase() {
       await untilCallTo { indexService.getIndexCount(SyncIndex.GREEN) } matches { it == 1L }
     }
 
-    private fun `When I update the offender`(withMappa: Boolean) {
+    private fun `When I update the offender`(withMappaRegistrationType: MappaRegistrationType) {
       communityApi.resetAll()
       communityApi.stubGetOffender("X123456")
-      if (withMappa) {
-        communityApi.stubGetMappaDetails("X123456", level = 2, teamCode = "NEWTEAM", notes = "Updated")
-      } else {
-        communityApi.stubMappaNotFound("X123456")
+      when (withMappaRegistrationType) {
+        REGISTER -> communityApi.stubGetMappaDetails("X123456", level = 2, teamCode = "NEWTEAM", notes = "Notes for updated MAPPA details")
+        DEREGISTER, DELETE -> communityApi.stubMappaNotFound("X123456")
       }
       await untilCallTo { getNumberOfMessagesCurrentlyOnEventQueue() } matches { it == 0 }
-      eventAwsSqsClient.sendMessage(eventQueueUrl, "/messages/offenderChanged.json".readResourceAsText())
+      when (withMappaRegistrationType) {
+        REGISTER -> eventAwsSqsClient.sendMessage(eventQueueUrl, "/messages/offenderRegistration.json".readResourceAsText())
+        DEREGISTER -> eventAwsSqsClient.sendMessage(eventQueueUrl, "/messages/offenderDeregistration.json".readResourceAsText())
+        DELETE -> eventAwsSqsClient.sendMessage(eventQueueUrl, "/messages/offenderRegistrationDeleted.json".readResourceAsText())
+      }
     }
   }
+
+  private enum class MappaRegistrationType { REGISTER, DEREGISTER, DELETE }
 }

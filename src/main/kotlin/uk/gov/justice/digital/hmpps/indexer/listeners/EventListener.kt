@@ -22,11 +22,13 @@ class EventListener(
     val (message, _, messageAttributes) = gson.fromJson(requestJson, Message::class.java)
 
     when (val eventType = messageAttributes.eventType.Value) {
-      "OFFENDER_CHANGED" -> indexService.updateOffender(gson.fromJson(message, OffenderChangedEvent::class.java).crn)
+      in updateEvents -> indexService.updateOffender(gson.fromJson(message, OffenderChangedEvent::class.java).crn)
       else -> log.error("We received a message of event type {} which I really wasn't expecting", eventType)
     }
   }
 }
+
+private val updateEvents = listOf("OFFENDER_CHANGED", "OFFENDER_REGISTRATION_CHANGED", "OFFENDER_REGISTRATION_DEREGISTERED", "OFFENDER_REGISTRATION_DELETED")
 
 data class EventType(val Value: String)
 data class MessageAttributes(val eventType: EventType)
