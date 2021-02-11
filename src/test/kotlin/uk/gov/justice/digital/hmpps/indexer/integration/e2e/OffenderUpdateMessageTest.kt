@@ -192,17 +192,27 @@ class OffenderUpdateMessageTest : IntegrationTestBase() {
       `When I update the offender`(withMappaRegistrationType = REGISTER)
 
       // Then the MAPPA details are returned from a search
-      await until { checkDocumentUpdated("mappa.notes", "Updated") }
+      await until { checkDocumentUpdated("mappa.notes", "Notes for updated MAPPA details") }
       val result = searchByCrn("X123456").hits.asList()[0].sourceAsString
       assertThatJson(result).node("mappa.level").isEqualTo(2)
       assertThatJson(result).node("mappa.team.code").isEqualTo("NEWTEAM")
     }
 
     @Test
-    fun `Existing offender with MAPPA - MAPPA is removed`() {
+    fun `Existing offender with MAPPA - MAPPA is removed after deregister`() {
       `Given Elasticearch holds an offender`(withMappa = true)
 
       `When I update the offender`(withMappaRegistrationType = DEREGISTER)
+
+      // Then the mappa details will be removed from Elasticsearch
+      await until { checkDocumentUpdated("mappa", null) }
+    }
+
+    @Test
+    fun `Existing offender with MAPPA - MAPPA is removed after delete`() {
+      `Given Elasticearch holds an offender`(withMappa = true)
+
+      `When I update the offender`(withMappaRegistrationType = DELETE)
 
       // Then the mappa details will be removed from Elasticsearch
       await until { checkDocumentUpdated("mappa", null) }
@@ -215,7 +225,7 @@ class OffenderUpdateMessageTest : IntegrationTestBase() {
       `When I update the offender`(withMappaRegistrationType = REGISTER)
 
       // Then the MAPPA details are returned from a search
-      await until { checkDocumentUpdated("mappa.notes", "Updated") }
+      await until { checkDocumentUpdated("mappa.notes", "Notes for updated MAPPA details") }
       val result = searchByCrn("X123456").hits.asList()[0].sourceAsString
       assertThatJson(result).node("mappa.level").isEqualTo(2)
       assertThatJson(result).node("mappa.team.code").isEqualTo("NEWTEAM")
@@ -237,7 +247,7 @@ class OffenderUpdateMessageTest : IntegrationTestBase() {
       communityApi.resetAll()
       communityApi.stubGetOffender("X123456")
       when (withMappaRegistrationType) {
-        REGISTER -> communityApi.stubGetMappaDetails("X123456", level = 2, teamCode = "NEWTEAM", notes = "Updated")
+        REGISTER -> communityApi.stubGetMappaDetails("X123456", level = 2, teamCode = "NEWTEAM", notes = "Notes for updated MAPPA details")
         DEREGISTER, DELETE -> communityApi.stubMappaNotFound("X123456")
       }
       await untilCallTo { getNumberOfMessagesCurrentlyOnEventQueue() } matches { it == 0 }
