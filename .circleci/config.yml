@@ -2,7 +2,7 @@ version: 2.1
 
 orbs:
   owasp: entur/owasp@0.0.14
-  hmpps: ministryofjustice/hmpps@2.2
+  hmpps: ministryofjustice/hmpps@2.3.1
 
 executors:
   validator:
@@ -18,13 +18,6 @@ executors:
     environment:
       _JAVA_OPTIONS: -Xmx256m -XX:ParallelGCThreads=2 -XX:ConcGCThreads=2 -XX:ParallelGCThreads=2 -Djava.util.concurrent.ForkJoinPool.common.parallelism=2 -Dorg.gradle.daemon=false
     working_directory: ~/app
-  smoketest:
-    docker:
-      - image: circleci/openjdk:11-jdk
-    environment:
-      _JAVA_OPTIONS: -Xmx256m -XX:ParallelGCThreads=2 -XX:ConcGCThreads=2 -XX:ParallelGCThreads=2 -Djava.util.concurrent.ForkJoinPool.common.parallelism=2 -Dorg.gradle.daemon=false
-    working_directory: ~/app
-
 
 jobs:
   validate:
@@ -68,25 +61,6 @@ jobs:
           paths:
             - build/libs
             - build.gradle.kts
-  smoke-test:
-    executor: smoketest
-    steps:
-      - checkout
-      - restore_cache:
-          keys:
-            - gradle-{{ checksum "build.gradle.kts" }}
-            - gradle-
-      - run:
-          command: ./gradlew testSmoke -Dtestlogger.showStandardStreams=true
-      - save_cache:
-          paths:
-            - ~/.gradle
-          key: gradle-{{ checksum "build.gradle.kts" }}
-      - store_test_results:
-          path: build/test-results
-      - store_artifacts:
-          path: build/reports/tests
-
 workflows:
   version: 2
   build-test-and-deploy:
@@ -115,8 +89,9 @@ workflows:
             - validate
             - helm_lint
             - build_docker
-      - smoke-test:
+      - hmpps/smoke_test:
           context: hmpps-smoketest-common-vars
+          name: smoke_test
           requires:
             - deploy_dev
       - hmpps/deploy_env:
@@ -126,7 +101,7 @@ workflows:
             - hmpps-common-vars
             - probation-offender-search-indexer-preprod
           requires:
-            - smoke-test
+            - smoke_test
       - hmpps/deploy_env:
           name: deploy_staging
           env: "staging"
