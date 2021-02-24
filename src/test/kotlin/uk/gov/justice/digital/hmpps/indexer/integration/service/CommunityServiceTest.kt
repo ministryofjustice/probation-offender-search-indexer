@@ -35,14 +35,14 @@ internal class CommunityServiceTest : IntegrationTestBase() {
         WireMock.get(WireMock.anyUrl()).willReturn(
           WireMock.aResponse()
             .withHeader("Content-Type", "application/json")
-            .withBody(
-              """{
-            "offenderId": 99,
-            "otherIds": {
-              "crn": "X12345"
+            .withBody("""
+            {
+              "offenderId": 99,
+              "otherIds": {
+                "crn": "X12345"
+              }
             }
-          }"""
-            )
+            """)
             .withStatus(HttpURLConnection.HTTP_OK)
         )
       )
@@ -112,6 +112,7 @@ internal class CommunityServiceTest : IntegrationTestBase() {
       )
 
       val offenderMappaDetail = service.getOffenderMappa("X12345")
+        .block()
 
       CommunityApiExtension.communityApi.verify(
         WireMock.getRequestedFor(WireMock.urlEqualTo("/secure/offenders/crn/X12345/risk/mappa"))
@@ -132,6 +133,7 @@ internal class CommunityServiceTest : IntegrationTestBase() {
       )
 
       val offenderMappaDetail = service.getOffenderMappa("X12345")
+        .block()
 
       CommunityApiExtension.communityApi.verify(
         WireMock.getRequestedFor(WireMock.urlEqualTo("/secure/offenders/crn/X12345/risk/mappa"))
@@ -150,7 +152,10 @@ internal class CommunityServiceTest : IntegrationTestBase() {
         )
       )
 
-      assertThatThrownBy { service.getOffenderMappa("X12345") }.isInstanceOf(WebClientResponseException::class.java)
+      assertThatThrownBy {
+        service.getOffenderMappa("X12345")
+          .block()
+      }.isInstanceOf(WebClientResponseException::class.java)
 
       CommunityApiExtension.communityApi.verify(
         WireMock.getRequestedFor(WireMock.urlEqualTo("/secure/offenders/crn/X12345/risk/mappa"))
@@ -160,9 +165,55 @@ internal class CommunityServiceTest : IntegrationTestBase() {
   }
 
   @Nested
+  inner class GetOffenderProbationStatus {
+
+    @Test
+    fun `will get offender probationStatus using the crn`() {
+      val json = someProbationStatusJson()
+      CommunityApiExtension.communityApi.stubFor(
+        WireMock.get(WireMock.urlEqualTo("/secure/offenders/crn/X12345/probationStatus")).willReturn(
+          WireMock.aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withBody(
+              json
+            )
+            .withStatus(HttpURLConnection.HTTP_OK)
+        )
+      )
+
+      val offenderProbationStatus = service.getOffenderProbationStatus("X12345").block()
+
+      CommunityApiExtension.communityApi.verify(
+        WireMock.getRequestedFor(WireMock.urlEqualTo("/secure/offenders/crn/X12345/probationStatus"))
+          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE"))
+      )
+      assertThat(offenderProbationStatus).isNotEmpty
+      assertThat(offenderProbationStatus).isEqualTo(json)
+    }
+
+    @Test
+    fun `will throw any exception`() {
+      CommunityApiExtension.communityApi.stubFor(
+        WireMock.get(WireMock.anyUrl()).willReturn(
+          WireMock.aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpURLConnection.HTTP_BAD_REQUEST)
+        )
+      )
+
+      assertThatThrownBy { service.getOffenderProbationStatus("X12345").block() }.isInstanceOf(WebClientResponseException::class.java)
+
+      CommunityApiExtension.communityApi.verify(
+        WireMock.getRequestedFor(WireMock.urlEqualTo("/secure/offenders/crn/X12345/probationStatus"))
+          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE"))
+      )
+    }
+  }
+
+  @Nested
   inner class GetOffenderSearchDetails {
     @Test
-    fun `can retrieve both offender details and mappa`() {
+    fun `can retrieve both offender details, probation status and mappa`() {
       CommunityApiExtension.communityApi.stubFor(
         WireMock.get(WireMock.urlEqualTo("/secure/offenders/crn/X12345/all")).willReturn(
           WireMock.aResponse()
@@ -178,6 +229,18 @@ internal class CommunityServiceTest : IntegrationTestBase() {
             .withStatus(HttpURLConnection.HTTP_OK)
         )
       )
+
+      CommunityApiExtension.communityApi.stubFor(
+        WireMock.get(WireMock.urlEqualTo("/secure/offenders/crn/X12345/probationStatus")).willReturn(
+          WireMock.aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withBody(
+              someProbationStatusJson()
+            )
+            .withStatus(HttpURLConnection.HTTP_OK)
+        )
+      )
+
       CommunityApiExtension.communityApi.stubFor(
         WireMock.get(WireMock.urlEqualTo("/secure/offenders/crn/X12345/risk/mappa")).willReturn(
           WireMock.aResponse()
@@ -193,11 +256,14 @@ internal class CommunityServiceTest : IntegrationTestBase() {
         assertThatJson(it.json).node("otherIds.crn").isEqualTo("X12345")
         assertThatJson(it.json).node("mappa.level").isEqualTo(1)
         assertThatJson(it.json).node("mappa.team.code").isEqualTo("N02AAM")
+        assertThatJson(it.json).node("probationStatus.status").isEqualTo("CURRENT")
+        assertThatJson(it.json).node("probationStatus.inBreach").isEqualTo(true)
+        assertThatJson(it.json).node("probationStatus.preSentenceActivity").isEqualTo(false)
       }
     }
 
     @Test
-    fun `can retrieve offender details without mappa`() {
+    fun `can retrieve offender details and probation status without mappa`() {
       CommunityApiExtension.communityApi.stubFor(
         WireMock.get(WireMock.urlEqualTo("/secure/offenders/crn/X12345/all")).willReturn(
           WireMock.aResponse()
@@ -213,6 +279,18 @@ internal class CommunityServiceTest : IntegrationTestBase() {
             .withStatus(HttpURLConnection.HTTP_OK)
         )
       )
+
+      CommunityApiExtension.communityApi.stubFor(
+        WireMock.get(WireMock.urlEqualTo("/secure/offenders/crn/X12345/probationStatus")).willReturn(
+          WireMock.aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withBody(
+              someProbationStatusJson()
+            )
+            .withStatus(HttpURLConnection.HTTP_OK)
+        )
+      )
+
       CommunityApiExtension.communityApi.stubFor(
         WireMock.get(WireMock.urlEqualTo("/secure/offenders/crn/X12345/risk/mappa")).willReturn(
           WireMock.aResponse()
@@ -226,6 +304,9 @@ internal class CommunityServiceTest : IntegrationTestBase() {
         assertThatJson(it.json).node("offenderId").isEqualTo(99)
         assertThatJson(it.json).node("otherIds.crn").isEqualTo("X12345")
         assertThatJson(it.json).node("mappa").isNull()
+        assertThatJson(it.json).node("probationStatus.status").isEqualTo("CURRENT")
+        assertThatJson(it.json).node("probationStatus.inBreach").isEqualTo(true)
+        assertThatJson(it.json).node("probationStatus.preSentenceActivity").isEqualTo(false)
       }
     }
 
@@ -466,6 +547,12 @@ internal class CommunityServiceTest : IntegrationTestBase() {
       assertThat(offenders.content).hasSize(10)
     }
   }
+
+  private fun someProbationStatusJson() = """{
+                  "status": "CURRENT",
+                  "inBreach": true,
+                  "preSentenceActivity": false
+              }""".trimIndent()
 
   private fun someMappaDetailsJson(): String =
     """{

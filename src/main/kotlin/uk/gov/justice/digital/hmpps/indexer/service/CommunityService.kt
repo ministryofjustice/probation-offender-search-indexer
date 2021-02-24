@@ -22,7 +22,7 @@ class CommunityService(@Qualifier("communityApiWebClient") private val webClient
 
   fun getOffenderSearchDetails(crn: String): Either<OffenderError, Offender> =
     getOffender(crn).flatMap {
-      return Offender(it, getOffenderMappa(crn)).right()
+      return Offender(it, getOffenderMappa(crn).block(), getOffenderProbationStatus(crn).block()).right()
     }
 
   fun getOffender(crn: String): Either<OffenderError, String> =
@@ -40,13 +40,11 @@ class CommunityService(@Qualifier("communityApiWebClient") private val webClient
     return if (exception is NotFound) Mono.empty() else Mono.error(exception)
   }
 
-  fun getOffenderMappa(crn: String): String? =
-    webClient.get()
-      .uri("/secure/offenders/crn/{crn}/risk/mappa", crn)
-      .retrieve()
-      .bodyToMono(String::class.java)
-      .onErrorResume(NotFound::class.java) { emptyIfNotFound(it) }
-      .block()
+  fun getOffenderMappa(crn: String) = webClient.get()
+    .uri("/secure/offenders/crn/{crn}/risk/mappa", crn)
+    .retrieve()
+    .bodyToMono(String::class.java)
+    .onErrorResume(NotFound::class.java) { emptyIfNotFound(it) }
 
   fun getCountAllOffenders(): OffendersPage {
     return webClient.get()
@@ -63,12 +61,22 @@ class CommunityService(@Qualifier("communityApiWebClient") private val webClient
       .bodyToMono(OffendersPage::class.java)
       .block()!!
   }
+
+  fun getOffenderProbationStatus(crn: String): Mono<String> =
+    webClient.get()
+      .uri("/secure/offenders/crn/{crn}/probationStatus", crn)
+      .retrieve()
+      .bodyToMono(String::class.java)
 }
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-data class Offender(private val offenderJson: String, private val offenderMappaJson: String? = null) {
+data class Offender(
+  private val offenderJson: String,
+  private val offenderMappaJson: String? = null,
+  private val probationStatus: String?
+) {
   private val detail: OffenderDetail = jacksonObjectMapper().readValue(offenderJson, OffenderDetail::class.java)
-  val json = mergeJson(offenderJson, offenderMappaJson)
+  val json = mergeJson(offenderJson, offenderMappaJson, probationStatus)
   val offenderId: Long
     get() {
       return detail.offenderId
@@ -79,10 +87,11 @@ data class Offender(private val offenderJson: String, private val offenderMappaJ
     }
 }
 
-private fun mergeJson(offenderJson: String, offenderMappaJson: String? = null): String {
+private fun mergeJson(offenderJson: String, offenderMappaJson: String? = null, probationStatus: String?): String {
   val offenderMappaMap: MutableMap<String, Any?>? = offenderMappaJson?.let { jacksonObjectMapper().readValue(offenderMappaJson) }
+  val offenderProbationStatusMap: MutableMap<String, Any?>? = probationStatus?.let { jacksonObjectMapper().readValue(probationStatus) }
   val offenderMap: MutableMap<String, Any?> = offenderJson.let { jacksonObjectMapper().readValue(offenderJson) }
-  return (offenderMap + ("mappa" to offenderMappaMap)).let { jacksonObjectMapper().writeValueAsString(it) }
+  return (offenderMap + ("mappa" to offenderMappaMap) + ("probationStatus" to offenderProbationStatusMap)).let { jacksonObjectMapper().writeValueAsString(it) }
 }
 
 @JsonIgnoreProperties(ignoreUnknown = true)

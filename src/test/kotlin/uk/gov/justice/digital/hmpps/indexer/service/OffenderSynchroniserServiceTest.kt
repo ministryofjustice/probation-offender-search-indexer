@@ -31,7 +31,8 @@ internal class OffenderSynchroniserServiceTest {
     @BeforeEach
     internal fun setUp() {
       whenever(communityApi.getOffenderSearchDetails(any()))
-        .thenReturn(Offender("""{"offenderId": 99, "otherIds": {"crn": "X12345"}}""").right())
+        .thenReturn(Offender("""{"offenderId": 99, "otherIds": {"crn": "X12345"}}""",
+          probationStatus = "{}").right())
     }
 
     @Test
