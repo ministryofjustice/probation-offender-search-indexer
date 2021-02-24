@@ -22,7 +22,9 @@ class CommunityService(@Qualifier("communityApiWebClient") private val webClient
 
   fun getOffenderSearchDetails(crn: String): Either<OffenderError, Offender> =
     getOffender(crn).flatMap {
-      return Offender(it, getOffenderMappa(crn).block(), getOffenderProbationStatus(crn).block()).right()
+      val offenderMappa = getOffenderMappa(crn)
+      val offenderProbationStatus = getOffenderProbationStatus(crn)
+      return Offender(it, offenderMappa.block(), offenderProbationStatus.block()).right()
     }
 
   fun getOffender(crn: String): Either<OffenderError, String> =
@@ -31,8 +33,7 @@ class CommunityService(@Qualifier("communityApiWebClient") private val webClient
       .retrieve()
       .bodyToMono(String::class.java)
       .onErrorResume(::emptyIfNotFound)
-      .block()
-      ?.let { it.right() }
+      .block()?.right()
       ?: OffenderNotFoundError(crn).left()
         .also { log.error("Offender with crn {} not found", crn) }
 
