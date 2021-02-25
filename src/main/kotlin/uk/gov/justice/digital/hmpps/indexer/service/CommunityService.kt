@@ -24,7 +24,7 @@ class CommunityService(@Qualifier("communityApiWebClient") private val webClient
     getOffender(crn).flatMap {
       val offenderMappa = getOffenderMappa(crn)
       val offenderProbationStatus = getOffenderProbationStatus(crn)
-      return Offender(it, offenderMappa.block(), offenderProbationStatus.block()).right()
+      return Offender(it, offenderProbationStatus.block(), offenderMappa.block()).right()
     }
 
   fun getOffender(crn: String): Either<OffenderError, String> =
@@ -73,8 +73,8 @@ class CommunityService(@Qualifier("communityApiWebClient") private val webClient
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class Offender(
   private val offenderJson: String,
-  private val offenderMappaJson: String? = null,
-  private val probationStatus: String?
+  private val probationStatus: String? = null,
+  private val offenderMappaJson: String? = null
 ) {
   private val detail: OffenderDetail = jacksonObjectMapper().readValue(offenderJson, OffenderDetail::class.java)
   val json = mergeJson(offenderJson, offenderMappaJson, probationStatus)

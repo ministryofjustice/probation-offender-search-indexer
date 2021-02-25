@@ -271,7 +271,7 @@ class OffenderUpdateMessageTest : IntegrationTestBase() {
     }
 
     @Test
-    fun `New offender with MAPPA - MAPPA details are returned`() {
+    fun `New offender with - probationStatus details are returned`() {
       communityApi.stubGetOffender("X123456")
       communityApi.stubGetProbationStatus("X123456")
 
@@ -279,8 +279,6 @@ class OffenderUpdateMessageTest : IntegrationTestBase() {
       eventAwsSqsClient.sendMessage(eventQueueUrl, "/messages/offenderChanged.json".readResourceAsText())
       await untilCallTo { indexService.getIndexCount(SyncIndex.GREEN) } matches { it == 1L }
 
-      // Then the MAPPA details are returned from a search
-      await untilCallTo { indexService.getIndexCount(SyncIndex.GREEN) } matches { it == 1L }
       val result = searchByCrn("X123456").hits.asList()[0].sourceAsString
       assertThatJson(result).node("probationStatus.status").isEqualTo("CURRENT")
       assertThatJson(result).node("probationStatus.inBreach").isEqualTo(true)

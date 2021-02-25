@@ -175,8 +175,7 @@ internal class OffenderRepositoryTest : IntegrationTestBase() {
     internal fun `will save offender in the correct index`() {
       offenderRepository.save(
         Offender(
-          OffenderDetail(otherIds = IDs(crn = "X12345"), offenderId = 99).asJson(),
-          probationStatus = "{}"
+          OffenderDetail(otherIds = IDs(crn = "X12345"), offenderId = 99).asJson()
         ),
         BLUE
       )
@@ -194,8 +193,7 @@ internal class OffenderRepositoryTest : IntegrationTestBase() {
     internal fun `will save json`() {
       offenderRepository.save(
         Offender(
-          OffenderDetail(otherIds = IDs(crn = "X12345"), offenderId = 99).asJson(),
-          probationStatus = "{}"
+          OffenderDetail(otherIds = IDs(crn = "X12345"), offenderId = 99).asJson()
         ),
         BLUE
       )
@@ -213,8 +211,7 @@ internal class OffenderRepositoryTest : IntegrationTestBase() {
     internal fun `will save two canonical forms of pncNumber in pncNumberLongYear and pncNumberShortYear`() {
       offenderRepository.save(
         Offender(
-          OffenderDetail(otherIds = IDs(crn = "X12345", pncNumber = "2016/01234Z"), offenderId = 99).asJson(),
-          probationStatus = "{}"
+          OffenderDetail(otherIds = IDs(crn = "X12345", pncNumber = "2016/01234Z"), offenderId = 99).asJson()
         ),
         BLUE
       )
@@ -230,8 +227,7 @@ internal class OffenderRepositoryTest : IntegrationTestBase() {
     internal fun `will save lowercase version of croNumber`() {
       offenderRepository.save(
         Offender(
-          OffenderDetail(offenderId = 99, otherIds = IDs(crn = "X12345", croNumber = "16/01234Z")).asJson(),
-          probationStatus = "{}"
+          OffenderDetail(offenderId = 99, otherIds = IDs(crn = "X12345", croNumber = "16/01234Z")).asJson()
         ),
         BLUE
       )
@@ -246,8 +242,7 @@ internal class OffenderRepositoryTest : IntegrationTestBase() {
     internal fun `will happily ignore missing pnc and cro numbers`() {
       offenderRepository.save(
         Offender(
-          OffenderDetail(offenderId = 99, otherIds = IDs(crn = "X12345", croNumber = null, pncNumber = null)).asJson(),
-          probationStatus = "{}"
+          OffenderDetail(offenderId = 99, otherIds = IDs(crn = "X12345", croNumber = null, pncNumber = null)).asJson()
         ),
         BLUE
       )
