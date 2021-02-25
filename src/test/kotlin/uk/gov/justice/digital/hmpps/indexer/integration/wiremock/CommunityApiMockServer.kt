@@ -139,7 +139,6 @@ class CommunityApiMockServer : WireMockServer(WIREMOCK_PORT) {
     stubAllOffenderGets(pageSize, *crns)
   }
 
-
   fun stubGetProbationStatus(
     crn: String = "X123456"
   ): StubMapping =
@@ -147,13 +146,16 @@ class CommunityApiMockServer : WireMockServer(WIREMOCK_PORT) {
       get("/secure/offenders/crn/$crn/probationStatus").willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
-          .withBody("""
+          .withBody(
+            """
             {
                 "status": "CURRENT",
                 "inBreach": true,
-                "preSentenceActivity": false
+                "preSentenceActivity": false,
+                "previouslyKnownTerminationDate": "2015-08-27"
             }
-          """.trimIndent())
+            """.trimIndent()
+          )
           .withStatus(200)
       )
     )

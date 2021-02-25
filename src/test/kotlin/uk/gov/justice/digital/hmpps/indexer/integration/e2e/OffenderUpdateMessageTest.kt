@@ -271,7 +271,7 @@ class OffenderUpdateMessageTest : IntegrationTestBase() {
     }
 
     @Test
-    fun `New offender with - probationStatus details are returned`() {
+    fun `New offender - probationStatus details are returned`() {
       communityApi.stubGetOffender("X123456")
       communityApi.stubGetProbationStatus("X123456")
 
@@ -283,6 +283,7 @@ class OffenderUpdateMessageTest : IntegrationTestBase() {
       assertThatJson(result).node("probationStatus.status").isEqualTo("CURRENT")
       assertThatJson(result).node("probationStatus.inBreach").isEqualTo(true)
       assertThatJson(result).node("probationStatus.preSentenceActivity").isEqualTo(false)
+      assertThatJson(result).node("probationStatus.previouslyKnownTerminationDate").isEqualTo("2015-08-27")
     }
   }
 

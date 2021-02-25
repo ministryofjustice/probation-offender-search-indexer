@@ -35,14 +35,16 @@ internal class CommunityServiceTest : IntegrationTestBase() {
         WireMock.get(WireMock.anyUrl()).willReturn(
           WireMock.aResponse()
             .withHeader("Content-Type", "application/json")
-            .withBody("""
+            .withBody(
+              """
             {
               "offenderId": 99,
               "otherIds": {
                 "crn": "X12345"
               }
             }
-            """)
+            """
+            )
             .withStatus(HttpURLConnection.HTTP_OK)
         )
       )
@@ -552,7 +554,8 @@ internal class CommunityServiceTest : IntegrationTestBase() {
                   "status": "CURRENT",
                   "inBreach": true,
                   "preSentenceActivity": false
-              }""".trimIndent()
+              }
+  """.trimIndent()
 
   private fun someMappaDetailsJson(): String =
     """{
