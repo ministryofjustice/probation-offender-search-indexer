@@ -175,7 +175,7 @@ class OffenderUpdateMessageTest : IntegrationTestBase() {
 
     @Test
     fun `New offender with MAPPA - MAPPA details are returned`() {
-      `Given Elasticearch holds an offender`(withMappa = true)
+      `Given Elasticsearch holds an offender`(withMappa = true)
 
       // Then the MAPPA details are returned from a search
       await untilCallTo { indexService.getIndexCount(SyncIndex.GREEN) } matches { it == 1L }
@@ -187,7 +187,7 @@ class OffenderUpdateMessageTest : IntegrationTestBase() {
 
     @Test
     fun `Existing offender with MAPPA - updated MAPPA details are returned`() {
-      `Given Elasticearch holds an offender`(withMappa = true)
+      `Given Elasticsearch holds an offender`(withMappa = true)
 
       `When I update the offender`(withMappaRegistrationType = REGISTER)
 
@@ -200,7 +200,7 @@ class OffenderUpdateMessageTest : IntegrationTestBase() {
 
     @Test
     fun `Existing offender with MAPPA - MAPPA is removed after deregister`() {
-      `Given Elasticearch holds an offender`(withMappa = true)
+      `Given Elasticsearch holds an offender`(withMappa = true)
 
       `When I update the offender`(withMappaRegistrationType = DEREGISTER)
 
@@ -210,7 +210,7 @@ class OffenderUpdateMessageTest : IntegrationTestBase() {
 
     @Test
     fun `Existing offender with MAPPA - MAPPA is removed after delete`() {
-      `Given Elasticearch holds an offender`(withMappa = true)
+      `Given Elasticsearch holds an offender`(withMappa = true)
 
       `When I update the offender`(withMappaRegistrationType = DELETE)
 
@@ -220,7 +220,7 @@ class OffenderUpdateMessageTest : IntegrationTestBase() {
 
     @Test
     fun `Existing offender without MAPPA - new MAPPA details are returned`() {
-      `Given Elasticearch holds an offender`(withMappa = false)
+      `Given Elasticsearch holds an offender`(withMappa = false)
 
       `When I update the offender`(withMappaRegistrationType = REGISTER)
 
@@ -231,8 +231,9 @@ class OffenderUpdateMessageTest : IntegrationTestBase() {
       assertThatJson(result).node("mappa.team.code").isEqualTo("NEWTEAM")
     }
 
-    private fun `Given Elasticearch holds an offender`(withMappa: Boolean) {
+    private fun `Given Elasticsearch holds an offender`(withMappa: Boolean) {
       communityApi.stubGetOffender("X123456")
+      communityApi.stubGetProbationStatus("X123456")
       if (withMappa) {
         communityApi.stubGetMappaDetails("X123456")
       } else {
@@ -246,6 +247,7 @@ class OffenderUpdateMessageTest : IntegrationTestBase() {
     private fun `When I update the offender`(withMappaRegistrationType: MappaRegistrationType) {
       communityApi.resetAll()
       communityApi.stubGetOffender("X123456")
+      communityApi.stubGetProbationStatus("X123456")
       when (withMappaRegistrationType) {
         REGISTER -> communityApi.stubGetMappaDetails("X123456", level = 2, teamCode = "NEWTEAM", notes = "Notes for updated MAPPA details")
         DEREGISTER, DELETE -> communityApi.stubMappaNotFound("X123456")
@@ -256,6 +258,32 @@ class OffenderUpdateMessageTest : IntegrationTestBase() {
         DEREGISTER -> eventAwsSqsClient.sendMessage(eventQueueUrl, "/messages/offenderDeregistration.json".readResourceAsText())
         DELETE -> eventAwsSqsClient.sendMessage(eventQueueUrl, "/messages/offenderRegistrationDeleted.json".readResourceAsText())
       }
+    }
+  }
+
+  @Nested
+  inner class ProbationStatus {
+    @BeforeEach
+    fun createIndexes() {
+      initialiseIndexStatus()
+      communityApi.stubAllOffenderGets(10, numberOfOffenders = 0)
+      buildAndSwitchIndex(SyncIndex.GREEN, 0)
+    }
+
+    @Test
+    fun `New offender - probationStatus details are returned`() {
+      communityApi.stubGetOffender("X123456")
+      communityApi.stubGetProbationStatus("X123456")
+
+      await untilCallTo { getNumberOfMessagesCurrentlyOnEventQueue() } matches { it == 0 }
+      eventAwsSqsClient.sendMessage(eventQueueUrl, "/messages/offenderChanged.json".readResourceAsText())
+      await untilCallTo { indexService.getIndexCount(SyncIndex.GREEN) } matches { it == 1L }
+
+      val result = searchByCrn("X123456").hits.asList()[0].sourceAsString
+      assertThatJson(result).node("probationStatus.status").isEqualTo("CURRENT")
+      assertThatJson(result).node("probationStatus.inBreach").isEqualTo(true)
+      assertThatJson(result).node("probationStatus.preSentenceActivity").isEqualTo(false)
+      assertThatJson(result).node("probationStatus.previouslyKnownTerminationDate").isEqualTo("2015-08-27")
     }
   }
 

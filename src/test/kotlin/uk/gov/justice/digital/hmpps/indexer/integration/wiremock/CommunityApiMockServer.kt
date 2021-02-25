@@ -6,6 +6,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
+import com.github.tomakehurst.wiremock.client.WireMock.urlMatching
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.stubbing.StubMapping
 import com.google.gson.Gson
@@ -138,6 +139,27 @@ class CommunityApiMockServer : WireMockServer(WIREMOCK_PORT) {
     val crns = (1..numberOfOffenders).asSequence().map { "X%05d".format(it) }.toList().toTypedArray()
     stubAllOffenderGets(pageSize, *crns)
   }
+
+  fun stubGetProbationStatus(
+    crn: String = ".*"
+  ): StubMapping =
+    stubFor(
+      get(urlMatching("/secure/offenders/crn/$crn/probationStatus")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withBody(
+            """
+            {
+                "status": "CURRENT",
+                "inBreach": true,
+                "preSentenceActivity": false,
+                "previouslyKnownTerminationDate": "2015-08-27"
+            }
+            """.trimIndent()
+          )
+          .withStatus(200)
+      )
+    )
 
   private fun anOffenderDetail(
     offenderId: Long = 490001467,
