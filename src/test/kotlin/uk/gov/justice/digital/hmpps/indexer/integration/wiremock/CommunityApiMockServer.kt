@@ -6,6 +6,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
+import com.github.tomakehurst.wiremock.client.WireMock.urlMatching
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.stubbing.StubMapping
 import com.google.gson.Gson
@@ -140,10 +141,10 @@ class CommunityApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun stubGetProbationStatus(
-    crn: String = "X123456"
+    crn: String = ".*"
   ): StubMapping =
     stubFor(
-      get("/secure/offenders/crn/$crn/probationStatus").willReturn(
+      get(urlMatching("/secure/offenders/crn/$crn/probationStatus")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withBody(

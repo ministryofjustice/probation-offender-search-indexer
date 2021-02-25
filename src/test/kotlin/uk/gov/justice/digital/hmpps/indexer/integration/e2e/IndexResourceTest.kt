@@ -41,6 +41,7 @@ class IndexResourceTest : IntegrationTestBase() {
       @BeforeEach
       internal fun setUp() {
         CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345")
+        CommunityApiExtension.communityApi.stubGetProbationStatus()
       }
 
       @Test
@@ -82,6 +83,7 @@ class IndexResourceTest : IntegrationTestBase() {
         CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345")
         buildAndSwitchIndex(GREEN, 1)
         CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345", "X12346", "X12347")
+        CommunityApiExtension.communityApi.stubGetProbationStatus()
       }
 
       @Test
@@ -124,6 +126,7 @@ class IndexResourceTest : IntegrationTestBase() {
         buildAndSwitchIndex(GREEN, 1)
         buildAndSwitchIndex(BLUE, 1)
         CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345", "X12346", "X12347")
+        CommunityApiExtension.communityApi.stubGetProbationStatus()
       }
 
       @Test
@@ -163,6 +166,7 @@ class IndexResourceTest : IntegrationTestBase() {
       @BeforeEach
       internal fun setUp() {
         CommunityApiExtension.communityApi.stubAllOffenderGets(10, numberOfOffenders = 31)
+        CommunityApiExtension.communityApi.stubGetProbationStatus()
       }
 
       @Test
@@ -203,6 +207,7 @@ class IndexResourceTest : IntegrationTestBase() {
       @BeforeEach
       internal fun setUp() {
         CommunityApiExtension.communityApi.stubAllOffenderGets(10, numberOfOffenders = 3)
+        CommunityApiExtension.communityApi.stubGetProbationStatus()
       }
 
       @Test
@@ -240,6 +245,7 @@ class IndexResourceTest : IntegrationTestBase() {
       CommunityApiExtension.communityApi.stubAllOffenderGets(10, numberOfOffenders = 1)
       buildAndSwitchIndex(GREEN, 1)
       CommunityApiExtension.communityApi.stubAllOffenderGets(10, numberOfOffenders = 20)
+      CommunityApiExtension.communityApi.stubGetProbationStatus()
     }
 
     @Test
@@ -281,6 +287,7 @@ class IndexResourceTest : IntegrationTestBase() {
     internal fun setUp() {
       initialiseIndexStatus()
       CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345")
+      CommunityApiExtension.communityApi.stubGetProbationStatus()
       buildAndSwitchIndex(GREEN, 1)
     }
 
@@ -289,6 +296,7 @@ class IndexResourceTest : IntegrationTestBase() {
       @BeforeEach
       internal fun setUp() {
         CommunityApiExtension.communityApi.stubGetOffender("X99999")
+        CommunityApiExtension.communityApi.stubGetProbationStatus()
       }
 
       @Test
@@ -315,6 +323,7 @@ class IndexResourceTest : IntegrationTestBase() {
       @BeforeEach
       internal fun setUp() {
         CommunityApiExtension.communityApi.stubGetOffender(crn = "X99999", nomsNumber = "A9999BB")
+        CommunityApiExtension.communityApi.stubGetProbationStatus()
       }
 
       @Test
@@ -356,6 +365,7 @@ class IndexResourceTest : IntegrationTestBase() {
         CommunityApiExtension.communityApi.stubGetOffender(crn = "X12345", pncNumber = "1999/0460155D")
         CommunityApiExtension.communityApi.stubGetOffender(crn = "X12346", pncNumber = "1998/0460155D")
         CommunityApiExtension.communityApi.stubGetOffender(crn = "X12347", pncNumber = "1999/9460155D")
+        CommunityApiExtension.communityApi.stubGetProbationStatus()
         buildAndSwitchIndex(GREEN, 3)
       }
 
@@ -410,6 +420,7 @@ class IndexResourceTest : IntegrationTestBase() {
           CommunityApiExtension.communityApi.stubGetOffender(crn = "X12345", croNumber = "46189/08G")
           CommunityApiExtension.communityApi.stubGetOffender(crn = "X12346", croNumber = "46189/99G")
           CommunityApiExtension.communityApi.stubGetOffender(crn = "X12347", croNumber = "99999/08G")
+          CommunityApiExtension.communityApi.stubGetProbationStatus()
           buildAndSwitchIndex(GREEN, 3)
         }
 
@@ -446,6 +457,7 @@ class IndexResourceTest : IntegrationTestBase() {
               OffenderManager(probationArea = ProbationArea(code = "N02"), active = true)
             )
           )
+          CommunityApiExtension.communityApi.stubGetProbationStatus()
           buildAndSwitchIndex(GREEN, 2)
         }
 
@@ -480,6 +492,7 @@ class IndexResourceTest : IntegrationTestBase() {
               OffenderAlias(surname = "Kunis", firstName = "Jane", gender = "FEMALE", dateOfBirth = "1965-07-19")
             )
           )
+          CommunityApiExtension.communityApi.stubGetProbationStatus()
           buildAndSwitchIndex(GREEN, 2)
         }
 
@@ -567,6 +580,7 @@ class IndexResourceTest : IntegrationTestBase() {
       internal fun setUp() {
         initialiseIndexStatus()
         CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345")
+        CommunityApiExtension.communityApi.stubGetProbationStatus()
         buildAndSwitchIndex(GREEN, 1)
 
         crns.forEach {
@@ -600,6 +614,7 @@ class IndexResourceTest : IntegrationTestBase() {
     internal fun `build index but don't complete`() {
       initialiseIndexStatus()
       CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345")
+      CommunityApiExtension.communityApi.stubGetProbationStatus()
       buildIndex(GREEN, 1)
     }
 
@@ -615,6 +630,7 @@ class IndexResourceTest : IntegrationTestBase() {
         """.trimIndent()
       )
       CommunityApiExtension.communityApi.stubGetOffender("X12346")
+      CommunityApiExtension.communityApi.stubGetProbationStatus()
 
       await untilCallTo { indexQueueService.getNumberOfMessagesCurrentlyOnIndexDLQ() } matches { it == 1 }
 
@@ -748,6 +764,7 @@ class IndexResourceTest : IntegrationTestBase() {
     fun setUp() {
       initialiseIndexStatus()
       CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345")
+      CommunityApiExtension.communityApi.stubGetProbationStatus()
       buildIndex(GREEN, 1)
     }
 
@@ -818,6 +835,7 @@ class IndexResourceTest : IntegrationTestBase() {
     fun setUp() {
       initialiseIndexStatus()
       CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345")
+      CommunityApiExtension.communityApi.stubGetProbationStatus()
       buildIndex(GREEN, 1)
     }
 
