@@ -113,6 +113,15 @@ class CommunityApiMockServer : WireMockServer(WIREMOCK_PORT) {
       )
     )
 
+  fun stubProbationStatusNotFound(crn: String): StubMapping =
+    stubFor(
+      get("/secure/offenders/crn/$crn/probationStatus").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(404)
+      )
+    )
+
   fun verifyGetOffender(crn: String = "X123456") =
     verify(
       getRequestedFor(urlEqualTo("/secure/offenders/crn/$crn/all"))
