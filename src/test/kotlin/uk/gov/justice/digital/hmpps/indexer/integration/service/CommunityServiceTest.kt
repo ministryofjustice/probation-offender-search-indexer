@@ -194,7 +194,7 @@ internal class CommunityServiceTest : IntegrationTestBase() {
     }
 
     @Test
-    fun `will throw any exception`() {
+    fun `will throw any exception other than not found`() {
       CommunityApiExtension.communityApi.stubFor(
         WireMock.get(WireMock.anyUrl()).willReturn(
           WireMock.aResponse()
@@ -209,6 +209,26 @@ internal class CommunityServiceTest : IntegrationTestBase() {
         WireMock.getRequestedFor(WireMock.urlEqualTo("/secure/offenders/crn/X12345/probationStatus"))
           .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE"))
       )
+    }
+
+    @Test
+    fun `will return null if not found`() {
+      CommunityApiExtension.communityApi.stubFor(
+        WireMock.get(WireMock.anyUrl()).willReturn(
+          WireMock.aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpURLConnection.HTTP_NOT_FOUND)
+        )
+      )
+
+      val probationStatus = service.getOffenderProbationStatus("X12345")
+        .block()
+
+      CommunityApiExtension.communityApi.verify(
+        WireMock.getRequestedFor(WireMock.urlEqualTo("/secure/offenders/crn/X12345/probationStatus"))
+          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE"))
+      )
+      assertThat(probationStatus).isNull()
     }
   }
 

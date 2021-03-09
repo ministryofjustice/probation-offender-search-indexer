@@ -68,6 +68,7 @@ class CommunityService(@Qualifier("communityApiWebClient") private val webClient
       .uri("/secure/offenders/crn/{crn}/probationStatus", crn)
       .retrieve()
       .bodyToMono(String::class.java)
+      .onErrorResume(NotFound::class.java) { emptyIfNotFound(it) }
 }
 
 @JsonIgnoreProperties(ignoreUnknown = true)

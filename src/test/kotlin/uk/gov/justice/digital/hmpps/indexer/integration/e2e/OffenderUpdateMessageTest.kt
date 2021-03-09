@@ -285,6 +285,19 @@ class OffenderUpdateMessageTest : IntegrationTestBase() {
       assertThatJson(result).node("probationStatus.preSentenceActivity").isEqualTo(false)
       assertThatJson(result).node("probationStatus.previouslyKnownTerminationDate").isEqualTo("2015-08-27")
     }
+
+    @Test
+    fun `New offender - probationStatus details are omitted if not available`() {
+      communityApi.stubGetOffender("X123456")
+      communityApi.stubProbationStatusNotFound("X123456")
+
+      await untilCallTo { getNumberOfMessagesCurrentlyOnEventQueue() } matches { it == 0 }
+      eventAwsSqsClient.sendMessage(eventQueueUrl, "/messages/offenderChanged.json".readResourceAsText())
+      await untilCallTo { indexService.getIndexCount(SyncIndex.GREEN) } matches { it == 1L }
+
+      val result = searchByCrn("X123456").hits.asList()[0].sourceAsString
+      assertThatJson(result).node("probationStatus").isNull()
+    }
   }
 
   private enum class MappaRegistrationType { REGISTER, DEREGISTER, DELETE }
