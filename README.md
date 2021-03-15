@@ -151,7 +151,7 @@ Access to the raw Elastic Search indexes is only possible from the Cloud Platfor
 For instance 
 
 ```
-curl http://aws-es-proxy-service:9200/_cat/indices
+curl http://es-proxy:9200/_cat/indices
 ```
 in any environment would return a list all indexes e.g.
 ```
@@ -254,10 +254,10 @@ Pay careful attention to `"offender-alias": "probation-search-green"` - this sho
 In rare circumstances where you need to test rebuilding indexes from scratch with an outage it is possible to delete the indexes as follows:
 
 ```
-curl -X DELETE aws-es-proxy-service:9200/probation-search-green/_alias/offender?pretty
-curl -X DELETE aws-es-proxy-service:9200/probation-search-green?pretty
-curl -X DELETE aws-es-proxy-service:9200/probation-search-blue?pretty
-curl -X DELETE aws-es-proxy-service:9200/offender-index-status?pretty
+curl -X DELETE es-proxy:9200/probation-search-green/_alias/offender?pretty
+curl -X DELETE es-proxy:9200/probation-search-green?pretty
+curl -X DELETE es-proxy:9200/probation-search-blue?pretty
+curl -X DELETE es-proxy:9200/offender-index-status?pretty
 ```
 
 
@@ -270,7 +270,7 @@ In that instance the alias must be switched manually.
 
 The current state of the alias can be seen from 
 ```
-curl http://aws-es-proxy-service:9200/_cat/aliases
+curl http://es-proxy:9200/_cat/aliases
 ```
 e.g.
 ```
@@ -281,7 +281,7 @@ shows that the current index is `probation-search-green`
 
 To update the alias:
 ```
-curl -X POST "aws-es-proxy-service:9200/_aliases?pretty" -H 'Content-Type: application/json' -d'
+curl -X POST "es-proxy:9200/_aliases?pretty" -H 'Content-Type: application/json' -d'
 {
   "actions" : [
     { "add" : { "index" : "probation-search-blue", "alias" : "offender" } }
@@ -291,9 +291,27 @@ curl -X POST "aws-es-proxy-service:9200/_aliases?pretty" -H 'Content-Type: appli
 ```
 And then delete old alias
 ```
-curl -X DELETE "aws-es-proxy-service:9200/probation-search-green/_alias/offender?pretty"
+curl -X DELETE "es-proxy:9200/probation-search-green/_alias/offender?pretty"
 
 ```
+
+Switching the alias will not update the service's understanding of what index is currently active. So that would need to be updated manually if the alias was updated:
+
+```
+curl -X PUT "http://es-proxy:9200/offender-index-status/_doc/STATUS"  -H 'Content-Type: application/json'  -d'
+{
+    "_class": "uk.gov.justice.digital.hmpps.indexer.model.IndexStatus",
+    "id": "STATUS",
+    "currentIndex": "BLUE",
+    "currentIndexStartBuildTime": "2021-03-12T16:30:14",
+    "currentIndexEndBuildTime": "2021-03-12T16:30:19",
+    "currentIndexState": "COMPLETED",
+    "otherIndexStartBuildTime": "2020-11-24T16:49:41",
+    "otherIndexEndBuildTime": "2020-11-25T02:40:17",
+    "otherIndexState": "COMPLETED"
+}'
+```
+
 ### Useful App Insights Queries
 ####General logs (filtering out the offender update)
 ``` kusto
