@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.indexer.integration.e2e
 
+import com.nhaarman.mockitokotlin2.whenever
 import org.apache.lucene.search.join.ScoreMode
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.await
@@ -10,6 +11,7 @@ import org.elasticsearch.index.query.TermQueryBuilder
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import uk.gov.justice.digital.hmpps.indexer.helpers.findLogAppender
 import uk.gov.justice.digital.hmpps.indexer.helpers.hasLogMessageContaining
@@ -158,6 +160,63 @@ class IndexResourceTest : IntegrationTestBase() {
           .jsonPath("$.otherIndexState").isEqualTo("COMPLETED")
 
         await untilCallTo { getIndexCount("offender") } matches { it == 3L }
+      }
+
+      @Test
+      internal fun `will NOT complete the index build if threshold not reached and not ignored`() {
+        whenever(indexBuildProperties.completeThreshold).thenReturn(1000000)
+
+        webTestClient.put()
+          .uri("/probation-index/build-index")
+          .accept(MediaType.APPLICATION_JSON)
+          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.currentIndex").isEqualTo("BLUE")
+          .jsonPath("$.currentIndexState").isEqualTo("COMPLETED")
+          .jsonPath("$.otherIndex").isEqualTo("GREEN")
+          .jsonPath("$.otherIndexState").isEqualTo("BUILDING")
+
+        await untilCallTo { getIndexCount(GREEN) } matches { it == 3L }
+
+        webTestClient.put()
+          .uri("/probation-index/mark-complete")
+          .accept(MediaType.APPLICATION_JSON)
+          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+          .exchange()
+          .expectStatus().isEqualTo(HttpStatus.CONFLICT)
+      }
+
+      @Test
+      internal fun `will complete the index build if threshold not reached but threshold is ignored`() {
+        whenever(indexBuildProperties.completeThreshold).thenReturn(1000000)
+
+        webTestClient.put()
+          .uri("/probation-index/build-index")
+          .accept(MediaType.APPLICATION_JSON)
+          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.currentIndex").isEqualTo("BLUE")
+          .jsonPath("$.currentIndexState").isEqualTo("COMPLETED")
+          .jsonPath("$.otherIndex").isEqualTo("GREEN")
+          .jsonPath("$.otherIndexState").isEqualTo("BUILDING")
+
+        await untilCallTo { getIndexCount(GREEN) } matches { it == 3L }
+
+        webTestClient.put()
+          .uri("/probation-index/mark-complete?ignoreThreshold=true")
+          .accept(MediaType.APPLICATION_JSON)
+          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.currentIndex").isEqualTo("GREEN")
+          .jsonPath("$.currentIndexState").isEqualTo("COMPLETED")
+          .jsonPath("$.otherIndex").isEqualTo("BLUE")
+          .jsonPath("$.otherIndexState").isEqualTo("COMPLETED")
       }
     }
 
@@ -694,6 +753,18 @@ class IndexResourceTest : IntegrationTestBase() {
     fun `does nothing if build was not successful`() {
       buildIndexAndWaitUntilFinished()
       addMessageToDlq()
+      val beforeHousekeepingStatus = indexStatusService.getIndexStatus()
+
+      callHousekeeping()
+
+      assertBuildStatusBuilding()
+      assertThat(indexStatusService.getIndexStatus()).isEqualTo(beforeHousekeepingStatus)
+    }
+
+    @Test
+    fun `does nothing if threshold not reached`() {
+      whenever(indexBuildProperties.completeThreshold).thenReturn(1000000)
+      buildIndexAndWaitUntilFinished()
       val beforeHousekeepingStatus = indexStatusService.getIndexStatus()
 
       callHousekeeping()

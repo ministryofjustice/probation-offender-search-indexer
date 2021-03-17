@@ -80,3 +80,6 @@ index:
   sqs:
     provider: ${aws.provider}
     endpoint.region: ${aws.region}
+
+index-build:
+  complete-threshold: 2000000

@@ -20,3 +20,6 @@ community:
 
 
 index.page.size: 10
+
+index-build:
+  complete-threshold: 0

@@ -11,6 +11,7 @@ import org.elasticsearch.client.core.CountRequest
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.indexer.config.IndexBuildProperties
 import uk.gov.justice.digital.hmpps.indexer.config.TelemetryEvents
 import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
 import uk.gov.justice.digital.hmpps.indexer.model.SyncIndex
@@ -23,7 +24,8 @@ class IndexService(
   private val indexQueueService: IndexQueueService,
   private val queueAdminService: QueueAdminService,
   private val elasticSearchClient: RestHighLevelClient,
-  private val telemetryClient: TelemetryClient
+  private val telemetryClient: TelemetryClient,
+  private val indexBuildProperties: IndexBuildProperties,
 ) {
 
   companion object {
@@ -61,15 +63,19 @@ class IndexService(
     )
   }
 
-  fun markIndexingComplete(): Either<Error, IndexStatus> {
+  fun markIndexingComplete(ignoreThreshold: Boolean): Either<Error, IndexStatus> {
     val indexQueueStatus = indexQueueService.getIndexQueueStatus()
     val indexStatus = indexStatusService.getIndexStatus()
     return indexStatus
       .failIf(IndexStatus::isNotBuilding) { BuildNotInProgressError(it) }
       .failIf({ indexQueueStatus.active }) { ActiveMessagesExistError(it.otherIndex, indexQueueStatus, "mark complete") }
+      .failIf({ ignoreThreshold.not() && indexSizeNotReachedThreshold(it) }) { ThresholdNotReachedError(it.otherIndex, indexBuildProperties.completeThreshold) }
       .also { logIndexStatuses(indexStatus) }
       .map { doMarkIndexingComplete() }
   }
+
+  private fun indexSizeNotReachedThreshold(indexStatus: IndexStatus): Boolean =
+    getIndexCount(indexStatus.currentIndex) < indexBuildProperties.completeThreshold
 
   private fun doMarkIndexingComplete(): IndexStatus =
     indexStatusService.markBuildCompleteAndSwitchIndex()
@@ -207,7 +213,8 @@ enum class PrepareRebuildError(val errorClass: KClass<out Error>) {
 
 enum class MarkCompleteError(val errorClass: KClass<out Error>) {
   BUILD_NOT_IN_PROGRESS(BuildNotInProgressError::class),
-  ACTIVE_MESSAGES_EXIST(ActiveMessagesExistError::class);
+  ACTIVE_MESSAGES_EXIST(ActiveMessagesExistError::class),
+  THRESHOLD_NOT_REACHED(ThresholdNotReachedError::class);
 
   companion object {
     fun fromErrorClass(error: Error): MarkCompleteError {
