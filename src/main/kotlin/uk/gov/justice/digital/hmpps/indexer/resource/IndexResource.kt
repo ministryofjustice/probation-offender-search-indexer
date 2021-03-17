@@ -11,6 +11,7 @@ import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.server.ResponseStatusException
 import uk.gov.justice.digital.hmpps.indexer.model.IndexStatus
@@ -68,13 +69,14 @@ class IndexResource(
   )
   @PutMapping("/mark-complete")
   @PreAuthorize("hasRole('PROBATION_INDEX')")
-  fun markComplete() =
-    indexService.markIndexingComplete()
+  fun markComplete(@RequestParam(name = "ignoreThreshold", required = false) ignoreThreshold: Boolean = false) =
+    indexService.markIndexingComplete(ignoreThreshold)
       .getOrHandle { error ->
         log.error("Request to /probation-index/mark-complete failed due to error {}", error)
         when (MarkCompleteError.fromErrorClass(error)) {
           MarkCompleteError.BUILD_NOT_IN_PROGRESS -> throw ResponseStatusException(HttpStatus.CONFLICT, error.message())
           MarkCompleteError.ACTIVE_MESSAGES_EXIST -> throw ResponseStatusException(HttpStatus.CONFLICT, error.message())
+          MarkCompleteError.THRESHOLD_NOT_REACHED -> throw ResponseStatusException(HttpStatus.CONFLICT, error.message())
         }
       }
 
@@ -185,7 +187,7 @@ class IndexResource(
     description = "This is an internal service which isn't exposed to the outside world. It is called from a Kubernetes CronJob named `index-housekeeping-cronjob`"
   )
   fun indexQueueHousekeeping() {
-    indexService.markIndexingComplete()
+    indexService.markIndexingComplete(ignoreThreshold = false)
     queueAdminService.transferIndexMessages()
     queueAdminService.transferEventMessages()
   }

@@ -18,6 +18,7 @@ import org.elasticsearch.client.core.CountResponse
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import uk.gov.justice.digital.hmpps.indexer.config.IndexBuildProperties
 import uk.gov.justice.digital.hmpps.indexer.config.TelemetryEvents
 import uk.gov.justice.digital.hmpps.indexer.model.IndexState.ABSENT
 import uk.gov.justice.digital.hmpps.indexer.model.IndexState.BUILDING
@@ -36,7 +37,8 @@ class IndexServiceTest {
   private val queueAdminService = mock<QueueAdminService>()
   private val elasticSearchClient = mock<RestHighLevelClient>()
   private val telemetryClient = mock<TelemetryClient>()
-  private val indexService = IndexService(indexStatusService, offenderSynchroniserService, indexQueueService, queueAdminService, elasticSearchClient, telemetryClient)
+  private val indexBuildProperties = mock<IndexBuildProperties>()
+  private val indexService = IndexService(indexStatusService, offenderSynchroniserService, indexQueueService, queueAdminService, elasticSearchClient, telemetryClient, indexBuildProperties)
 
   @Nested
   inner class BuildIndex {
@@ -136,7 +138,7 @@ class IndexServiceTest {
       val expectedIndexStatus = IndexStatus(currentIndex = GREEN, otherIndexState = COMPLETED)
       whenever(indexStatusService.getIndexStatus()).thenReturn(expectedIndexStatus)
 
-      val result = indexService.markIndexingComplete()
+      val result = indexService.markIndexingComplete(ignoreThreshold = true)
 
       verify(indexStatusService).getIndexStatus()
       result shouldBeLeft BuildNotInProgressError(expectedIndexStatus)
@@ -148,10 +150,24 @@ class IndexServiceTest {
       val expectedIndexQueueStatus = IndexQueueStatus(1, 0, 0)
       whenever(indexQueueService.getIndexQueueStatus()).thenReturn(expectedIndexQueueStatus)
 
-      val result = indexService.markIndexingComplete()
+      val result = indexService.markIndexingComplete(ignoreThreshold = true)
 
       verify(indexStatusService).getIndexStatus()
       result shouldBeLeft ActiveMessagesExistError(BLUE, expectedIndexQueueStatus, "mark complete")
+    }
+
+    @Test
+    fun `Index not reached threshold returns error`() {
+      whenever(indexStatusService.getIndexStatus()).thenReturn(IndexStatus(currentIndex = GREEN, otherIndexState = BUILDING))
+      val expectedIndexQueueStatus = IndexQueueStatus(0, 0, 0)
+      whenever(indexQueueService.getIndexQueueStatus()).thenReturn(expectedIndexQueueStatus)
+      whenever(indexBuildProperties.completeThreshold).thenReturn(1000000)
+
+      val result = indexService.markIndexingComplete(ignoreThreshold = false)
+
+      verify(indexStatusService).getIndexStatus()
+      verify(indexQueueService).getIndexQueueStatus()
+      result shouldBeLeft ThresholdNotReachedError(BLUE, 1000000)
     }
 
     @Test
@@ -161,9 +177,23 @@ class IndexServiceTest {
         .thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
       whenever(indexStatusService.markBuildCompleteAndSwitchIndex()).thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
 
-      indexService.markIndexingComplete()
+      indexService.markIndexingComplete(ignoreThreshold = true)
 
       verify(indexStatusService).markBuildCompleteAndSwitchIndex()
+    }
+
+    @Test
+    fun `Index not reached threshold but ignoring threshold - completes ok`() {
+      whenever(indexStatusService.getIndexStatus()).thenReturn(IndexStatus(currentIndex = GREEN, otherIndexState = BUILDING))
+      val expectedIndexQueueStatus = IndexQueueStatus(0, 0, 0)
+      whenever(indexQueueService.getIndexQueueStatus()).thenReturn(expectedIndexQueueStatus)
+      whenever(indexBuildProperties.completeThreshold).thenReturn(1000000)
+
+      val result = indexService.markIndexingComplete(ignoreThreshold = false)
+
+      verify(indexStatusService).getIndexStatus()
+      verify(indexQueueService).getIndexQueueStatus()
+      result shouldBeLeft ThresholdNotReachedError(BLUE, 1000000)
     }
 
     @Test
@@ -173,7 +203,7 @@ class IndexServiceTest {
         .thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
       whenever(indexStatusService.markBuildCompleteAndSwitchIndex()).thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
 
-      indexService.markIndexingComplete()
+      indexService.markIndexingComplete(ignoreThreshold = true)
 
       verify(offenderSynchroniserService).switchAliasIndex(BLUE)
     }
@@ -185,7 +215,7 @@ class IndexServiceTest {
         .thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
       whenever(indexStatusService.markBuildCompleteAndSwitchIndex()).thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
 
-      indexService.markIndexingComplete()
+      indexService.markIndexingComplete(ignoreThreshold = true)
 
       verify(telemetryClient).trackEvent(TelemetryEvents.COMPLETED_BUILDING_INDEX.name, mapOf("index" to "BLUE"), null)
     }
@@ -197,7 +227,7 @@ class IndexServiceTest {
         .thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
       whenever(indexStatusService.markBuildCompleteAndSwitchIndex()).thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
 
-      val result = indexService.markIndexingComplete()
+      val result = indexService.markIndexingComplete(ignoreThreshold = true)
 
       verify(indexStatusService, times(2)).getIndexStatus()
       result shouldBeRight IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED)

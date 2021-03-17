@@ -114,7 +114,7 @@ class IndexResourceApiTest : IntegrationTestBase() {
   inner class MarkIndexComplete {
     @Test
     fun `Request to mark index complete is successful and calls service`() {
-      doReturn(anIndexStatus().right()).whenever(indexService).markIndexingComplete()
+      doReturn(anIndexStatus().right()).whenever(indexService).markIndexingComplete(ignoreThreshold = false)
 
       webTestClient.put()
         .uri("/probation-index/mark-complete")
@@ -123,13 +123,15 @@ class IndexResourceApiTest : IntegrationTestBase() {
         .exchange()
         .expectStatus().isOk
 
-      verify(indexService).markIndexingComplete()
+      verify(indexService).markIndexingComplete(ignoreThreshold = false)
     }
 
     @Test
     fun `Request to mark index complete when index not building returns error`() {
       val expectedIndexStatus = IndexStatus(currentIndex = GREEN, otherIndexState = COMPLETED)
-      doReturn(BuildNotInProgressError(expectedIndexStatus).left()).whenever(indexService).markIndexingComplete()
+      doReturn(BuildNotInProgressError(expectedIndexStatus).left()).whenever(indexService).markIndexingComplete(
+        ignoreThreshold = false
+      )
 
       webTestClient.put()
         .uri("/probation-index/mark-complete")
@@ -143,7 +145,7 @@ class IndexResourceApiTest : IntegrationTestBase() {
           assertThat(message).contains(expectedIndexStatus.otherIndexState.name)
         }
 
-      verify(indexService).markIndexingComplete()
+      verify(indexService).markIndexingComplete(ignoreThreshold = false)
     }
   }
 
@@ -235,7 +237,7 @@ class IndexResourceApiTest : IntegrationTestBase() {
 
     @BeforeEach
     fun mockService() {
-      doReturn(IndexStatus("any_id", GREEN).right()).whenever(indexService).markIndexingComplete()
+      doReturn(IndexStatus("any_id", GREEN).right()).whenever(indexService).markIndexingComplete(ignoreThreshold = false)
     }
 
     @Test
@@ -254,7 +256,7 @@ class IndexResourceApiTest : IntegrationTestBase() {
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
 
-      verify(indexService).markIndexingComplete()
+      verify(indexService).markIndexingComplete(ignoreThreshold = false)
     }
   }
 }

@@ -33,3 +33,7 @@ data class OffenderNotFoundError(val crn: String) : OffenderError {
 data class ActiveMessagesExistError(val index: SyncIndex, val indexQueueStatus: IndexQueueStatus, val action: String) : IndexError {
   override fun message() = "The index ${index.indexName} has active messages $indexQueueStatus so we cannot process $action"
 }
+
+data class ThresholdNotReachedError(val index: SyncIndex, val threshold: Int) : IndexError {
+  override fun message() = "The index ${index.indexName} has not reached threshold $threshold so we cannot mark the index as complete"
+}
