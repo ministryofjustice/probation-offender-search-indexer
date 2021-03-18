@@ -235,6 +235,59 @@ class IndexServiceTest {
   }
 
   @Nested
+  inner class SwitchIndex {
+
+    @Test
+    fun `A request is made to switch the indexes`() {
+      whenever(indexStatusService.getIndexStatus())
+        .thenReturn(IndexStatus(currentIndex = GREEN, otherIndexState = COMPLETED))
+        .thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
+      whenever(indexStatusService.switchIndex()).thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
+
+      indexService.switchIndex()
+
+      verify(indexStatusService).switchIndex()
+    }
+
+    @Test
+    fun `A request is made to switch alias`() {
+      whenever(indexStatusService.getIndexStatus())
+        .thenReturn(IndexStatus(currentIndex = GREEN, otherIndexState = COMPLETED))
+        .thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
+      whenever(indexStatusService.switchIndex()).thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
+
+      indexService.switchIndex()
+
+      verify(offenderSynchroniserService).switchAliasIndex(BLUE)
+    }
+
+    @Test
+    fun `A telemetry event is sent`() {
+      whenever(indexStatusService.getIndexStatus())
+        .thenReturn(IndexStatus(currentIndex = GREEN, otherIndexState = COMPLETED))
+        .thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
+      whenever(indexStatusService.switchIndex()).thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
+
+      indexService.switchIndex()
+
+      verify(telemetryClient).trackEvent(TelemetryEvents.SWITCH_INDEX.name, mapOf("index" to "BLUE"), null)
+    }
+
+    @Test
+    fun `Once current index marked as complete, the 'other' index is current`() {
+      whenever(indexStatusService.getIndexStatus())
+        .thenReturn(IndexStatus(currentIndex = GREEN, otherIndexState = COMPLETED))
+        .thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
+      whenever(indexStatusService.switchIndex()).thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
+
+      val result = indexService.switchIndex()
+
+      verify(indexStatusService, times(2)).getIndexStatus()
+      result shouldBeRight IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED)
+    }
+  }
+
+  @Nested
   inner class CancelIndexing {
 
     @Test

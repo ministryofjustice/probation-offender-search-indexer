@@ -47,6 +47,14 @@ class IndexStatusService(private val indexStatusRepository: IndexStatusRepositor
     return currentIndexStatus
   }
 
+  fun switchIndex(): IndexStatus {
+    val currentIndexStatus = getIndexStatus()
+    if (currentIndexStatus.inProgress()) {
+      return currentIndexStatus
+    }
+    return indexStatusRepository.save(currentIndexStatus.toSwitchIndex())
+  }
+
   fun markBuildCancelled(): IndexStatus {
     val currentIndexStatus = getIndexStatus()
     if (currentIndexStatus.inProgress()) {

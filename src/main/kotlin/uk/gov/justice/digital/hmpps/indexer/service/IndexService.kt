@@ -86,6 +86,23 @@ class IndexService(
           .also { telemetryClient.trackEvent(TelemetryEvents.COMPLETED_BUILDING_INDEX.name, mapOf("index" to it.currentIndex.name), null) }
       }
 
+  fun switchIndex(): Either<Error, IndexStatus> {
+    val indexStatus = indexStatusService.getIndexStatus()
+    return indexStatus
+      .failIf(IndexStatus::isBuilding) { BuildInProgressError(it) }
+      .also { logIndexStatuses(indexStatus) }
+      .map { doSwitchIndex() }
+  }
+
+  private fun doSwitchIndex(): IndexStatus =
+    indexStatusService.switchIndex()
+      .let { newStatus ->
+        offenderSynchroniserService.switchAliasIndex(newStatus.currentIndex)
+        return indexStatusService.getIndexStatus()
+          .also { latestStatus -> logIndexStatuses(latestStatus) }
+          .also { telemetryClient.trackEvent(TelemetryEvents.SWITCH_INDEX.name, mapOf("index" to it.currentIndex.name), null) }
+      }
+
   fun cancelIndexing(): Either<Error, IndexStatus> =
     indexStatusService.getIndexStatus()
       .also { logIndexStatuses(it) }
@@ -218,6 +235,16 @@ enum class MarkCompleteError(val errorClass: KClass<out Error>) {
 
   companion object {
     fun fromErrorClass(error: Error): MarkCompleteError {
+      return values().first { it.errorClass == error::class }
+    }
+  }
+}
+
+enum class SwitchIndexError(val errorClass: KClass<out Error>) {
+  BUILD_IN_PROGRESS(BuildInProgressError::class);
+
+  companion object {
+    fun fromErrorClass(error: Error): SwitchIndexError {
       return values().first { it.errorClass == error::class }
     }
   }
