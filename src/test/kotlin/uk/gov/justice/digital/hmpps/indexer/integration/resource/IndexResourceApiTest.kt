@@ -40,6 +40,7 @@ class IndexResourceApiTest : IntegrationTestBase() {
       listOf(
         "/probation-index/build-index",
         "/probation-index/mark-complete",
+        "/probation-index/switch-index",
         "/probation-index/cancel-index",
         "/probation-index/index/offender/SOME_CRN",
         "/probation-index/purge-index-dlq",
@@ -146,6 +147,23 @@ class IndexResourceApiTest : IntegrationTestBase() {
         }
 
       verify(indexService).markIndexingComplete(ignoreThreshold = false)
+    }
+  }
+
+  @Nested
+  inner class SwitchIndex {
+    @Test
+    fun `Request to mark index complete is successful and calls service`() {
+      doReturn(anIndexStatus().right()).whenever(indexService).switchIndex()
+
+      webTestClient.put()
+        .uri("/probation-index/switch-index")
+        .accept(MediaType.APPLICATION_JSON)
+        .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+        .exchange()
+        .expectStatus().isOk
+
+      verify(indexService).switchIndex()
     }
   }
 

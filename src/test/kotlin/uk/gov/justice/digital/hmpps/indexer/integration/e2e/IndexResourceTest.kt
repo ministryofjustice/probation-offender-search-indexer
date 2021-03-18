@@ -221,6 +221,99 @@ class IndexResourceTest : IntegrationTestBase() {
     }
 
     @Nested
+    inner class SwitchIndexes {
+      @Test
+      internal fun `Switch index`() {
+        CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12346")
+        buildAndSwitchIndex(GREEN, 1)
+        buildAndSwitchIndex(BLUE, 1)
+        CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12346")
+        CommunityApiExtension.communityApi.stubGetProbationStatus()
+
+        webTestClient.get()
+          .uri("/info")
+          .exchange()
+          .expectStatus()
+          .isOk
+          .expectBody()
+          .jsonPath("index-status.id").doesNotExist()
+          .jsonPath("index-status.currentIndex").isEqualTo("BLUE")
+          .jsonPath("index-status.otherIndex").isEqualTo("GREEN")
+          .jsonPath("index-size.GREEN").isEqualTo(1)
+          .jsonPath("index-size.BLUE").isEqualTo(1)
+          .jsonPath("offender-alias").isEqualTo("probation-search-blue")
+          .jsonPath("index-queue-backlog").isEqualTo("0")
+
+        webTestClient.put()
+          .uri("/probation-index/switch-index")
+          .accept(MediaType.APPLICATION_JSON)
+          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.currentIndex").isEqualTo("GREEN")
+          .jsonPath("$.currentIndexState").isEqualTo("COMPLETED")
+          .jsonPath("$.otherIndex").isEqualTo("BLUE")
+          .jsonPath("$.otherIndexState").isEqualTo("COMPLETED")
+
+        webTestClient.get()
+          .uri("/info")
+          .exchange()
+          .expectStatus()
+          .isOk
+          .expectBody()
+          .jsonPath("index-status.id").doesNotExist()
+          .jsonPath("index-status.currentIndex").isEqualTo("GREEN")
+          .jsonPath("index-status.otherIndex").isEqualTo("BLUE")
+          .jsonPath("index-size.GREEN").isEqualTo(1)
+          .jsonPath("index-size.BLUE").isEqualTo(1)
+          .jsonPath("offender-alias").isEqualTo("probation-search-green")
+          .jsonPath("index-queue-backlog").isEqualTo("0")
+
+        webTestClient.put()
+          .uri("/probation-index/switch-index")
+          .accept(MediaType.APPLICATION_JSON)
+          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.currentIndex").isEqualTo("BLUE")
+          .jsonPath("$.currentIndexState").isEqualTo("COMPLETED")
+          .jsonPath("$.otherIndex").isEqualTo("GREEN")
+          .jsonPath("$.otherIndexState").isEqualTo("COMPLETED")
+      }
+
+      @Test
+      internal fun `Will not switch indexes if both are not complete`() {
+        CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345")
+        buildAndSwitchIndex(GREEN, 1)
+        CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345", "X12346", "X12347")
+        CommunityApiExtension.communityApi.stubGetProbationStatus()
+
+        webTestClient.put()
+          .uri("/probation-index/build-index")
+          .accept(MediaType.APPLICATION_JSON)
+          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.currentIndex").isEqualTo("GREEN")
+          .jsonPath("$.currentIndexState").isEqualTo("COMPLETED")
+          .jsonPath("$.otherIndex").isEqualTo("BLUE")
+          .jsonPath("$.otherIndexState").isEqualTo("BUILDING")
+
+        await untilCallTo { getIndexCount(BLUE) } matches { it == 3L }
+
+        webTestClient.put()
+          .uri("/probation-index/switch-index")
+          .accept(MediaType.APPLICATION_JSON)
+          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+          .exchange()
+          .expectStatus().isEqualTo(HttpStatus.CONFLICT)
+      }
+    }
+
+    @Nested
     inner class Paging {
       @BeforeEach
       internal fun setUp() {
@@ -957,7 +1050,8 @@ class IndexResourceTest : IntegrationTestBase() {
     }
 
     fun getNumberOfMessagesCurrentlyInFlight(): Int {
-      val queueAttributes = eventAwsSqsClient.getQueueAttributes(eventQueueUrl, listOf("ApproximateNumberOfMessagesNotVisible"))
+      val queueAttributes =
+        eventAwsSqsClient.getQueueAttributes(eventQueueUrl, listOf("ApproximateNumberOfMessagesNotVisible"))
       return queueAttributes.attributes["ApproximateNumberOfMessagesNotVisible"]?.toInt() ?: 0
     }
   }

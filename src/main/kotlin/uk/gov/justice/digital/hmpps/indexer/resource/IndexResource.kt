@@ -20,6 +20,7 @@ import uk.gov.justice.digital.hmpps.indexer.service.IndexService
 import uk.gov.justice.digital.hmpps.indexer.service.MarkCompleteError
 import uk.gov.justice.digital.hmpps.indexer.service.PrepareRebuildError
 import uk.gov.justice.digital.hmpps.indexer.service.QueueAdminService
+import uk.gov.justice.digital.hmpps.indexer.service.SwitchIndexError
 import uk.gov.justice.digital.hmpps.indexer.service.UpdateOffenderError
 
 @RestController
@@ -101,6 +102,20 @@ class IndexResource(
           CancelBuildError.BUILD_NOT_IN_PROGRESS -> throw ResponseStatusException(HttpStatus.CONFLICT, error.message())
         }
       }
+
+  @PutMapping("/switch-index")
+  @PreAuthorize("hasRole('PROBATION_INDEX')")
+  @Operation(
+    summary = "Switch index without rebuilding",
+    description = "current index will be switched both indexed have to be complete, requires PROBATION_INDEX role"
+  )
+  fun switchIndex() = indexService.switchIndex()
+    .getOrHandle { error ->
+      log.error("Request to /probation-index/switch-index failed due to error {}", error)
+      when (SwitchIndexError.fromErrorClass(error)) {
+        SwitchIndexError.BUILD_IN_PROGRESS -> throw ResponseStatusException(HttpStatus.CONFLICT, error.message())
+      }
+    }
 
   @PutMapping("/index/offender/{crn}")
   @PreAuthorize("hasRole('PROBATION_INDEX')")
