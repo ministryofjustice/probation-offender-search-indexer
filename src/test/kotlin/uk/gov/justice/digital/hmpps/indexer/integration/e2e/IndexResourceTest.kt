@@ -290,7 +290,6 @@ class IndexResourceTest : IntegrationTestBase() {
         CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345", "X12346", "X12347")
         CommunityApiExtension.communityApi.stubGetProbationStatus()
 
-
         webTestClient.put()
           .uri("/probation-index/build-index")
           .accept(MediaType.APPLICATION_JSON)
