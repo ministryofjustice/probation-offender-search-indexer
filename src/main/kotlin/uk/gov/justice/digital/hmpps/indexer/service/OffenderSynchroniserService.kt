@@ -4,6 +4,9 @@ import arrow.core.Either
 import arrow.core.flatMap
 import arrow.core.right
 import com.microsoft.applicationinsights.TelemetryClient
+import org.awaitility.kotlin.await
+import org.awaitility.kotlin.matches
+import org.awaitility.kotlin.untilCallTo
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -35,6 +38,7 @@ class OffenderSynchroniserService(
     if (offenderRepository.doesIndexExist(index)) {
       offenderRepository.deleteIndex(index)
     }
+    await untilCallTo { offenderRepository.doesIndexExist(index) } matches { it == false }
     offenderRepository.createIndex(index)
   }
 
