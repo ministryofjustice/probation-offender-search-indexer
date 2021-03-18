@@ -31,10 +31,11 @@ dependencies {
   implementation("org.springdoc:springdoc-openapi-data-rest:1.5.4")
   implementation("org.springdoc:springdoc-openapi-kotlin:1.5.4")
 
+  implementation("org.awaitility:awaitility-kotlin:4.0.3")
+
   testImplementation("com.github.tomakehurst:wiremock-standalone:2.27.2")
   testImplementation("org.testcontainers:localstack:1.15.2")
   testImplementation("org.testcontainers:elasticsearch:1.15.2")
-  testImplementation("org.awaitility:awaitility-kotlin:4.0.3")
   testImplementation("io.kotest:kotest-assertions-arrow-jvm:4.4.1")
   testImplementation("org.springframework.security:spring-security-test")
   testImplementation("io.jsonwebtoken:jjwt:0.9.1")

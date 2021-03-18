@@ -9,6 +9,7 @@ import com.nhaarman.mockitokotlin2.isA
 import com.nhaarman.mockitokotlin2.isNull
 import com.nhaarman.mockitokotlin2.mock
 import com.nhaarman.mockitokotlin2.never
+import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
 import org.assertj.core.api.Assertions.assertThat
@@ -73,7 +74,9 @@ internal class OffenderSynchroniserServiceTest {
     inner class IndexExists {
       @BeforeEach
       internal fun setUp() {
-        whenever(offenderRepository.doesIndexExist(GREEN)).thenReturn(true)
+        whenever(offenderRepository.doesIndexExist(GREEN))
+          .thenReturn(true)
+          .thenReturn(false)
 
         service.checkExistsAndReset(GREEN)
       }
@@ -93,7 +96,9 @@ internal class OffenderSynchroniserServiceTest {
     inner class IndexDoesNotExists {
       @BeforeEach
       internal fun setUp() {
-        whenever(offenderRepository.doesIndexExist(GREEN)).thenReturn(false)
+        whenever(offenderRepository.doesIndexExist(GREEN))
+          .thenReturn(false)
+          .thenReturn(false)
 
         service.checkExistsAndReset(GREEN)
       }
@@ -109,6 +114,24 @@ internal class OffenderSynchroniserServiceTest {
 
       @Test
       internal fun `will create the index`() {
+        verify(offenderRepository).createIndex(GREEN)
+      }
+    }
+
+    @Nested
+    inner class IndexDeleteIsSlow {
+
+      @Test
+      fun `waits for index to be deleted before recreating`() {
+        whenever(offenderRepository.doesIndexExist(GREEN))
+          .thenReturn(true)
+          .thenReturn(true)
+          .thenReturn(false)
+
+        service.checkExistsAndReset(GREEN)
+
+        verify(offenderRepository, times(3)).doesIndexExist(GREEN)
+        verify(offenderRepository).deleteIndex(GREEN)
         verify(offenderRepository).createIndex(GREEN)
       }
     }
