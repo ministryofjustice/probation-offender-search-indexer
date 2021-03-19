@@ -203,6 +203,14 @@ class IndexResource(
   )
   fun indexQueueHousekeeping() {
     indexService.markIndexingComplete(ignoreThreshold = false)
+      .getOrHandle { error ->
+        if (MarkCompleteError.fromErrorClass(error) == MarkCompleteError.THRESHOLD_NOT_REACHED) {
+          log.warn(
+            "Not marking index build complete but only because the minimum index size threshold has not been reached",
+            error
+          )
+        }
+      }
     queueAdminService.transferIndexMessages()
     queueAdminService.transferEventMessages()
   }
