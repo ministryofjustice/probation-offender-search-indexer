@@ -5,4 +5,4 @@ import org.springframework.boot.context.properties.ConstructorBinding
 
 @ConstructorBinding
 @ConfigurationProperties("index-build")
-data class IndexBuildProperties(val completeThreshold: Int)
+data class IndexBuildProperties(val completeThreshold: Long)
