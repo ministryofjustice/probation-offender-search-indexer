@@ -16,6 +16,9 @@ env:
   - name: COMMUNITY_ENDPOINT_URL
     value: "{{ .Values.env.COMMUNITY_ENDPOINT_URL }}"
 
+  - name: INDEX_BUILD_COMPLETE_THRESHOLD
+    value: "{{ .Values.env.INDEX_BUILD_COMPLETE_THRESHOLD }}"
+
   - name: SPRING_PROFILES_ACTIVE
     value: "logstash"
 
