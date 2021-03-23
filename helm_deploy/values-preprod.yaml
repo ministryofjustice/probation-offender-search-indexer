@@ -22,7 +22,7 @@ env:
   JAVA_OPTS: "-Xmx512m"
   OAUTH_ENDPOINT_URL: "https://sign-in-preprod.hmpps.service.justice.gov.uk/auth"
   COMMUNITY_ENDPOINT_URL: "https://community-api-secure.pre-prod.delius.probation.hmpps.dsd.io"
-  INDEX_BUILD_COMPLETE_THRESHOLD: 2000000
+  INDEX_BUILD_COMPLETE_THRESHOLD: "2000000"
 
 whitelist:
   office: "217.33.148.210/32"
