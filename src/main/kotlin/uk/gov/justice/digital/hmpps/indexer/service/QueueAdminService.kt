@@ -105,7 +105,7 @@ class QueueAdminService(
           null
         )
       }
-    }
+  }
 
   private fun getEventDlqMessageCount() =
     eventAwsSqsDlqClient.getQueueAttributes(eventDlqUrl, listOf("ApproximateNumberOfMessages"))
