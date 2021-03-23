@@ -106,6 +106,12 @@ data class IndexStatus(
   fun isBuilding() = otherIndexState == IndexState.BUILDING
 
   @JsonIgnore
+  fun isCancelled() = otherIndexState == IndexState.CANCELLED
+
+  @JsonIgnore
+  fun isAbsent() = otherIndexState == IndexState.ABSENT
+
+  @JsonIgnore
   fun isNotBuilding() = isBuilding().not()
 
   companion object {

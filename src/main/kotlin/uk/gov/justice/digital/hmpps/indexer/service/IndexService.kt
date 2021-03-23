@@ -86,12 +86,24 @@ class IndexService(
           .also { telemetryClient.trackEvent(TelemetryEvents.COMPLETED_BUILDING_INDEX.name, mapOf("index" to it.currentIndex.name), null) }
       }
 
-  fun switchIndex(): Either<Error, IndexStatus> {
+  fun switchIndex(force: Boolean): Either<Error, IndexStatus> {
     val indexStatus = indexStatusService.getIndexStatus()
-    return indexStatus
-      .failIf(IndexStatus::isBuilding) { BuildInProgressError(it) }
-      .also { logIndexStatuses(indexStatus) }
-      .map { doSwitchIndex() }
+    return when {
+      force -> {
+        indexStatus
+          .failIf(IndexStatus::isAbsent) { BuildAbsentError(it) }
+          .also { logIndexStatuses(indexStatus) }
+          .map { doSwitchIndex() }
+      }
+      else -> {
+        indexStatus
+          .failIf(IndexStatus::isAbsent) { BuildAbsentError(it) }
+          .failIf(IndexStatus::isBuilding) { BuildInProgressError(it) }
+          .failIf(IndexStatus::isCancelled) { BuildCancelledError(it) }
+          .also { logIndexStatuses(indexStatus) }
+          .map { doSwitchIndex() }
+      }
+    }
   }
 
   private fun doSwitchIndex(): IndexStatus =
@@ -241,7 +253,9 @@ enum class MarkCompleteError(val errorClass: KClass<out Error>) {
 }
 
 enum class SwitchIndexError(val errorClass: KClass<out Error>) {
-  BUILD_IN_PROGRESS(BuildInProgressError::class);
+  BUILD_ABSENT(BuildAbsentError::class),
+  BUILD_IN_PROGRESS(BuildInProgressError::class),
+  BUILD_CANCELLED(BuildCancelledError::class);
 
   companion object {
     fun fromErrorClass(error: Error): SwitchIndexError {

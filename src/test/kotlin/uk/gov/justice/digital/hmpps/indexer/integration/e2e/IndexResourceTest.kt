@@ -284,7 +284,7 @@ class IndexResourceTest : IntegrationTestBase() {
       }
 
       @Test
-      internal fun `Will not switch indexes if both are not complete`() {
+      internal fun `Will not switch indexes if both one is in progress`() {
         CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345")
         buildAndSwitchIndex(GREEN, 1)
         CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345", "X12346", "X12347")
@@ -306,6 +306,153 @@ class IndexResourceTest : IntegrationTestBase() {
 
         webTestClient.put()
           .uri("/probation-index/switch-index")
+          .accept(MediaType.APPLICATION_JSON)
+          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+          .exchange()
+          .expectStatus().isEqualTo(HttpStatus.CONFLICT)
+      }
+
+      @Test
+      internal fun `Will not switch indexes if one index is cancelled`() {
+        CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345")
+        buildAndSwitchIndex(GREEN, 1)
+        CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345", "X12346", "X12347")
+        CommunityApiExtension.communityApi.stubGetProbationStatus()
+
+        webTestClient.put()
+          .uri("/probation-index/build-index")
+          .accept(MediaType.APPLICATION_JSON)
+          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.currentIndex").isEqualTo("GREEN")
+          .jsonPath("$.currentIndexState").isEqualTo("COMPLETED")
+          .jsonPath("$.otherIndex").isEqualTo("BLUE")
+          .jsonPath("$.otherIndexState").isEqualTo("BUILDING")
+
+        webTestClient.put()
+          .uri("/probation-index/cancel-index")
+          .accept(MediaType.APPLICATION_JSON)
+          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.currentIndex").isEqualTo("GREEN")
+          .jsonPath("$.currentIndexState").isEqualTo("COMPLETED")
+          .jsonPath("$.otherIndex").isEqualTo("BLUE")
+          .jsonPath("$.otherIndexState").isEqualTo("CANCELLED")
+
+        webTestClient.put()
+          .uri("/probation-index/switch-index")
+          .accept(MediaType.APPLICATION_JSON)
+          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+          .exchange()
+          .expectStatus().isEqualTo(HttpStatus.CONFLICT)
+      }
+
+      @Test
+      internal fun `Will not switch indexes if one index is absent`() {
+        CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345")
+        buildAndSwitchIndex(GREEN, 1)
+        CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345", "X12346", "X12347")
+        CommunityApiExtension.communityApi.stubGetProbationStatus()
+
+        webTestClient.put()
+          .uri("/probation-index/switch-index")
+          .accept(MediaType.APPLICATION_JSON)
+          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+          .exchange()
+          .expectStatus().isEqualTo(HttpStatus.CONFLICT)
+      }
+
+      @Test
+      internal fun `Will switch indexes if both one is in progress but force set to true`() {
+        CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345")
+        buildAndSwitchIndex(GREEN, 1)
+        CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345", "X12346", "X12347")
+        CommunityApiExtension.communityApi.stubGetProbationStatus()
+
+        webTestClient.put()
+          .uri("/probation-index/build-index")
+          .accept(MediaType.APPLICATION_JSON)
+          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.currentIndex").isEqualTo("GREEN")
+          .jsonPath("$.currentIndexState").isEqualTo("COMPLETED")
+          .jsonPath("$.otherIndex").isEqualTo("BLUE")
+          .jsonPath("$.otherIndexState").isEqualTo("BUILDING")
+
+        await untilCallTo { getIndexCount(BLUE) } matches { it == 3L }
+
+        webTestClient.put()
+          .uri("/probation-index/switch-index?force=true")
+          .accept(MediaType.APPLICATION_JSON)
+          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.currentIndex").isEqualTo("BLUE")
+          .jsonPath("$.currentIndexState").isEqualTo("CANCELLED")
+          .jsonPath("$.otherIndex").isEqualTo("GREEN")
+          .jsonPath("$.otherIndexState").isEqualTo("COMPLETED")
+      }
+
+      @Test
+      internal fun `Will switch indexes if one index is cancelled but force set to true`() {
+        CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345")
+        buildAndSwitchIndex(GREEN, 1)
+        CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345", "X12346", "X12347")
+        CommunityApiExtension.communityApi.stubGetProbationStatus()
+
+        webTestClient.put()
+          .uri("/probation-index/build-index")
+          .accept(MediaType.APPLICATION_JSON)
+          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.currentIndex").isEqualTo("GREEN")
+          .jsonPath("$.currentIndexState").isEqualTo("COMPLETED")
+          .jsonPath("$.otherIndex").isEqualTo("BLUE")
+          .jsonPath("$.otherIndexState").isEqualTo("BUILDING")
+
+        webTestClient.put()
+          .uri("/probation-index/cancel-index")
+          .accept(MediaType.APPLICATION_JSON)
+          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.currentIndex").isEqualTo("GREEN")
+          .jsonPath("$.currentIndexState").isEqualTo("COMPLETED")
+          .jsonPath("$.otherIndex").isEqualTo("BLUE")
+          .jsonPath("$.otherIndexState").isEqualTo("CANCELLED")
+
+        webTestClient.put()
+          .uri("/probation-index/switch-index?force=true")
+          .accept(MediaType.APPLICATION_JSON)
+          .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.currentIndex").isEqualTo("BLUE")
+          .jsonPath("$.currentIndexState").isEqualTo("CANCELLED")
+          .jsonPath("$.otherIndex").isEqualTo("GREEN")
+          .jsonPath("$.otherIndexState").isEqualTo("COMPLETED")
+      }
+
+      @Test
+      internal fun `Will not switch indexes if one index is absent and force set to true`() {
+        CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345")
+        buildAndSwitchIndex(GREEN, 1)
+        CommunityApiExtension.communityApi.stubAllOffenderGets(10, "X12345", "X12346", "X12347")
+        CommunityApiExtension.communityApi.stubGetProbationStatus()
+
+        webTestClient.put()
+          .uri("/probation-index/switch-index?force=true")
           .accept(MediaType.APPLICATION_JSON)
           .headers(setAuthorisation(roles = listOf("ROLE_PROBATION_INDEX")))
           .exchange()

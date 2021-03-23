@@ -154,7 +154,7 @@ class IndexResourceApiTest : IntegrationTestBase() {
   inner class SwitchIndex {
     @Test
     fun `Request to mark index complete is successful and calls service`() {
-      doReturn(anIndexStatus().right()).whenever(indexService).switchIndex()
+      doReturn(anIndexStatus().right()).whenever(indexService).switchIndex(false)
 
       webTestClient.put()
         .uri("/probation-index/switch-index")
@@ -163,7 +163,7 @@ class IndexResourceApiTest : IntegrationTestBase() {
         .exchange()
         .expectStatus().isOk
 
-      verify(indexService).switchIndex()
+      verify(indexService).switchIndex(false)
     }
   }
 
