@@ -39,36 +39,73 @@ class QueueAdminService(
   fun clearAllIndexQueueMessages() {
     indexQueueService.getNumberOfMessagesCurrentlyOnIndexQueue()
       .takeIf { it > 0 }
-      ?.run {
+      ?.also { total ->
         indexAwsSqsClient.purgeQueue(PurgeQueueRequest(indexQueueUrl))
-        log.info("Clear all messages on index queue")
-        telemetryClient.trackEvent(TelemetryEvents.PURGED_INDEX_QUEUE.name, mapOf("messages-on-queue" to this.toString()), null)
+        telemetryClient.trackEvent(
+          TelemetryEvents.PURGED_INDEX_QUEUE.name,
+          mapOf("messages-on-queue" to total.toString()),
+          null
+        )
+        log.info("Clear all messages on index queue - found $total message(s)")
+      }
+      ?: also {
+        log.info("No messages to clear on index queue")
       }
   }
 
   fun clearAllDlqMessagesForIndex() {
     indexQueueService.getNumberOfMessagesCurrentlyOnIndexDLQ()
       .takeIf { it > 0 }
-      ?.run {
+      ?.also { total ->
         indexAwsSqsDlqClient.purgeQueue(PurgeQueueRequest(indexDlqUrl))
-        log.info("Clear all messages on index dead letter queue")
-        telemetryClient.trackEvent(TelemetryEvents.PURGED_INDEX_DLQ.name, mapOf("messages-on-queue" to this.toString()), null)
+        telemetryClient.trackEvent(
+          TelemetryEvents.PURGED_INDEX_DLQ.name,
+          mapOf("messages-on-queue" to total.toString()),
+          null
+        )
+        log.info("Clear all messages on index dead letter queue - found $total message(s)")
+      }
+      ?: also {
+        log.info("No messages to clear on index dead letter queue")
       }
   }
 
   fun clearAllDlqMessagesForEvent() {
-    eventAwsSqsDlqClient.purgeQueue(PurgeQueueRequest(eventDlqUrl))
-    log.info("Clear all messages on event dead letter queue")
+    getEventDlqMessageCount()
+      .takeIf { it > 0 }
+      ?.also { total ->
+        eventAwsSqsDlqClient.purgeQueue(PurgeQueueRequest(eventDlqUrl))
+        telemetryClient.trackEvent(
+          TelemetryEvents.PURGED_EVENT_DLQ.name,
+          mapOf("messages-on-queue" to total.toString()),
+          null
+        )
+        log.info("Clear messages on event dead letter queue - found $total message(s)")
+      }
+      ?: also {
+        log.info("No messages to clear on event dead letter queue")
+      }
   }
 
-  fun transferEventMessages() =
-    repeat(getEventDlqMessageCount()) {
-      eventAwsSqsDlqClient.receiveMessage(ReceiveMessageRequest(eventDlqUrl).withMaxNumberOfMessages(1)).messages
-        .forEach { msg ->
-          eventAwsSqsClient.sendMessage(eventQueueUrl, msg.body)
-          eventAwsSqsDlqClient.deleteMessage(DeleteMessageRequest(eventDlqUrl, msg.receiptHandle))
+  fun transferEventMessages() {
+    getEventDlqMessageCount()
+      .takeIf { it > 0 }
+      ?.also { total ->
+        repeat(total) {
+          eventAwsSqsDlqClient.receiveMessage(ReceiveMessageRequest(eventDlqUrl).withMaxNumberOfMessages(1)).messages
+            .forEach { msg ->
+              eventAwsSqsClient.sendMessage(eventQueueUrl, msg.body)
+              eventAwsSqsDlqClient.deleteMessage(DeleteMessageRequest(eventDlqUrl, msg.receiptHandle))
+              log.info("Transferred message with from Event DLQ: $msg")
+            }
         }
-    }
+        telemetryClient.trackEvent(
+          TelemetryEvents.TRANSFERRED_EVENT_DLQ.name,
+          mapOf("messages-on-queue" to total.toString()),
+          null
+        )
+      }
+  }
 
   private fun getEventDlqMessageCount() =
     eventAwsSqsDlqClient.getQueueAttributes(eventDlqUrl, listOf("ApproximateNumberOfMessages"))
@@ -84,10 +121,15 @@ class QueueAdminService(
             .forEach { msg ->
               indexAwsSqsClient.sendMessage(indexQueueUrl, msg.body)
               indexAwsSqsDlqClient.deleteMessage(DeleteMessageRequest(indexDlqUrl, msg.receiptHandle))
+              log.info("Transferred message with from Index DLQ: $msg")
             }
         }
-      }?.also { total ->
-        telemetryClient.trackEvent(TelemetryEvents.TRANSFERRED_INDEX_DLQ.name, mapOf("messages-on-queue" to total.toString()), null)
+        telemetryClient.trackEvent(
+          TelemetryEvents.TRANSFERRED_INDEX_DLQ.name,
+          mapOf("messages-on-queue" to total.toString()),
+          null
+        )
+        log.info("Transfer all Index DLQ messages to main queue - found $total message(s)")
       }
   }
 }
