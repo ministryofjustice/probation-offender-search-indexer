@@ -109,11 +109,20 @@ class IndexResource(
     summary = "Switch index without rebuilding",
     description = "current index will be switched both indexed have to be complete, requires PROBATION_INDEX role"
   )
-  fun switchIndex() = indexService.switchIndex()
+  @ApiResponses(
+    value = [
+      ApiResponse(responseCode = "401", description = "Unauthorised, requires a valid Oauth2 token"),
+      ApiResponse(responseCode = "403", description = "Forbidden, requires an authorisation with role PROBATION_INDEX"),
+      ApiResponse(responseCode = "409", description = "Conflict, the index was not able to be swapped as other index not complete")
+    ]
+  )
+  fun switchIndex(@RequestParam(name = "force", required = false) force: Boolean = false) = indexService.switchIndex(force)
     .getOrHandle { error ->
       log.error("Request to /probation-index/switch-index failed due to error {}", error)
       when (SwitchIndexError.fromErrorClass(error)) {
         SwitchIndexError.BUILD_IN_PROGRESS -> throw ResponseStatusException(HttpStatus.CONFLICT, error.message())
+        SwitchIndexError.BUILD_CANCELLED -> throw ResponseStatusException(HttpStatus.CONFLICT, error.message())
+        SwitchIndexError.BUILD_ABSENT -> throw ResponseStatusException(HttpStatus.CONFLICT, error.message())
       }
     }
 

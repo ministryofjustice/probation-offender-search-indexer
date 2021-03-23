@@ -50,9 +50,9 @@ class IndexStatusService(private val indexStatusRepository: IndexStatusRepositor
   fun switchIndex(): IndexStatus {
     val currentIndexStatus = getIndexStatus()
     if (currentIndexStatus.inProgress()) {
-      return currentIndexStatus
+      return indexStatusRepository.save(currentIndexStatus.toBuildCancelled().toSwitchIndex())
     }
-    return indexStatusRepository.save(currentIndexStatus.toSwitchIndex())
+    return indexStatusRepository.save(getIndexStatus().toSwitchIndex())
   }
 
   fun markBuildCancelled(): IndexStatus {

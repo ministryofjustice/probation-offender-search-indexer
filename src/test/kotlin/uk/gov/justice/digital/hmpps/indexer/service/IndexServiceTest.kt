@@ -244,9 +244,10 @@ class IndexServiceTest {
         .thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
       whenever(indexStatusService.switchIndex()).thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
 
-      indexService.switchIndex()
+      val result = indexService.switchIndex(false)
 
       verify(indexStatusService).switchIndex()
+      result shouldBeRight IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED)
     }
 
     @Test
@@ -256,7 +257,7 @@ class IndexServiceTest {
         .thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
       whenever(indexStatusService.switchIndex()).thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
 
-      indexService.switchIndex()
+      indexService.switchIndex(false)
 
       verify(offenderSynchroniserService).switchAliasIndex(BLUE)
     }
@@ -268,22 +269,42 @@ class IndexServiceTest {
         .thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
       whenever(indexStatusService.switchIndex()).thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
 
-      indexService.switchIndex()
+      indexService.switchIndex(false)
 
       verify(telemetryClient).trackEvent(TelemetryEvents.SWITCH_INDEX.name, mapOf("index" to "BLUE"), null)
     }
 
     @Test
-    fun `Once current index marked as complete, the 'other' index is current`() {
-      whenever(indexStatusService.getIndexStatus())
-        .thenReturn(IndexStatus(currentIndex = GREEN, otherIndexState = COMPLETED))
-        .thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
-      whenever(indexStatusService.switchIndex()).thenReturn(IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED))
+    fun `Index building returns error`() {
+      val expectedIndexStatus = IndexStatus(currentIndex = GREEN, otherIndexState = BUILDING)
+      whenever(indexStatusService.getIndexStatus()).thenReturn(expectedIndexStatus)
 
-      val result = indexService.switchIndex()
+      val result = indexService.switchIndex(false)
 
-      verify(indexStatusService, times(2)).getIndexStatus()
-      result shouldBeRight IndexStatus(currentIndex = BLUE, currentIndexState = COMPLETED)
+      verify(indexStatusService).getIndexStatus()
+      result shouldBeLeft BuildInProgressError(expectedIndexStatus)
+    }
+
+    @Test
+    fun `Index Cancelled returns error`() {
+      val expectedIndexStatus = IndexStatus(currentIndex = GREEN, otherIndexState = CANCELLED)
+      whenever(indexStatusService.getIndexStatus()).thenReturn(expectedIndexStatus)
+
+      val result = indexService.switchIndex(false)
+
+      verify(indexStatusService).getIndexStatus()
+      result shouldBeLeft BuildCancelledError(expectedIndexStatus)
+    }
+
+    @Test
+    fun `Index Absent returns error`() {
+      val expectedIndexStatus = IndexStatus(currentIndex = GREEN, otherIndexState = ABSENT)
+      whenever(indexStatusService.getIndexStatus()).thenReturn(expectedIndexStatus)
+
+      val result = indexService.switchIndex(false)
+
+      verify(indexStatusService).getIndexStatus()
+      result shouldBeLeft BuildAbsentError(expectedIndexStatus)
     }
   }
 

@@ -18,6 +18,14 @@ data class BuildInProgressError(val indexStatus: IndexStatus) : IndexError {
   override fun message() = "The build for ${indexStatus.otherIndex} is already ${indexStatus.otherIndexState} (started at ${indexStatus.otherIndexStartBuildTime})"
 }
 
+data class BuildCancelledError(val indexStatus: IndexStatus) : IndexError {
+  override fun message() = "The build for ${indexStatus.otherIndex} is in state ${indexStatus.otherIndexState} (started at ${indexStatus.otherIndexStartBuildTime})"
+}
+
+data class BuildAbsentError(val indexStatus: IndexStatus) : IndexError {
+  override fun message() = "The build for ${indexStatus.otherIndex} is in state ${indexStatus.otherIndexState} (started at ${indexStatus.otherIndexStartBuildTime})"
+}
+
 data class BuildNotInProgressError(val indexStatus: IndexStatus) : IndexError {
   override fun message() = "The index ${indexStatus.otherIndex} is in state ${indexStatus.otherIndexState} (ended at ${indexStatus.otherIndexEndBuildTime})"
 }
