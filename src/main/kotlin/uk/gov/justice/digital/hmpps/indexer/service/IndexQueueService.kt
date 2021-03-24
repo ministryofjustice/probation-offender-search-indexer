@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.indexer.service
 
 import com.amazonaws.services.sqs.AmazonSQS
+import com.amazonaws.services.sqs.AmazonSQSAsync
 import com.amazonaws.services.sqs.model.SendMessageRequest
 import com.google.gson.Gson
 import org.slf4j.Logger
@@ -22,6 +23,8 @@ data class IndexQueueStatus(val messagesOnQueue: Int, val messagesOnDlq: Int, va
 class IndexQueueService(
   private val indexAwsSqsClient: AmazonSQS,
   private val indexAwsSqsDlqClient: AmazonSQS,
+  private val indexAwsSqsAsyncClient: AmazonSQSAsync,
+  private val indexAwsSqsDlqAsyncClient: AmazonSQSAsync,
   @Value("\${index.sqs.queue.name}") private val indexQueueName: String,
   @Value("\${index.sqs.dlq.name}") private val indexDlqName: String,
   private val gson: Gson
@@ -50,23 +53,24 @@ class IndexQueueService(
 
   fun getNumberOfMessagesCurrentlyOnIndexQueue(): Int {
     val queueAttributes = indexAwsSqsClient.getQueueAttributes(indexQueueUrl, listOf("ApproximateNumberOfMessages"))
-    return queueAttributes.attributes["ApproximateNumberOfMessages"]?.toInt() ?: 0
+    return queueAttributes.attributes["ApproximateNumberOfMessages"].toIntOrZero()
   }
 
   fun getNumberOfMessagesCurrentlyOnIndexDLQ(): Int {
     val queueAttributes = indexAwsSqsDlqClient.getQueueAttributes(indexDlqUrl, listOf("ApproximateNumberOfMessages"))
-    return queueAttributes.attributes["ApproximateNumberOfMessages"]?.toInt() ?: 0
+    return queueAttributes.attributes["ApproximateNumberOfMessages"].toIntOrZero()
   }
 
-  fun getNumberOfMessagesCurrentlyInFlight(): Int {
-    val queueAttributes = indexAwsSqsClient.getQueueAttributes(indexQueueUrl, listOf("ApproximateNumberOfMessagesNotVisible"))
-    return queueAttributes.attributes["ApproximateNumberOfMessagesNotVisible"]?.toInt() ?: 0
-  }
+  fun getIndexQueueStatus(): IndexQueueStatus {
+    val queueAttributesAsyncFuture = indexAwsSqsAsyncClient.getQueueAttributesAsync(indexQueueUrl, listOf("ApproximateNumberOfMessages", "ApproximateNumberOfMessagesNotVisible"))
+    val dlqAttributesAsyncFuture = indexAwsSqsDlqAsyncClient.getQueueAttributesAsync(indexDlqUrl, listOf("ApproximateNumberOfMessages"))
 
-  fun getIndexQueueStatus(): IndexQueueStatus =
-    IndexQueueStatus(
-      messagesOnQueue = getNumberOfMessagesCurrentlyOnIndexQueue(),
-      messagesInFlight = getNumberOfMessagesCurrentlyInFlight(),
-      messagesOnDlq = getNumberOfMessagesCurrentlyOnIndexDLQ()
+    return IndexQueueStatus(
+      messagesOnQueue = queueAttributesAsyncFuture.get().attributes["ApproximateNumberOfMessages"].toIntOrZero(),
+      messagesInFlight = queueAttributesAsyncFuture.get().attributes["ApproximateNumberOfMessagesNotVisible"].toIntOrZero(),
+      messagesOnDlq = dlqAttributesAsyncFuture.get().attributes["ApproximateNumberOfMessages"].toIntOrZero(),
     )
+  }
+  private fun String?.toIntOrZero() =
+    this?.toInt() ?: 0
 }
