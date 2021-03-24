@@ -3,6 +3,8 @@ package uk.gov.justice.digital.hmpps.indexer.config
 import com.amazonaws.auth.AWSStaticCredentialsProvider
 import com.amazonaws.auth.BasicAWSCredentials
 import com.amazonaws.services.sqs.AmazonSQS
+import com.amazonaws.services.sqs.AmazonSQSAsync
+import com.amazonaws.services.sqs.AmazonSQSAsyncClientBuilder
 import com.amazonaws.services.sqs.AmazonSQSClientBuilder
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -41,6 +43,14 @@ class JmsAwsConfig {
   ): AmazonSQS =
     amazonSQS(accessKey, secretKey, region)
 
+  @Bean("indexAwsSqsAsyncClient")
+  fun indexAwsSqsAsyncClient(
+    @Value("\${index.sqs.aws.access.key.id}") accessKey: String,
+    @Value("\${index.sqs.aws.secret.access.key}") secretKey: String,
+    @Value("\${index.sqs.endpoint.region}") region: String
+  ): AmazonSQSAsync =
+    amazonSQSAsync(accessKey, secretKey, region)
+
   @Bean
   fun indexAwsSqsDlqClient(
     @Value("\${index.sqs.aws.dlq.access.key.id}") accessKey: String,
@@ -49,8 +59,22 @@ class JmsAwsConfig {
   ): AmazonSQS =
     amazonSQS(accessKey, secretKey, region)
 
+  @Bean
+  fun indexAwsSqsDlqAsyncClient(
+    @Value("\${index.sqs.aws.dlq.access.key.id}") accessKey: String,
+    @Value("\${index.sqs.aws.dlq.secret.access.key}") secretKey: String,
+    @Value("\${index.sqs.endpoint.region}") region: String
+  ): AmazonSQSAsync =
+    amazonSQSAsync(accessKey, secretKey, region)
+
   private fun amazonSQS(accessKey: String, secretKey: String, region: String): AmazonSQS {
     return AmazonSQSClientBuilder.standard()
+      .withCredentials(AWSStaticCredentialsProvider(BasicAWSCredentials(accessKey, secretKey)))
+      .withRegion(region)
+      .build()
+  }
+  private fun amazonSQSAsync(accessKey: String, secretKey: String, region: String): AmazonSQSAsync {
+    return AmazonSQSAsyncClientBuilder.standard()
       .withCredentials(AWSStaticCredentialsProvider(BasicAWSCredentials(accessKey, secretKey)))
       .withRegion(region)
       .build()
