@@ -1,6 +1,6 @@
 plugins {
   id("uk.gov.justice.hmpps.gradle-spring-boot") version "3.1.4"
-  kotlin("plugin.spring") version "1.4.30"
+  kotlin("plugin.spring") version "1.4.32"
   id("org.unbroken-dome.test-sets") version "3.0.1"
 }
 
@@ -25,7 +25,7 @@ dependencies {
   implementation("com.amazonaws:aws-java-sdk-elasticsearch:1.11.989")
 
   implementation("com.google.code.gson:gson:2.8.6")
-  implementation("io.arrow-kt:arrow-core:0.13.0")
+  implementation("io.arrow-kt:arrow-core:0.12.0")
 
   implementation("org.springdoc:springdoc-openapi-ui:1.5.6")
   implementation("org.springdoc:springdoc-openapi-data-rest:1.5.6")
