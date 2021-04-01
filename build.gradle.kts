@@ -25,6 +25,7 @@ dependencies {
   implementation("com.amazonaws:aws-java-sdk-elasticsearch:1.11.989")
 
   implementation("com.google.code.gson:gson:2.8.6")
+  // arrow-core not updated to 0.13.0 to avoid possible bug when calling Either.shouldBeLeft
   implementation("io.arrow-kt:arrow-core:0.12.0")
 
   implementation("org.springdoc:springdoc-openapi-ui:1.5.6")
