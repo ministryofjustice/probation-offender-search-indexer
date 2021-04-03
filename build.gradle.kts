@@ -45,3 +45,9 @@ dependencies {
   testImplementation("org.mockito:mockito-inline:3.8.0")
   testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactive:1.4.3")
 }
+
+tasks {
+  test {
+    maxHeapSize = "256m"
+  }
+}
