@@ -1,16 +1,16 @@
 event:
   sqs:
-    endpoint.url: http://localhost:4576 # only required for external localstack
+    endpoint.url: http://localhost:4566 # only required for external localstack
     queue.name: probation_offender_search_event_queue
     dlq.name: probation_offender_search_event_dl_queue
 index:
   sqs:
-    endpoint.url: http://localhost:4576 # only required for external localstack
+    endpoint.url: http://localhost:4566 # only required for external localstack
     queue.name: probation_offender_search_index_queue
     dlq.name: probation_offender_search_index_dl_queue
 
 elasticsearch:
-  port: 4571
+  port: 4566
   scheme: http
   host: localhost
 
