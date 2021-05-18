@@ -1,5 +1,5 @@
 plugins {
-  id("uk.gov.justice.hmpps.gradle-spring-boot") version "3.2.0"
+  id("uk.gov.justice.hmpps.gradle-spring-boot") version "3.2.1"
   kotlin("plugin.spring") version "1.5.0"
   id("org.unbroken-dome.test-sets") version "4.0.0"
 }
@@ -22,7 +22,7 @@ dependencies {
 
   implementation("org.springframework:spring-jms")
   implementation("com.amazonaws:amazon-sqs-java-messaging-lib:1.0.8")
-  implementation("com.amazonaws:aws-java-sdk-elasticsearch:1.11.1015")
+  implementation("com.amazonaws:aws-java-sdk-elasticsearch:1.11.1020")
 
   implementation("com.google.code.gson:gson:2.8.6")
   // arrow-core not updated to 0.13.0 to avoid possible bug when calling Either.shouldBeLeft
@@ -42,8 +42,8 @@ dependencies {
   testImplementation("io.jsonwebtoken:jjwt:0.9.1")
   testImplementation("net.javacrumbs.json-unit:json-unit-assertj:2.25.0")
   testImplementation("io.swagger.parser.v3:swagger-parser-v2-converter:2.0.25")
-  testImplementation("org.mockito:mockito-inline:3.9.0")
-  testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactive:1.4.3")
+  testImplementation("org.mockito:mockito-inline:3.10.0")
+  testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactive:1.5.0")
 }
 
 tasks {
