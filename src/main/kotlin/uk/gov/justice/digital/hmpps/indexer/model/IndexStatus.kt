@@ -30,11 +30,11 @@ data class IndexStatus(
   @Schema(description = "The index currently active for searches", example = "GREEN")
   val currentIndex: SyncIndex,
 
-  @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second)
+  @Field(type = FieldType.Date, format = [DateFormat.date_hour_minute_second])
   @Schema(description = "The last time the current index started building", example = "2020-07-17T10:25:49.842Z")
   val currentIndexStartBuildTime: LocalDateTime? = null,
 
-  @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second)
+  @Field(type = FieldType.Date, format = [DateFormat.date_hour_minute_second])
   @Schema(description = "The last time the current index finished building", example = "2020-07-17T11:35:29.833Z")
   val currentIndexEndBuildTime: LocalDateTime? = null,
 
@@ -42,11 +42,11 @@ data class IndexStatus(
   @Schema(description = "The status of the current index before it became active", example = "COMPLETED")
   val currentIndexState: IndexState = IndexState.ABSENT,
 
-  @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second)
+  @Field(type = FieldType.Date, format = [DateFormat.date_hour_minute_second])
   @Schema(description = "The time the inactive index started building", example = "2020-07-17T12:26:48.822Z")
   val otherIndexStartBuildTime: LocalDateTime? = null,
 
-  @Field(type = FieldType.Date, format = DateFormat.date_hour_minute_second)
+  @Field(type = FieldType.Date, format = [DateFormat.date_hour_minute_second])
   @Schema(description = "The time the inactive index ended building", example = "null")
   val otherIndexEndBuildTime: LocalDateTime? = null,
 
