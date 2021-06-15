@@ -23,6 +23,7 @@ env:
   OAUTH_ENDPOINT_URL: "https://sign-in.hmpps.service.justice.gov.uk/auth"
   COMMUNITY_ENDPOINT_URL: "https://community-api-secure.probation.service.justice.gov.uk"
   INDEX_BUILD_COMPLETE_THRESHOLD: "2000000"
+  APPLICATIONINSIGHTS_CONFIGURATION_FILE: applicationinsights.json
 
 whitelist:
   office: "217.33.148.210/32"
