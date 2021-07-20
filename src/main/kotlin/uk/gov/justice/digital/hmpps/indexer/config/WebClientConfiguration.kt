@@ -15,7 +15,6 @@ import org.springframework.web.reactive.function.client.WebClient
 class WebClientConfiguration(
   @Value("\${community.endpoint.url}") private val communityRootUri: String,
   @Value("\${oauth.endpoint.url}") private val oauthRootUri: String,
-  private val webClientBuilder: WebClient.Builder
 ) {
 
   @Bean
@@ -23,7 +22,7 @@ class WebClientConfiguration(
     val oauth2Client = ServletOAuth2AuthorizedClientExchangeFilterFunction(authorizedClientManager)
     oauth2Client.setDefaultClientRegistrationId("community-api")
 
-    return webClientBuilder
+    return WebClient.builder()
       .baseUrl(communityRootUri)
       .apply(oauth2Client.oauth2Configuration())
       .build()
@@ -31,12 +30,12 @@ class WebClientConfiguration(
 
   @Bean
   fun communityApiHealthWebClient(): WebClient {
-    return webClientBuilder.baseUrl(communityRootUri).build()
+    return WebClient.builder().baseUrl(communityRootUri).build()
   }
 
   @Bean
   fun oauthApiHealthWebClient(): WebClient {
-    return webClientBuilder.baseUrl(oauthRootUri).build()
+    return WebClient.builder().baseUrl(oauthRootUri).build()
   }
 
   @Bean
@@ -45,7 +44,8 @@ class WebClientConfiguration(
     oAuth2AuthorizedClientService: OAuth2AuthorizedClientService?
   ): OAuth2AuthorizedClientManager? {
     val authorizedClientProvider = OAuth2AuthorizedClientProviderBuilder.builder().clientCredentials().build()
-    val authorizedClientManager = AuthorizedClientServiceOAuth2AuthorizedClientManager(clientRegistrationRepository, oAuth2AuthorizedClientService)
+    val authorizedClientManager =
+      AuthorizedClientServiceOAuth2AuthorizedClientManager(clientRegistrationRepository, oAuth2AuthorizedClientService)
     authorizedClientManager.setAuthorizedClientProvider(authorizedClientProvider)
     return authorizedClientManager
   }
